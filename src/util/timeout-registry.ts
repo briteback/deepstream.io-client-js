@@ -33,12 +33,14 @@ export class TimeoutRegistry extends EventEmitter {
   private options: Options
   private services: Services
   private register: Map<number, InternalTimeout>
+  private ackRegister: Map<string, InternalTimeout>
 
   constructor (services: Services, options: Options) {
     super()
     this.options = options
     this.services = services
     this.register = new Map()
+    this.ackRegister = new Map()
   }
 
   /**
@@ -78,6 +80,7 @@ export class TimeoutRegistry extends EventEmitter {
       data: internalTimeout
     })
     this.register.set(internalTimeout.timerId, internalTimeout)
+    this.ackRegister.set(internalTimeout.uniqueName, internalTimeout)
     return internalTimeout.timerId
   }
 
@@ -92,12 +95,11 @@ export class TimeoutRegistry extends EventEmitter {
     } else {
       requestMsg = Object.assign({}, message, { action })
     }
+
     const uniqueName = this.getUniqueName(requestMsg)
-    for (const [timerId, timeout] of this.register) {
-      if (timeout.uniqueName === uniqueName) {
-        this.services.timerRegistry.remove(timerId)
-        this.register.delete(timerId)
-      }
+    const entry = this.ackRegister.get(uniqueName)
+    if (entry) {
+      this.clear(entry.timerId)
     }
   }
 
@@ -106,7 +108,11 @@ export class TimeoutRegistry extends EventEmitter {
    */
   public clear (timerId: number): void {
     this.services.timerRegistry.remove(timerId)
-    this.register.delete(timerId)
+    const entry = this.register.get(timerId)
+    if (entry) {
+      this.register.delete(timerId)
+      this.ackRegister.delete(entry.uniqueName)
+    }
   }
 
   /**

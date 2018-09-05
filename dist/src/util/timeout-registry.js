@@ -15,6 +15,7 @@ class TimeoutRegistry extends EventEmitter {
         this.options = options;
         this.services = services;
         this.register = new Map();
+        this.ackRegister = new Map();
     }
     /**
      * Add an entry
@@ -48,6 +49,7 @@ class TimeoutRegistry extends EventEmitter {
             data: internalTimeout
         });
         this.register.set(internalTimeout.timerId, internalTimeout);
+        this.ackRegister.set(internalTimeout.uniqueName, internalTimeout);
         return internalTimeout.timerId;
     }
     /**
@@ -63,11 +65,9 @@ class TimeoutRegistry extends EventEmitter {
             requestMsg = Object.assign({}, message, { action });
         }
         const uniqueName = this.getUniqueName(requestMsg);
-        for (const [timerId, timeout] of this.register) {
-            if (timeout.uniqueName === uniqueName) {
-                this.services.timerRegistry.remove(timerId);
-                this.register.delete(timerId);
-            }
+        const entry = this.ackRegister.get(uniqueName);
+        if (entry) {
+            this.clear(entry.timerId);
         }
     }
     /**
@@ -75,7 +75,11 @@ class TimeoutRegistry extends EventEmitter {
      */
     clear(timerId) {
         this.services.timerRegistry.remove(timerId);
-        this.register.delete(timerId);
+        const entry = this.register.get(timerId);
+        if (entry) {
+            this.register.delete(timerId);
+            this.ackRegister.delete(entry.uniqueName);
+        }
     }
     /**
      * Will be invoked if the timeout has occured before the ack message was received

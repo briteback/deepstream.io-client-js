@@ -19,6 +19,7 @@ export declare class TimeoutRegistry extends EventEmitter {
     private options;
     private services;
     private register;
+    private ackRegister;
     constructor(services: Services, options: Options);
     /**
      * Add an entry
