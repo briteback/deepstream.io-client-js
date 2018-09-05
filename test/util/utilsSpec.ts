@@ -110,6 +110,18 @@ describe('deepEquals', () => {
 
     expect(utils.deepEquals(a, 'primitive'))
       .to.equal(false)
+
+    expect(utils.deepEquals(44, a))
+      .to.equal(false)
+
+    expect(utils.deepEquals(false, a))
+      .to.equal(false)
+
+    expect(utils.deepEquals(44.44, a))
+      .to.equal(false)
+
+    expect(utils.deepEquals('primitive', a))
+      .to.equal(false)
   })
 
   it('handles undefined', () => {
@@ -122,6 +134,9 @@ describe('deepEquals', () => {
 
     expect(utils.deepEquals(a, undefined))
       .to.be.equal(false)
+
+    expect(utils.deepEquals(undefined, a))
+      .to.be.equal(false)
   })
 
   it('handles empty objects', () => {
@@ -130,6 +145,9 @@ describe('deepEquals', () => {
     }
 
     expect(utils.deepEquals(a, {}))
+      .to.equal(false)
+
+    expect(utils.deepEquals({}, a))
       .to.equal(false)
   })
 
@@ -141,9 +159,11 @@ describe('deepEquals', () => {
       a: 'b',
       c: 'd'
     }
-    // ??
-    process.stdout.write(`${utils.deepEquals(a, b)}`)
-    expect(false).to.equal(false)
+    expect(utils.deepEquals(a, b))
+      .to.be.equal(false)
+
+    expect(utils.deepEquals(b, a))
+      .to.be.equal(false)
   })
 })
 
@@ -166,8 +186,8 @@ describe('deepCopy', () => {
 
   it('copies objects', () => {
     const original = {
-        firstname: 'Wolfram',
-        lastname: ' Hempel'
+      firstname: 'Wolfram',
+      lastname: ' Hempel'
     }
 
     const copy = utils.deepCopy(original)
@@ -178,13 +198,16 @@ describe('deepCopy', () => {
 
   it('copies objects with null values', () => {
     const original = {
-        firstname: 'Wolfram',
-        lastname: null
+      firstname: 'Wolfram',
+      lastname: null
     }
     const copy = utils.deepCopy(original)
 
     expect(copy)
       .to.deep.equal(original)
+
+    expect(copy.lastname)
+      .to.be.a('null')
   })
 
   it('copies null values', () => {
@@ -310,6 +333,13 @@ describe('shallowCopy', () => {
 
 describe('trim', () => {
   it('removes various kinds of whitespace from Strings having String.prototype.trim polyfill', () => {
+
+    expect(utils.trim('   '))
+      .to.equal('')
+
+    expect(utils.trim(''))
+      .to.equal('')
+
     expect(utils.trim('a    '))
       .to.equal('a')
 
@@ -321,7 +351,14 @@ describe('trim', () => {
   })
 
   it('removes various kinds of whitespace from string having no String.prototype.trim polyfill', () => {
+    const stringTrim = String.prototype.trim
     delete String.prototype.trim
+
+    expect(utils.trim('   '))
+      .to.equal('')
+
+    expect(utils.trim(''))
+      .to.equal('')
 
     expect(utils.trim('a    '))
       .to.equal('a')
@@ -331,12 +368,14 @@ describe('trim', () => {
 
     expect(utils.trim('   c d    '))
       .to.equal('c d')
+
+    String.prototype.trim = stringTrim
   })
 })
 
 describe('normalizeSetArguments', () => {
   it('normalizes argument list containing only a data argument as object', () => {
-    const argumentsSet = utils.normalizeSetArguments([{title: 'awesome post'}] as any)
+    const argumentsSet = utils.normalizeSetArguments([{ title: 'awesome post' }] as any)
 
     expect(argumentsSet).to.deep.equal({
       path: undefined,
@@ -378,7 +417,7 @@ describe('normalizeSetArguments', () => {
   })
 
   it('normalizes argument list containing only a path and a data argument as primitive', () => {
-    let argumentsSet = utils.normalizeSetArguments([ 'title', 'awesome post' ] as any)
+    let argumentsSet = utils.normalizeSetArguments(['title', 'awesome post'] as any)
 
     expect(argumentsSet).to.deep.equal({
       path: 'title',
@@ -407,7 +446,7 @@ describe('normalizeSetArguments', () => {
     const argumentsSet = utils.normalizeSetArguments([
       'post',
       { title: 'awesome post' },
-      () => {}
+      () => { }
     ] as any)
 
     expect(argumentsSet)
@@ -450,54 +489,39 @@ describe('normalizeSetArguments', () => {
     }).to.throw('Invalid set arguments')
   })
 
-  it.skip('throws error on an argument list containing an invalid data argument', () => {
+  it('throws error on an argument list containing an invalid data argument', () => {
     expect(() => {
       utils.normalizeSetArguments([undefined] as any)
-    }).to.throw('Invalid set data argument')
+    }).to.throw()
 
     expect(() => {
       utils.normalizeSetArguments([() => { }] as any)
-    }).to.throw('Invalid set data argument')
+    }).to.throw()
 
     expect(() => {
-      utils.normalizeSetArguments(['data', () => {}] as any)
-    }).to.throw('Invalid set data argument')
-
-    expect(() => {
-      utils.normalizeSetArguments([134, () => {}] as any)
-    }).to.throw('Invalid set data argument')
-
-    expect(() => {
-      utils.normalizeSetArguments([
-        'path', () => { }, () => {}
-      ] as any)
-    }).to.throw('Invalid set data argument')
+      utils.normalizeSetArguments([134, () => { }] as any)
+    }).to.throw()
   })
 
-  it.skip('throws error on an argument list contaning an invalid path argument', () => {
+  it('throws error on an argument list contaning an invalid path argument', () => {
     expect(() => {
       utils.normalizeSetArguments([
         undefined, { title: 'awesome post' }
       ] as any)
-    }).to.throw('Invalid set path argument')
+    }).to.throw()
 
     expect(() => {
       utils.normalizeSetArguments([
         '', { title: 'awesome post' }
       ] as any)
-    }).to.throw('Invalid set path argument')
+    }).to.throw()
 
     expect(() => {
       utils.normalizeSetArguments([
         null, { title: 'awesome post' }
       ] as any)
-    }).to.throw('Invalid set path argument')
+    }).to.throw()
 
-    expect(() => {
-      utils.normalizeSetArguments([
-        true, { title: 'awesome post' }, () => {}
-      ] as any)
-    }).to.throw('Invalid set path argument')
   })
 
   it('throws error on an argument list containing an invalid callback argument', () => {
@@ -537,7 +561,7 @@ describe('normalizeArguments', () => {
   it('normalizes argument list contaning an object', () => {
     const argumentSet = utils.normalizeArguments([{
       path: 'title',
-      callback: () => {},
+      callback: () => { },
       triggerNow: false
     }] as any)
 
@@ -556,7 +580,7 @@ describe('normalizeArguments', () => {
 
   it('normalizes argument list contaning path, callback and triggerNow arguments', () => {
     const argumentSet = utils.normalizeArguments([
-      true, () => {}, 'title'
+      true, () => { }, 'title'
     ] as any)
 
     expect(argumentSet)
