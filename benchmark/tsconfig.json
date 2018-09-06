@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "dist",
+    "sourceMap": true,
+    "allowJs": false,
+    "strictNullChecks": true,
+    "strict": true,
+    "declaration": true,
+    "noUnusedLocals": true,
+    "forceConsistentCasingInFileNames": true    
+  },
+  "files": [
+    "./node_modules/@types/node/index.d.ts",
+    "./node_modules/@types/ws/index.d.ts"
+  ],
+  "include": [
+    "src/**/*",
+    "package.json"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
