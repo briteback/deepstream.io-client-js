@@ -9,7 +9,7 @@
     "client"
   ],
   "main": "dist/src/deepstream.js",
-  "types": "dist/src/client.d.ts",
+  "types": "dist/src/deepstream.d.ts",
   "directories": {
     "test": "test"
   },
