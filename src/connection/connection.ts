@@ -228,7 +228,7 @@ export class Connection {
     }
 
     if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {
-      this.authCallback = authParamsOrCallback
+      this.authCallback = authParamsOrCallback as AuthenticationCallback
     } else if (callback) {
       this.authCallback = callback
     } else {
