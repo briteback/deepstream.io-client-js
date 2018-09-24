@@ -6,5 +6,9 @@ declare const _default: ((url: string, options?: any) => Client) & {
     C: typeof C;
     EVENT: typeof EVENT;
     deepstream: (url: string, options?: any) => Client;
+    MERGE_STRATEGIES: {
+        LOCAL_WINS: (localValue: object, localVersion: number, remoteValue: object, remoteVersion: number, callback: (error: string | null, mergedData: any) => void) => void;
+        REMOTE_WINS: (localValue: object, localVersion: number, remoteValue: object, remoteVersion: number, callback: (error: string | null, mergedData: any) => void) => void;
+    };
 };
 export = _default;

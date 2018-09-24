@@ -22,6 +22,7 @@ module.exports = {
     // new webpack.IgnorePlugin(/ws/),
   ],
   node: {
-    fs: 'empty'
+    fs: 'empty',
+    buffer: true
   }
 };

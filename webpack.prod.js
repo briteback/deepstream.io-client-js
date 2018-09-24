@@ -23,6 +23,7 @@ module.exports = {
     new UglifyJSPlugin()
   ],
   node: {
-    fs: 'empty'
+    fs: 'empty',
+    buffer: true
   }
 };

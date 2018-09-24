@@ -15,6 +15,11 @@ exports.socketFactory = (url, options) => {
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => { };
     socket.onmessage = (raw) => {
+        if (typeof raw.data === 'string') {
+            // TODO: We expect to always receive a buffer here but it seems like we
+            // sometimes get string. How does this happen?
+            raw.data = Buffer.from(raw.data);
+        }
         const parseResults = message_parser_1.parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) : raw.data);
         socket.onparsedmessages(parseResults);
     };
@@ -25,9 +30,6 @@ exports.socketFactory = (url, options) => {
             return;
         }
         message.data = JSON.stringify(message.parsedData);
-        // if (message.action !== CONNECTION_ACTIONS.PONG && message.action !== CONNECTION_ACTIONS.PING) {
-        //     console.log('>>>', TOPIC[message.topic], (ACTIONS as any)[message.topic][message.action], message.parsedData, message.data, message.name)
-        // }
         socket.send(message_builder_1.getMessage(message, false));
     };
     return socket;
