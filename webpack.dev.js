@@ -23,6 +23,7 @@ module.exports = {
   ],
   node: {
     fs: 'empty',
-    buffer: true
+    Buffer: true,
+    module: 'empty'
   }
 };

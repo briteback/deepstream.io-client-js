@@ -2876,7 +2876,7 @@ var objectKeys = Object.keys || function (obj) {
 module.exports = Duplex;
 
 /*<replacement>*/
-var util = __webpack_require__(11);
+var util = __webpack_require__(12);
 util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
@@ -3481,6 +3481,12 @@ exports.computeSourceURL = computeSourceURL;
 
 /***/ }),
 /* 10 */
+/***/ (function(module, exports) {
+
+
+
+/***/ }),
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3512,7 +3518,7 @@ exports.WRITE_ACK_TO_ACTION = reverseMapNumeric(exports.ACTION_TO_WRITE_ACK);
 exports.RESPONSE_TO_REQUEST = (_exports$RESPONSE_TO_ = {}, _defineProperty(_exports$RESPONSE_TO_, message_constants_1.TOPIC.RECORD, (_message_constants_1$ = {}, _defineProperty(_message_constants_1$, message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE, message_constants_1.RECORD_ACTIONS.HEAD), _defineProperty(_message_constants_1$, message_constants_1.RECORD_ACTIONS.READ_RESPONSE, message_constants_1.RECORD_ACTIONS.READ), _defineProperty(_message_constants_1$, message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS, message_constants_1.RECORD_ACTIONS.DELETE), _message_constants_1$)), _defineProperty(_exports$RESPONSE_TO_, message_constants_1.TOPIC.PRESENCE, (_message_constants_1$2 = {}, _defineProperty(_message_constants_1$2, message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE, message_constants_1.PRESENCE_ACTIONS.QUERY), _defineProperty(_message_constants_1$2, message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE, message_constants_1.PRESENCE_ACTIONS.QUERY_ALL), _message_constants_1$2)), _defineProperty(_exports$RESPONSE_TO_, message_constants_1.TOPIC.RPC, (_message_constants_1$3 = {}, _defineProperty(_message_constants_1$3, message_constants_1.RPC_ACTIONS.ACCEPT, message_constants_1.RPC_ACTIONS.REQUEST), _defineProperty(_message_constants_1$3, message_constants_1.RPC_ACTIONS.ERROR, message_constants_1.RPC_ACTIONS.REQUEST), _message_constants_1$3)), _defineProperty(_exports$RESPONSE_TO_, message_constants_1.TOPIC.EVENT, {}), _exports$RESPONSE_TO_);
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
@@ -3624,12 +3630,6 @@ function objectToString(o) {
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports) {
-
-
 
 /***/ }),
 /* 13 */
@@ -4142,7 +4142,7 @@ var Duplex;
 Writable.WritableState = WritableState;
 
 /*<replacement>*/
-var util = __webpack_require__(11);
+var util = __webpack_require__(12);
 util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
@@ -6315,7 +6315,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 Object.defineProperty(exports, "__esModule", { value: true });
 var message_constants_1 = __webpack_require__(0);
 var constants_1 = __webpack_require__(26);
-var utils_1 = __webpack_require__(10);
+var utils_1 = __webpack_require__(11);
 var message_validator_1 = __webpack_require__(27);
 function isError(message) {
     return message.action >= 0x50 && message.action < 0x70 || message.topic === message_constants_1.TOPIC.PARSER;
@@ -6879,7 +6879,7 @@ exports.Listener = Listener;
 "use strict";
 
 
-var fs = __webpack_require__(12)
+var fs = __webpack_require__(10)
 
 module.exports = clone(fs)
 
@@ -6971,7 +6971,7 @@ function _isUint8Array(obj) {
 /*</replacement>*/
 
 /*<replacement>*/
-var util = __webpack_require__(11);
+var util = __webpack_require__(12);
 util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
@@ -8301,7 +8301,7 @@ module.exports = Transform;
 var Duplex = __webpack_require__(7);
 
 /*<replacement>*/
-var util = __webpack_require__(11);
+var util = __webpack_require__(12);
 util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
@@ -8509,7 +8509,7 @@ var path = __webpack_require__(23);
 
 var fs;
 try {
-  fs = __webpack_require__(12);
+  fs = __webpack_require__(10);
   if (!fs.existsSync || !fs.readFileSync) {
     // fs doesn't have all methods we need
     fs = null;
@@ -8985,7 +8985,7 @@ exports.install = function(options) {
   if (options.hookRequire && !isInBrowser()) {
     var Module;
     try {
-      Module = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"module\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+      Module = __webpack_require__(10);
     } catch (err) {
       // NOP: Loading in catch block to convert webpack error to warning.
     }
@@ -11474,7 +11474,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var constants_1 = __webpack_require__(1);
-var utils_1 = __webpack_require__(10);
+var utils_1 = __webpack_require__(11);
 var EventEmitter = __webpack_require__(3);
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -13880,7 +13880,7 @@ exports.socketFactory = function (url, options) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var message_constants_1 = __webpack_require__(0);
-var utils_1 = __webpack_require__(10);
+var utils_1 = __webpack_require__(11);
 var constants_1 = __webpack_require__(26);
 var message_validator_1 = __webpack_require__(27);
 function getMessage(msg, isAck) {
@@ -14793,7 +14793,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var utils = __webpack_require__(6);
 var constants_1 = __webpack_require__(1);
 var message_constants_1 = __webpack_require__(0);
-var utils_1 = __webpack_require__(10);
+var utils_1 = __webpack_require__(11);
 var record_core_1 = __webpack_require__(70);
 var record_1 = __webpack_require__(72);
 var anonymous_record_1 = __webpack_require__(73);
@@ -16986,7 +16986,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var message_constants_1 = __webpack_require__(0);
-var utils_1 = __webpack_require__(10);
+var utils_1 = __webpack_require__(11);
 var constants_1 = __webpack_require__(1);
 
 var WriteAcknowledgementService = function () {
@@ -17288,7 +17288,7 @@ exports.Storage = Storage;
 
   path = __webpack_require__(23);
 
-  fs = __webpack_require__(12);
+  fs = __webpack_require__(10);
 
   events = __webpack_require__(13);
 
@@ -17730,7 +17730,7 @@ function writeFileSync (filename, data, options) {
 /* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var fs = __webpack_require__(12)
+/* WEBPACK VAR INJECTION */(function(process) {var fs = __webpack_require__(10)
 var polyfills = __webpack_require__(83)
 var legacy = __webpack_require__(85)
 var queue = []
@@ -19045,7 +19045,7 @@ module.exports = PassThrough;
 var Transform = __webpack_require__(35);
 
 /*<replacement>*/
-var util = __webpack_require__(11);
+var util = __webpack_require__(12);
 util.inherits = __webpack_require__(8);
 /*</replacement>*/
 
