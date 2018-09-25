@@ -9,12 +9,14 @@
     "client"
   ],
   "main": "dist/src/deepstream.js",
+  "module": "dist/srcESM/deepstream.js",
   "types": "dist/src/deepstream.d.ts",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "tsc": "rm -rf dist && tsc",
+    "tscESM": "rm -rf distESM && tsc -p tsconfigESM.json",
     "precommit": "npm run tsc && npm run build && git add dist/",
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
@@ -63,11 +65,12 @@
     "rimraf": "^2.6.2",
     "sinon": "^4.1.2",
     "source-map-support": "^0.5.0",
-    "ts-loader": "^3.2.0",
+    "ts-loader": "^5.2.0",
     "tslint": "^5.8.0",
     "typescript": "^2.6.2",
     "uglifyjs-webpack-plugin": "^1.1.2",
-    "webpack": "^3.9.1"
+    "webpack": "^4.19.1",
+    "webpack-cli": "^3.1.1"
   },
   "author": "deepstreamHub GmbH",
   "license": "Apache-2.0",
