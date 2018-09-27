@@ -37,7 +37,6 @@ module.exports = {
   },
   node: {
     fs: 'empty',
-    module: 'empty',
-    Buffer: false
+    module: 'empty'
   }
 };
