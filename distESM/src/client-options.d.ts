@@ -1,3 +1,4 @@
+import { RPCMessage } from '../binary-protocol/src/message-constants';
 import { MergeStrategy } from './record/merge-strategy';
 export interface Options {
     /**
@@ -95,5 +96,9 @@ export interface Options {
      * blbalbla
      */
     lazyConnect: boolean;
+    /**
+     * Handles the data of an RPC message and allows it to be rewritten.
+     */
+    messageRewriter: (message: RPCMessage) => void;
 }
 export declare const DefaultOptions: Options;

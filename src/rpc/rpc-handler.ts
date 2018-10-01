@@ -151,6 +151,9 @@ export class RPCHandler {
   private respondToRpc (message: RPCMessage) {
     const provider = this.providers.get(message.name)
     if (provider) {
+      if (this.options.messageRewriter) {
+        this.options.messageRewriter(message)
+      }
       provider(message.parsedData, new RPCResponse(message, this.options, this.services))
     } else {
       this.services.connection.sendMessage({

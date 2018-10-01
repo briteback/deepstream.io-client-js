@@ -1,3 +1,4 @@
+import { RPCMessage } from '../binary-protocol/src/message-constants'
 import { MergeStrategy, REMOTE_WINS } from './record/merge-strategy'
 
 export interface Options {
@@ -98,7 +99,13 @@ export interface Options {
     /**
      * blbalbla
      */
-    lazyConnect: boolean
+    lazyConnect: boolean,
+
+    /**
+     * Handles the data of an RPC message and allows it to be rewritten.
+     */
+    messageRewriter: (message: RPCMessage) => void
+
 }
 
 export const DefaultOptions: Options = {
@@ -121,5 +128,6 @@ export const DefaultOptions: Options = {
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
     nodeStorageSize: 5,
-    lazyConnect: false
+    lazyConnect: false,
+    messageRewriter: (message: RPCMessage) => { /* noop */ }
 }

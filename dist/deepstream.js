@@ -11502,7 +11502,8 @@ var DefaultOptions = {
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
     nodeStorageSize: 5,
-    lazyConnect: false
+    lazyConnect: false,
+    messageRewriter: function messageRewriter(message) {}
 };
 // CONCATENATED MODULE: ./src/constants.ts
 var EVENT;
@@ -13421,6 +13422,9 @@ var rpc_handler_RPCHandler = function () {
         value: function respondToRpc(message) {
             var provider = this.providers.get(message.name);
             if (provider) {
+                if (this.options.messageRewriter) {
+                    this.options.messageRewriter(message);
+                }
                 provider(message.parsedData, new rpc_response_RPCResponse(message, this.options, this.services));
             } else {
                 this.services.connection.sendMessage({
