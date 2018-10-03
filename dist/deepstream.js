@@ -14812,6 +14812,11 @@ var list_List = function (_Emitter) {
         value: function whenReady(callback) {
             return this.record.whenReady(this, callback);
         }
+    }, {
+        key: 'discard',
+        value: function discard() {
+            return this.record.discard();
+        }
         /**
          * Returns the array of list entries or an
          * empty array if the list hasn't been populated yet.
