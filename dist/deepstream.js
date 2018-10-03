@@ -14827,8 +14827,8 @@ var list_List = function (_Emitter) {
             return entries;
         }
         /**
-        * Returns true if the list is empty
-        */
+         * Returns true if the list is empty
+         */
 
     }, {
         key: 'isEmpty',
@@ -14836,8 +14836,8 @@ var list_List = function (_Emitter) {
             return this.getEntries().length === 0;
         }
         /**
-        * Updates the list with a new set of entries
-        */
+         * Updates the list with a new set of entries
+         */
 
     }, {
         key: 'setEntriesWithAck',
@@ -14858,8 +14858,8 @@ var list_List = function (_Emitter) {
             this.setEntries(entries, callback);
         }
         /**
-        * Updates the list with a new set of entries
-        */
+         * Updates the list with a new set of entries
+         */
 
     }, {
         key: 'setEntries',
@@ -14910,11 +14910,11 @@ var list_List = function (_Emitter) {
             this.afterChange();
         }
         /**
-        * Adds an entry to the list
-        *
-        * @param {String} entry
-        * @param {Number} [index]
-        */
+         * Adds an entry to the list
+         *
+         * @param {String} entry
+         * @param {Number} [index]
+         */
 
     }, {
         key: 'addEntry',
@@ -14938,9 +14938,9 @@ var list_List = function (_Emitter) {
             this.afterChange();
         }
         /**
-        * Proxies the underlying Record's subscribe method. Makes sure
-        * that no path is provided
-        */
+         * Proxies the underlying Record's subscribe method. Makes sure
+         * that no path is provided
+         */
 
     }, {
         key: 'subscribe',
@@ -14954,22 +14954,22 @@ var list_List = function (_Emitter) {
                 cb(scope.getEntries());
             }.bind(this, this, parameters.callback);
             /**
-            * Adding a property onto a function directly is terrible practice,
-            * and we will change this as soon as we have a more seperate approach
-            * of creating lists that doesn't have records default state.
-            *
-            * The reason we are holding a referencing to wrapped array is so that
-            * on unsubscribe it can provide a reference to the actual method the
-            * record is subscribed too.
-            **/
+             * Adding a property onto a function directly is terrible practice,
+             * and we will change this as soon as we have a more seperate approach
+             * of creating lists that doesn't have records default state.
+             *
+             * The reason we are holding a referencing to wrapped array is so that
+             * on unsubscribe it can provide a reference to the actual method the
+             * record is subscribed too.
+             **/
             this.wrappedFunctions.set(parameters.callback, listCallback);
             parameters.callback = listCallback;
             this.record.subscribe(parameters);
         }
         /**
-        * Proxies the underlying Record's unsubscribe method. Makes sure
-        * that no path is provided
-        */
+         * Proxies the underlying Record's unsubscribe method. Makes sure
+         * that no path is provided
+         */
 
     }, {
         key: 'unsubscribe',

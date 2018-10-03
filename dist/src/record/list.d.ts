@@ -19,16 +19,16 @@ export declare class List extends Emitter {
      */
     getEntries(): Array<string>;
     /**
-   * Returns true if the list is empty
-   */
+     * Returns true if the list is empty
+     */
     isEmpty(): boolean;
     /**
-* Updates the list with a new set of entries
-*/
+     * Updates the list with a new set of entries
+     */
     setEntriesWithAck(entries: Array<string>, callback?: WriteAckCallback): Promise<void> | void;
     /**
-    * Updates the list with a new set of entries
-    */
+     * Updates the list with a new set of entries
+     */
     setEntries(entries: Array<string>, callback?: WriteAckCallback): void;
     /**
      * Removes an entry from the list
@@ -38,21 +38,21 @@ export declare class List extends Emitter {
      */
     removeEntry(entry: string, index?: number, callback?: WriteAckCallback): void;
     /**
-   * Adds an entry to the list
-   *
-   * @param {String} entry
-   * @param {Number} [index]
-   */
+     * Adds an entry to the list
+     *
+     * @param {String} entry
+     * @param {Number} [index]
+     */
     addEntry(entry: string, index?: number, callback?: WriteAckCallback): void;
     /**
-   * Proxies the underlying Record's subscribe method. Makes sure
-   * that no path is provided
-   */
+     * Proxies the underlying Record's subscribe method. Makes sure
+     * that no path is provided
+     */
     subscribe(callback: (entries: Array<string>) => void): void;
     /**
-   * Proxies the underlying Record's unsubscribe method. Makes sure
-   * that no path is provided
-   */
+     * Proxies the underlying Record's unsubscribe method. Makes sure
+     * that no path is provided
+     */
     unsubscribe(callback: (entries: Array<string>) => void): void;
     /**
      * Proxies the underlying Record's _update method. Set's
