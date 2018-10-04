@@ -114,6 +114,9 @@ export class RPCHandler {
     respondToRpc(message) {
         const provider = this.providers.get(message.name);
         if (provider) {
+            if (this.options.messageRewriter) {
+                this.options.messageRewriter(message);
+            }
             provider(message.parsedData, new RPCResponse(message, this.options, this.services));
         }
         else {
