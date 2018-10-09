@@ -865,7 +865,12 @@ export class RecordCore extends Emitter {
   }
 
   private onConnectionReestablished (): void {
-    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
+    try {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
+    } catch (error) {
+      this.services.logger.warn({topic: TOPIC.RECORD}, EVENT.RECORD_ERROR,
+                                `Error on transition while reestablishing connection "${error}"`)
+    }
   }
 
   private onConnectionLost (): void {
