@@ -14463,7 +14463,11 @@ var record_core_RecordCore = function (_Emitter) {
     }, {
         key: 'onConnectionReestablished',
         value: function onConnectionReestablished() {
-            this.stateMachine.transition(3 /* RESUBSCRIBE */);
+            try {
+                this.stateMachine.transition(3 /* RESUBSCRIBE */);
+            } catch (error) {
+                this.services.logger.warn({ topic: message_constants["TOPIC"].RECORD }, EVENT.RECORD_ERROR, 'Error on transition while reestablishing connection "' + error + '"');
+            }
         }
     }, {
         key: 'onConnectionLost',
