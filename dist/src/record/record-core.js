@@ -48,6 +48,8 @@ class RecordCore extends Emitter {
                 { name: message_constants_1.RECORD_ACTIONS.DELETED, from: 4 /* READY */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS, from: 8 /* DELETING */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE, from: 4 /* READY */, to: 6 /* UNSUBSCRIBING */ },
+                // Ignore unsubscribes while in the unsubscribing state.
+                { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE, from: 6 /* UNSUBSCRIBING */, to: 6 /* UNSUBSCRIBING */ },
                 { name: message_constants_1.RECORD_ACTIONS.SUBSCRIBE, from: 6 /* UNSUBSCRIBING */, to: 4 /* READY */ },
                 { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE_ACK, from: 6 /* UNSUBSCRIBING */, to: 7 /* UNSUBSCRIBED */, handler: this.onUnsubscribed.bind(this) },
                 { name: 5 /* INVALID_VERSION */, from: 4 /* READY */, to: 5 /* MERGING */ },
@@ -728,7 +730,12 @@ class RecordCore extends Emitter {
         this.whenComplete(this.name);
     }
     onConnectionReestablished() {
-        this.stateMachine.transition(3 /* RESUBSCRIBE */);
+        try {
+            this.stateMachine.transition(3 /* RESUBSCRIBE */);
+        }
+        catch (error) {
+            this.services.logger.warn({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_ERROR, `Error on transition while reestablishing connection "${error}"`);
+        }
     }
     onConnectionLost() {
         this.saveRecordToOffline();

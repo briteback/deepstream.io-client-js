@@ -14,6 +14,7 @@ export declare class List extends Emitter {
     readonly version: number;
     whenReady(callback?: ((list: List) => void)): void | Promise<List>;
     discard(): void;
+    delete(): void | Promise<void>;
     /**
      * Returns the array of list entries or an
      * empty array if the list hasn't been populated yet.

@@ -46,6 +46,8 @@ export class RecordCore extends Emitter {
                 { name: RA.DELETED, from: 4 /* READY */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: RA.DELETE_SUCCESS, from: 8 /* DELETING */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: RA.UNSUBSCRIBE, from: 4 /* READY */, to: 6 /* UNSUBSCRIBING */ },
+                // Ignore unsubscribes while in the unsubscribing state.
+                { name: RA.UNSUBSCRIBE, from: 6 /* UNSUBSCRIBING */, to: 6 /* UNSUBSCRIBING */ },
                 { name: RA.SUBSCRIBE, from: 6 /* UNSUBSCRIBING */, to: 4 /* READY */ },
                 { name: RA.UNSUBSCRIBE_ACK, from: 6 /* UNSUBSCRIBING */, to: 7 /* UNSUBSCRIBED */, handler: this.onUnsubscribed.bind(this) },
                 { name: 5 /* INVALID_VERSION */, from: 4 /* READY */, to: 5 /* MERGING */ },
@@ -726,7 +728,12 @@ export class RecordCore extends Emitter {
         this.whenComplete(this.name);
     }
     onConnectionReestablished() {
-        this.stateMachine.transition(3 /* RESUBSCRIBE */);
+        try {
+            this.stateMachine.transition(3 /* RESUBSCRIBE */);
+        }
+        catch (error) {
+            this.services.logger.warn({ topic: TOPIC.RECORD }, EVENT.RECORD_ERROR, `Error on transition while reestablishing connection "${error}"`);
+        }
     }
     onConnectionLost() {
         this.saveRecordToOffline();
