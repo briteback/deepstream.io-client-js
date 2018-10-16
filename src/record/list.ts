@@ -21,6 +21,10 @@ export class List extends Emitter {
     this.record.applyUpdate = this.applyUpdate.bind(this)
     this.wrappedFunctions = new Map()
 
+    this.record.on('delete', this.emit.bind(this, 'delete'))
+    this.record.on('discard', this.emit.bind(this, 'discard'))
+    this.record.on('ready', this.emit.bind(this, 'ready'))
+
     this.hasAddListener = false
     this.hasRemoveListener = false
     this.hasMoveListener = false
@@ -44,6 +48,10 @@ export class List extends Emitter {
 
   public discard (): void {
     return this.record.discard()
+  }
+
+  public delete (): void | Promise<void> {
+    return this.record.delete()
   }
 
   /**
