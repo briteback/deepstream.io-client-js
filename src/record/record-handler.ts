@@ -11,7 +11,6 @@ import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
 import { WriteAcknowledgementService } from './write-ack-service'
-import { DirtyService } from './dirty-service'
 import { MergeStrategyService } from './merge-strategy-service'
 import { MergeStrategy } from './merge-strategy'
 
@@ -19,7 +18,6 @@ export interface RecordServices {
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier,
   headRegistry: SingleNotifier,
-  dirtyService: DirtyService,
   mergeStrategy: MergeStrategyService
 }
 
@@ -29,9 +27,8 @@ export class RecordHandler {
   private listener: Listener
   private recordCores: Map<string, RecordCore>
   private recordServices: RecordServices
-  private dirtyService: DirtyService
 
-  constructor (services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
+  constructor(services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
     this.services = services
     this.options = options
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
@@ -42,24 +39,14 @@ export class RecordHandler {
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
       headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),
-      dirtyService: new DirtyService(services.storage, options.dirtyStorageName),
       mergeStrategy: new MergeStrategyService(services, options.mergeStrategy)
     } as RecordServices
-    this.dirtyService = this.recordServices.dirtyService
 
-    this.sendUpdatedData = this.sendUpdatedData.bind(this)
-    this.onRecordUpdated = this.onRecordUpdated.bind(this)
-    this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
-    this.services.connection.onReestablished(this.syncDirtyRecords.bind(this))
-
-    if (this.services.connection.isConnected) {
-      this.syncDirtyRecords()
-    }
   }
 
-  public setMergeStrategy (recordName: string, mergeStrategy: MergeStrategy): void {
+  public setMergeStrategy(recordName: string, mergeStrategy: MergeStrategy): void {
     if (typeof mergeStrategy === 'function') {
       this.recordServices.mergeStrategy.setMergeStrategyByName(recordName, mergeStrategy)
     } else {
@@ -67,7 +54,7 @@ export class RecordHandler {
     }
   }
 
-  public setMergeStrategyRegExp (regexp: RegExp, mergeStrategy: MergeStrategy): void {
+  public setMergeStrategyRegExp(regexp: RegExp, mergeStrategy: MergeStrategy): void {
     if (typeof mergeStrategy === 'function') {
       this.recordServices.mergeStrategy.setMergeStrategyByPattern(regexp, mergeStrategy)
     } else {
@@ -80,7 +67,7 @@ export class RecordHandler {
  *
  * @param   {String} name              the unique name of the record
  */
-  public getRecord (name: string): Record {
+  public getRecord(name: string): Record {
     return new Record(this.getRecordCore(name))
   }
 
@@ -90,7 +77,7 @@ export class RecordHandler {
    *
    * @param   {String} name       the unique name of the list
    */
-  public getList (name: string): List {
+  public getList(name: string): List {
     return new List(this.getRecordCore(name))
   }
 
@@ -104,7 +91,7 @@ export class RecordHandler {
    *
    * The only API difference to a normal record is an additional setName( name ) method.
    */
-  public getAnonymousRecord (): AnonymousRecord {
+  public getAnonymousRecord(): AnonymousRecord {
     return new AnonymousRecord(this.getRecordCore)
   }
 
@@ -116,7 +103,7 @@ export class RecordHandler {
    * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
    * @param   {Function} callback
    */
-  public listen (pattern: string, callback: ListenCallback): void {
+  public listen(pattern: string, callback: ListenCallback): void {
     this.listener.listen(pattern, callback)
   }
 
@@ -125,7 +112,7 @@ export class RecordHandler {
    *
    * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
    */
-  public unlisten (pattern: string): void {
+  public unlisten(pattern: string): void {
     this.listener.unlisten(pattern)
   }
 
@@ -135,9 +122,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name: string): Promise<any>
-  public snapshot (name: string, callback: (error: string | null, data: any) => void): void
-  public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<any> {
+  public snapshot(name: string): Promise<any>
+  public snapshot(name: string, callback: (error: string | null, data: any) => void): void
+  public snapshot(name: string, callback?: (error: string | null, data: any) => void): void | Promise<any> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -146,26 +133,26 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name)
-    if (recordCore) {
-      if (callback) {
-        recordCore.whenReady(null, () => {
-          callback(null, recordCore.get())
-        })
-      } else {
-        return new Promise((resolve, reject) => {
-          recordCore.whenReady(null, () => {
-            resolve(recordCore.get())
-          })
-        })
-      }
-      return
-    }
+    if (recordCore && callback) {
+      return recordCore.whenReady(null, () => {
+        callback(null, recordCore.get())
+      })
 
-    if (callback) {
+    } else if (recordCore && !callback) {
+      return new Promise((resolve, reject) => {
+        recordCore.whenReady(null, () => {
+          resolve(recordCore.get())
+        })
+      })
+
+    } else if (!recordCore && callback) {
       this.recordServices.readRegistry.request(name, callback)
+      return
+
     } else {
       return new Promise((resolve, reject) => {
-        this.recordServices.readRegistry.request(name, (error, data) => error ? reject(error) : resolve(data))
+        const cb = (err: any, data: any) => err ? reject(err) : resolve(data)
+        this.recordServices.readRegistry.request(name, cb)
       })
     }
   }
@@ -176,9 +163,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public has (name: string): Promise<boolean>
-  public has (name: string, callback: (error: string | null, has: boolean | null) => void): void
-  public has (name: string, callback?: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
+  public has(name: string): Promise<boolean>
+  public has(name: string, callback: (error: string | null, has: boolean | null) => void): void
+  public has(name: string, callback?: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -188,12 +175,13 @@ export class RecordHandler {
 
     let cb
     if (!callback) {
-      return new Promise ((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1)
         this.head(name, cb)
       })
     }
-    cb = (error: string | null, version: number) => error ? callback(error, null) : callback(null, version !== -1)
+    cb = (error: string | null, version: number) => error ?
+      callback(error, null) : callback(null, version !== -1)
     this.head(name, cb)
   }
 
@@ -203,9 +191,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public head (name: string): Promise<number>
-  public head (name: string, callback: (error: string | null, version: number) => void): void
-  public head (name: string, callback?: (error: string | null, version: number) => void): void | Promise<number> {
+  public head(name: string): Promise<number>
+  public head(name: string, callback: (error: string | null, version: number) => void): void
+  public head(name: string, callback?: (error: string | null, version: number) => void): void | Promise<number> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -252,9 +240,9 @@ export class RecordHandler {
    * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
    *                    with the result of the write
    */
-  public setDataWithAck (recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void
-  public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void
-  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<string> | void {
+  public setDataWithAck(recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void
+  public setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void
+  public setDataWithAck(recordName: string, ...rest: Array<any>): Promise<string> | void {
     const args = utils.normalizeSetArguments(arguments, 1)
     if (!args.callback) {
       return new Promise((resolve, reject) => {
@@ -280,15 +268,15 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
-  public setData (recordName: string, data: any): void
-  public setData (recordName: string, path: string, data: any, callback: WriteAckCallback): void
-  public setData (recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
-  public setData (recordName: string): void {
+  public setData(recordName: string, data: any): void
+  public setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void
+  public setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
+  public setData(recordName: string): void {
     const args = utils.normalizeSetArguments(arguments, 1)
     this.sendSetData(recordName, -1, args)
   }
 
-  private sendSetData (recordName: string, version: number, args: utils.RecordSetArguments): void {
+  private sendSetData(recordName: string, version: number, args: utils.RecordSetArguments): void {
     const { path, data, callback } = args
     if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
       throw new Error('invalid argument: recordName must be an non empty string')
@@ -297,22 +285,21 @@ export class RecordHandler {
       throw new Error('invalid argument: data must be an object when no path is provided')
     }
 
-    const recordCores = this.recordCores.get(recordName)
-    if (recordCores) {
-      recordCores.set({ path, data, callback })
+    const recordCore = this.recordCores.get(recordName)
+    if (recordCore) {
+      recordCore.set({ path, data, callback })
       return
     }
 
-    let action
-    if (path) {
-      if (data === undefined) {
-        action = RECORD_ACTION.ERASE
+    const action = (() => {
+      if (!path) {
+        return RECORD_ACTION.CREATEANDUPDATE
+      } else if (data === undefined) {
+        return RECORD_ACTION.ERASE
       } else {
-        action = RECORD_ACTION.CREATEANDPATCH
+        return RECORD_ACTION.CREATEANDPATCH
       }
-    } else {
-      action = RECORD_ACTION.CREATEANDUPDATE
-    }
+    })()
 
     const message = {
       topic: TOPIC.RECORD,
@@ -335,7 +322,7 @@ export class RecordHandler {
    *
    * @param   {Object} message parsed and validated deepstream message
    */
-  private handle (message: RecordMessage) {
+  private handle(message: RecordMessage) {
     if (
       message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
       message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED ||
@@ -403,11 +390,11 @@ export class RecordHandler {
    * Callback for 'deleted' and 'discard' events from a record. Removes the record from
    * the registry
    */
-  private removeRecord (recordName: string) {
+  private removeRecord(recordName: string) {
     this.recordCores.delete(recordName)
   }
 
-  private getRecordCore (recordName: string): RecordCore {
+  private getRecordCore(recordName: string): RecordCore {
     let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
       recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
@@ -418,49 +405,4 @@ export class RecordHandler {
     return recordCore
   }
 
-  private syncDirtyRecords () {
-    this.dirtyService.whenLoaded(() => {
-      const dirtyRecords = this.dirtyService.getAll()
-      for (const recordName in dirtyRecords) {
-        const recordCore = this.recordCores.get(recordName)
-        if (recordCore && recordCore.usages > 0) {
-          // if it isn't zero.. problem.
-          continue
-        }
-        this.services.storage.get(recordName, this.sendUpdatedData)
-      }
-    })
-  }
-
-  private sendUpdatedData (recordName: string, version: number, data: any) {
-    this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated })
-  }
-
-  private onRecordUpdated (error: string | null, recordName: string) {
-    if (!error) {
-      this.dirtyService.setDirty(recordName, false)
-    }
-  }
-
-  /**
-  * Callback once the record merge has completed. If successful it will set the
-  * record state, else emit and error and the record will remain in an
-  * inconsistent state until the next update.
-  */
-  // private onMergeConflict (message: RecordWriteMessage): void {
-  //   this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
-  //     this.recordServices.mergeStrategy.merge(
-  //       message.name,
-  //       version,
-  //       data,
-  //       message.version,
-  //       message.parsedData,
-  //       this.onMergeCompleted
-  //     )
-  //   })
-  // }
-
-  private onMergeCompleted (error: string | null, recordName: string, mergeData: any, remoteVersion: number, remoteData: any) {
-    this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })
-  }
 }
