@@ -2,23 +2,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 class StateMachine {
     constructor(logger, stateMachine) {
-        this.inEndState = false;
-        this.transitions = stateMachine.transitions;
-        this.state = stateMachine.init;
-        this.stateMachine = stateMachine;
+        this._transitions = stateMachine.transitions;
+        this._state = stateMachine.init;
+        this._stateMachine = stateMachine;
     }
     /**
      * Try to perform a state change
      */
     transition(transitionName) {
         let transition;
-        for (let i = 0; i < this.transitions.length; i++) {
-            transition = this.transitions[i];
-            if (transitionName === transition.name && (this.state === transition.from || transition.from === undefined)) {
-                const oldState = this.state;
-                this.state = transition.to;
-                if (this.stateMachine.onStateChanged) {
-                    this.stateMachine.onStateChanged(this.state, oldState);
+        for (let i = 0; i < this._transitions.length; i++) {
+            transition = this._transitions[i];
+            if (transitionName === transition.name && (this._state === transition.from || transition.from === undefined)) {
+                const oldState = this._state;
+                this._state = transition.to;
+                if (this._stateMachine.onStateChanged) {
+                    this._stateMachine.onStateChanged(this._state, oldState);
                 }
                 if (transition.handler) {
                     transition.handler();
@@ -26,8 +25,11 @@ class StateMachine {
                 return;
             }
         }
-        const details = JSON.stringify({ transition: transitionName, state: this.state });
+        const details = JSON.stringify({ transition: transitionName, state: this._state });
         throw new Error(`Invalid state transition: ${details}`);
+    }
+    get state() {
+        return this._state;
     }
 }
 exports.StateMachine = StateMachine;

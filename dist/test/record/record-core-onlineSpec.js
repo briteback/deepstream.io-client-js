@@ -170,7 +170,7 @@ describe('record core online', () => {
     it('queues discarding record when no longer needed', () => {
         recordServices.readRegistry.recieve(READ_RESPONSE);
         recordCore.discard();
-        chai_1.expect(recordCore.recordState).to.equal(6 /* UNSUBSCRIBING */);
+        chai_1.expect(recordCore.recordState).to.equal(3 /* UNSUBSCRIBING */);
         // tslint:disable-next-line:no-unused-expression
         chai_1.expect(recordCore.isReady).to.be.true;
     });
@@ -179,7 +179,7 @@ describe('record core online', () => {
         recordCore.discard();
         recordCore.usages++;
         yield BBPromise.delay(30);
-        chai_1.expect(recordCore.recordState).to.equal(4 /* READY */);
+        chai_1.expect(recordCore.recordState).to.equal(2 /* READY */);
         // tslint:disable-next-line:no-unused-expression
         chai_1.expect(recordCore.isReady).to.be.true;
     }));
@@ -195,7 +195,7 @@ describe('record core online', () => {
             name
         });
         yield BBPromise.delay(30);
-        chai_1.expect(recordCore.recordState).to.equal(7 /* UNSUBSCRIBED */);
+        chai_1.expect(recordCore.recordState).to.equal(4 /* UNSUBSCRIBED */);
         sinon_1.assert.calledOnce(whenCompleted);
         sinon_1.assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression
@@ -212,7 +212,7 @@ describe('record core online', () => {
             name
         });
         recordCore.delete();
-        chai_1.expect(recordCore.recordState).to.equal(8 /* DELETING */);
+        chai_1.expect(recordCore.recordState).to.equal(5 /* DELETING */);
         sinon_1.assert.notCalled(whenCompleted);
         // tslint:disable-next-line:no-unused-expression
         chai_1.expect(recordCore.isReady).to.be.true;
@@ -228,7 +228,7 @@ describe('record core online', () => {
             action: message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS,
             name
         });
-        chai_1.expect(recordCore.recordState).to.equal(9 /* DELETED */);
+        chai_1.expect(recordCore.recordState).to.equal(6 /* DELETED */);
         sinon_1.assert.calledOnce(whenCompleted);
         sinon_1.assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression
@@ -241,7 +241,7 @@ describe('record core online', () => {
             action: message_constants_1.RECORD_ACTIONS.DELETED,
             name
         });
-        chai_1.expect(recordCore.recordState).to.equal(9 /* DELETED */);
+        chai_1.expect(recordCore.recordState).to.equal(6 /* DELETED */);
         sinon_1.assert.calledOnce(whenCompleted);
         sinon_1.assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression

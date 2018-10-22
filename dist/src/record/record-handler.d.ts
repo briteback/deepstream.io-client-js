@@ -7,14 +7,12 @@ import { List } from './list';
 import { Listener, ListenCallback } from '../util/listener';
 import { SingleNotifier } from './single-notifier';
 import { WriteAcknowledgementService } from './write-ack-service';
-import { DirtyService } from './dirty-service';
 import { MergeStrategyService } from './merge-strategy-service';
 import { MergeStrategy } from './merge-strategy';
 export interface RecordServices {
     writeAckService: WriteAcknowledgementService;
     readRegistry: SingleNotifier;
     headRegistry: SingleNotifier;
-    dirtyService: DirtyService;
     mergeStrategy: MergeStrategyService;
 }
 export declare class RecordHandler {
@@ -23,7 +21,6 @@ export declare class RecordHandler {
     private listener;
     private recordCores;
     private recordServices;
-    private dirtyService;
     constructor(services: Services, options: Options, recordServices?: RecordServices, listener?: Listener);
     setMergeStrategy(recordName: string, mergeStrategy: MergeStrategy): void;
     setMergeStrategyRegExp(regexp: RegExp, mergeStrategy: MergeStrategy): void;
@@ -137,13 +134,4 @@ export declare class RecordHandler {
      */
     private removeRecord;
     private getRecordCore;
-    private syncDirtyRecords;
-    private sendUpdatedData;
-    private onRecordUpdated;
-    /**
-    * Callback once the record merge has completed. If successful it will set the
-    * record state, else emit and error and the record will remain in an
-    * inconsistent state until the next update.
-    */
-    private onMergeCompleted;
 }

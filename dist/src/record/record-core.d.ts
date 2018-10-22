@@ -1,6 +1,5 @@
 import { Services } from '../client';
 import { Options } from '../client-options';
-import { MergeStrategy } from './merge-strategy';
 import { RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants';
 import { RecordServices } from './record-handler';
 import * as Emitter from 'component-emitter2';
@@ -8,19 +7,16 @@ import * as utils from '../util/utils';
 import { Record } from './record';
 import { AnonymousRecord } from './anonymous-record';
 import { List } from './list';
+import { MergeStrategy } from './merge-strategy';
 export declare type WriteAckCallback = (error: string | null, recordName: string) => void;
 export declare const enum RECORD_STATE {
     INITIAL = 0,
     SUBSCRIBING = 1,
-    RESUBSCRIBING = 2,
-    LOADING_OFFLINE = 3,
-    READY = 4,
-    MERGING = 5,
-    UNSUBSCRIBING = 6,
-    UNSUBSCRIBED = 7,
-    DELETING = 8,
-    DELETED = 9,
-    ERROR = 10
+    READY = 2,
+    UNSUBSCRIBING = 3,
+    UNSUBSCRIBED = 4,
+    DELETING = 5,
+    DELETED = 6
 }
 export declare class RecordCore extends Emitter {
     name: string;
@@ -44,23 +40,23 @@ export declare class RecordCore extends Emitter {
     readonly recordState: RECORD_STATE;
     usages: number;
     /**
-   * Convenience method, similar to promises. Executes callback
-   * whenever the record is ready, either immediatly or once the ready
-   * event is fired
-   * @param   {[Function]} callback Will be called when the record is ready
-   */
+     * Convenience method, similar to promises. Executes callback
+     * whenever the record is ready, either immediatly or once the ready
+     * event is fired
+     * @param   {[Function]} callback Will be called when the record is ready
+     */
     whenReady(context: null | List | Record | AnonymousRecord, callback?: (context: any) => void): Promise<any> | void;
     /**
-   * Sets the value of either the entire dataset
-   * or of a specific path within the record
-   * and submits the changes to the server
-   *
-   * If the new data is equal to the current data, nothing will happen
-   *
-   * @param {[String|Object]} pathOrData Either a JSON path when called with
-   *                                     two arguments or the data itself
-   * @param {Object} data     The data that should be stored in the record
-   */
+     * Sets the value of either the entire dataset
+     * or of a specific path within the record
+     * and submits the changes to the server
+     *
+     * If the new data is equal to the current data, nothing will happen
+     *
+     * @param {[String|Object]} pathOrData Either a JSON path when called with
+     *                                     two arguments or the data itself
+     * @param {Object} data     The data that should be stored in the record
+     */
     set({ path, data, callback }: utils.RecordSetArguments): void;
     /**
      * Wrapper function around the record.set that returns a promise
@@ -69,26 +65,26 @@ export declare class RecordCore extends Emitter {
      */
     setWithAck(args: utils.RecordSetArguments): Promise<void> | void;
     /**
-   * Returns a copy of either the entire dataset of the record
-   * or - if called with a path - the value of that path within
-   * the record's dataset.
-   *
-   * Returning a copy rather than the actual value helps to prevent
-   * the record getting out of sync due to unintentional changes to
-   * its data
-   */
+     * Returns a copy of either the entire dataset of the record
+     * or - if called with a path - the value of that path within
+     * the record's dataset.
+     *
+     * Returning a copy rather than the actual value helps to prevent
+     * the record getting out of sync due to unintentional changes to
+     * its data
+     */
     get(path?: string): any;
     /**
-   * Subscribes to changes to the records dataset.
-   *
-   * Callback is the only mandatory argument.
-   *
-   * When called with a path, it will only subscribe to updates
-   * to that path, rather than the entire record
-   *
-   * If called with true for triggerNow, the callback will
-   * be called immediatly with the current value
-   */
+     * Subscribes to changes to the records dataset.
+     *
+     * Callback is the only mandatory argument.
+     *
+     * When called with a path, it will only subscribe to updates
+     * to that path, rather than the entire record
+     *
+     * If called with true for triggerNow, the callback will
+     * be called immediatly with the current value
+     */
     subscribe(args: utils.RecordSubscribeArguments): void;
     /**
      * Removes a subscription that was previously made using record.subscribe()
@@ -107,40 +103,40 @@ export declare class RecordCore extends Emitter {
      */
     unsubscribe(args: utils.RecordSubscribeArguments): void;
     /**
-    * Removes all change listeners and notifies the server that the client is
-    * no longer interested in updates for this record
-    */
+     * Removes all change listeners and notifies the server that the client is
+     * no longer interested in updates for this record
+     */
     discard(): void;
     /**
      * Deletes the record on the server.
      */
     delete(callback?: (error: string | null) => void): Promise<void> | void;
     /**
-     * Set a merge strategy to resolve any merge conflicts that may occur due
-     * to offline work or write conflicts. The function will be called with the
-     * local record, the remote version/data and a callback to call once the merge has
-     * completed or if an error occurs ( which leaves it in an inconsistent state until
-     * the next update merge attempt ).
+     * Set a merge strategy to resolve any merge conflicts that may occur due to
+     * write conflicts. The function will be called with the local record, the
+     * remote version/data and a callback to call once the merge has completed or
+     * if an error occurs ( which leaves it in an inconsistent state until the
+     * next update merge attempt ).
      */
     setMergeStrategy(mergeStrategy: MergeStrategy): void;
-    saveRecordToOffline(): void;
+    saveRecordLocally(): void;
     /**
      * Transition States
      */
     private onSubscribing;
-    private onResubscribing;
-    private onOfflineLoading;
     private onReady;
     private applyPendingWrites;
     private onUnsubscribed;
     private onDeleted;
+    private handleAckMessage;
+    private handleUpdateMessage;
+    private handleDeleteSuccess;
+    private handleDeleted;
+    private handleMessageDenied;
+    private handleChangedProvider;
     handle(message: RecordMessage): void;
     private handleReadResponse;
-    private handleHeadResponse;
-    private sendRead;
-    private saveUpdate;
     private sendUpdate;
-    private sendCreateUpdate;
     /**
      * Applies incoming updates and patches to the record's dataset
      */
@@ -156,31 +152,9 @@ export declare class RecordCore extends Emitter {
      */
     private sendDelete;
     /**
-     * Called when a merge conflict is detected by a VERSION_EXISTS error or if an update recieved
-     * is directly after the clients. If no merge strategy is configure it will emit a VERSION_EXISTS
-     * error and the record will remain in an inconsistent state.
-     *
-     * @param   {Number} remoteVersion The remote version number
-     * @param   {Object} remoteData The remote object data
-     * @param   {Object} message parsed and validated deepstream message
-     */
-    private recoverRecord;
-    /**
-   * Callback once the record merge has completed. If successful it will set the
-   * record state, else emit and error and the record will remain in an
-   * inconsistent state until the next update.
-   */
-    private onRecordRecovered;
-    /**
-   * A quick check that's carried out by most methods that interact with the record
-   * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
-   */
-    private checkDestroyed;
-    /**
      * Destroys the record and nulls all
      * its dependencies
      */
     private destroy;
-    private onConnectionReestablished;
     private onConnectionLost;
 }

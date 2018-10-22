@@ -3,7 +3,6 @@ import { TimerRegistry } from '../src/util/timer-registry';
 import { Message } from '../binary-protocol/src/message-constants';
 import { SingleNotifier } from '../src/record/single-notifier';
 import { WriteAcknowledgementService } from '../src/record/write-ack-service';
-import { DirtyService } from '../src/record/dirty-service';
 export declare const getLastMessageSent: () => Message;
 export declare const getServicesMock: () => {
     socketFactory: (url: string, options: object) => any;
@@ -47,8 +46,6 @@ export declare const getServicesMock: () => {
     verify: () => void;
 };
 export declare const getRecordServices: (services: any) => {
-    dirtyService: DirtyService;
-    dirtyServiceMock: SinonMock;
     headRegistry: SingleNotifier;
     headRegistryMock: SinonMock;
     readRegistry: SingleNotifier;
