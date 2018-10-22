@@ -1,4 +1,5 @@
 export declare class StateMachine {
+    private _logger;
     private _state;
     private _transitions;
     private _stateMachine;

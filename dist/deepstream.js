@@ -11815,6 +11815,7 @@ var StateMachine = function () {
     function StateMachine(logger, stateMachine) {
         state_machine_classCallCheck(this, StateMachine);
 
+        this._logger = logger;
         this._transitions = stateMachine.transitions;
         this._state = stateMachine.init;
         this._stateMachine = stateMachine;
@@ -11843,7 +11844,7 @@ var StateMachine = function () {
                 }
             }
             var details = JSON.stringify({ transition: transitionName, state: this._state });
-            console.warn("Invalid state transition: " + details);
+            this._logger.warn("Invalid state transition: " + details);
         }
     }, {
         key: "state",

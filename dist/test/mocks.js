@@ -47,7 +47,7 @@ exports.getServicesMock = () => {
         error: () => { }
     };
     const loggerMock = sinon_1.mock(logger);
-    loggerMock.expects('warn').never();
+    // loggerMock.expects('warn').never()
     // loggerMock.expects('error').never()
     const timerRegistry = new timer_registry_1.TimerRegistry();
     // tslint:disable-next-line

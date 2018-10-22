@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 class StateMachine {
     constructor(logger, stateMachine) {
+        this._logger = logger;
         this._transitions = stateMachine.transitions;
         this._state = stateMachine.init;
         this._stateMachine = stateMachine;
@@ -26,7 +27,7 @@ class StateMachine {
             }
         }
         const details = JSON.stringify({ transition: transitionName, state: this._state });
-        console.warn(`Invalid state transition: ${details}`);
+        this._logger.warn(`Invalid state transition: ${details}`);
     }
     get state() {
         return this._state;

@@ -50,7 +50,7 @@ export const getServicesMock = () => {
       error: () => {}
   }
   const loggerMock = mock(logger)
-  loggerMock.expects('warn').never()
+  // loggerMock.expects('warn').never()
   // loggerMock.expects('error').never()
 
   const timerRegistry = new TimerRegistry()

@@ -1,10 +1,12 @@
 export class StateMachine {
 
+  private _logger: any
   private _state: any
   private _transitions: any
   private _stateMachine: any
 
   constructor (logger: any, stateMachine: any) {
+    this._logger = logger
     this._transitions = stateMachine.transitions
     this._state = stateMachine.init
     this._stateMachine = stateMachine
@@ -30,7 +32,7 @@ export class StateMachine {
       }
     }
     const details = JSON.stringify({ transition: transitionName, state: this._state })
-    console.warn(`Invalid state transition: ${details}`)
+    this._logger.warn(`Invalid state transition: ${details}`)
   }
 
   public get state() {

@@ -8,6 +8,14 @@ import { TOPIC, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/sr
 import { DefaultOptions, Options } from '../../src/client-options'
 import { RecordCore, RECORD_STATE } from '../../src/record/record-core'
 
+const createMessage = (name: string, action: number) => ({
+  topic: TOPIC.RECORD,
+  name,
+  action,
+  parsedData: {},
+  version: 1
+})
+
 describe('record core online', () => {
   let whenCompleted: sinon.SinonSpy
   let recordCore: RecordCore
@@ -300,6 +308,21 @@ describe('record core online', () => {
     assert.calledWithExactly(whenCompleted, name)
 
     // tslint:disable-next-line:no-unused-expression
+    expect(recordCore.isReady).to.be.false
+  })
+
+  it('does not crash on a delete while unsubscribing', async () => {
+    services
+
+    const recordCore = new RecordCore('recordB', services, options, recordServices, whenCompleted)
+    const READ = createMessage('recordB', RECORD_ACTION.READ_RESPONSE)
+    const DELETED = createMessage('recordB', RECORD_ACTION.DELETED)
+    recordServices.readRegistry.recieve(READ)
+    expect(recordCore.recordState).to.equal(RECORD_STATE.READY)
+    recordCore.discard()
+    expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
+    expect(() => recordCore.handle(DELETED)).not.to.throw()
+    await BBPromise.delay(30)
     expect(recordCore.isReady).to.be.false
   })
 })

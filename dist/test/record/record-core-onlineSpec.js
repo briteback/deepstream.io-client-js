@@ -16,6 +16,13 @@ const mocks_1 = require("../mocks");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const client_options_1 = require("../../src/client-options");
 const record_core_1 = require("../../src/record/record-core");
+const createMessage = (name, action) => ({
+    topic: message_constants_1.TOPIC.RECORD,
+    name,
+    action,
+    parsedData: {},
+    version: 1
+});
 describe('record core online', () => {
     let whenCompleted;
     let recordCore;
@@ -245,6 +252,19 @@ describe('record core online', () => {
         sinon_1.assert.calledOnce(whenCompleted);
         sinon_1.assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression
+        chai_1.expect(recordCore.isReady).to.be.false;
+    }));
+    it('does not crash on a delete while unsubscribing', () => __awaiter(this, void 0, void 0, function* () {
+        services;
+        const recordCore = new record_core_1.RecordCore('recordB', services, options, recordServices, whenCompleted);
+        const READ = createMessage('recordB', message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
+        const DELETED = createMessage('recordB', message_constants_1.RECORD_ACTIONS.DELETED);
+        recordServices.readRegistry.recieve(READ);
+        chai_1.expect(recordCore.recordState).to.equal(2 /* READY */);
+        recordCore.discard();
+        chai_1.expect(recordCore.recordState).to.equal(3 /* UNSUBSCRIBING */);
+        chai_1.expect(() => recordCore.handle(DELETED)).not.to.throw();
+        yield BBPromise.delay(30);
         chai_1.expect(recordCore.isReady).to.be.false;
     }));
 });
