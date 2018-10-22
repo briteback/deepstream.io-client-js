@@ -30,7 +30,7 @@ export class StateMachine {
       }
     }
     const details = JSON.stringify({ transition: transitionName, state: this._state })
-    throw new Error(`Invalid state transition: ${details}`)
+    console.warn(`Invalid state transition: ${details}`)
   }
 
   public get state() {
