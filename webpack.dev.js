@@ -30,9 +30,6 @@ module.exports = {
   },
   plugins: [
       // new webpack.IgnorePlugin(/ws/),
-      new webpack.DefinePlugin({
-          IN_BROWSER: true
-      })
   ],
   optimization: {
     concatenateModules: true,

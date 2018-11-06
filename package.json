@@ -40,7 +40,8 @@
   },
   "browser": {
     "net": false,
-    "ws": false
+    "ws": false,
+    "node-localstorage": false
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.18",
