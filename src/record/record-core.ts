@@ -35,6 +35,7 @@ export class RecordCore extends Emitter {
   private options: Options
   private recordServices: RecordServices
   private emitter: Emitter
+  private parentEmitter: Emitter
   private data: object
   private stateMachine: StateMachine
   private responseTimeout: number
@@ -63,6 +64,7 @@ export class RecordCore extends Emitter {
     this.hasProvider = false
     this.pendingWrites = []
     this.isReady = false
+    this.parentEmitter = services.emitter
 
     this.version = null
     this.responseTimeout = -1
@@ -366,6 +368,13 @@ export class RecordCore extends Emitter {
    */
   private onSubscribing(): void {
     this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+    this.parentEmitter.on(EVENT.CONNECTION_REESTABLISHED, () => {
+      this.services.connection.sendMessage({
+        topic: TOPIC.RECORD,
+        action: RA.SUBSCRIBECREATEANDREAD,
+        name: this.name
+      })
+    })
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,

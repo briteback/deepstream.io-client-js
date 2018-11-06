@@ -27,6 +27,7 @@ export interface Services {
   timerRegistry: TimerRegistry
   socketFactory: SocketFactory
   storage: RecordOfflineStore
+  emitter: Emitter
 }
 
 export class Client extends EventEmitter {
@@ -48,6 +49,7 @@ export class Client extends EventEmitter {
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
+    services.emitter = (this as Emitter)
     this.services = services as Services
 
     this.services.connection.onLost(
