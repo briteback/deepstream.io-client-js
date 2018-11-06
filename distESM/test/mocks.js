@@ -5,7 +5,6 @@ import { TimerRegistry } from '../src/util/timer-registry';
 import { RECORD_ACTIONS } from '../binary-protocol/src/message-constants';
 import { SingleNotifier } from '../src/record/single-notifier';
 import { WriteAcknowledgementService } from '../src/record/write-ack-service';
-import { DirtyService } from '../src/record/dirty-service';
 import { Listener } from '../src/util/listener';
 let lastMessageSent;
 export const getLastMessageSent = () => lastMessageSent;
@@ -46,7 +45,7 @@ export const getServicesMock = () => {
         error: () => { }
     };
     const loggerMock = mock(logger);
-    loggerMock.expects('warn').never();
+    // loggerMock.expects('warn').never()
     // loggerMock.expects('error').never()
     const timerRegistry = new TimerRegistry();
     // tslint:disable-next-line
@@ -114,17 +113,13 @@ export const getServicesMock = () => {
 export const getRecordServices = (services) => {
     services.storageMock.expects('get').withArgs('__ds__dirty_records', match.func).atLeast(0).callsArgWith(1, '__ds__dirty_records', 1, {});
     services.storageMock.expects('set').withArgs('__ds__dirty_records', 1, match.any, match.func).atLeast(0);
-    const dirtyService = new DirtyService(services.storage, '__ds__dirty_records');
     const headRegistry = new SingleNotifier(services, RECORD_ACTIONS.HEAD, 50);
     const readRegistry = new SingleNotifier(services, RECORD_ACTIONS.READ, 50);
     const writeAckService = new WriteAcknowledgementService(services);
-    const dirtyServiceMock = mock(dirtyService);
     const readRegistryMock = mock(readRegistry);
     const headRegistryMock = mock(headRegistry);
     const writeAckServiceMock = mock(writeAckService);
     return {
-        dirtyService,
-        dirtyServiceMock,
         headRegistry,
         headRegistryMock,
         readRegistry,
@@ -132,7 +127,6 @@ export const getRecordServices = (services) => {
         writeAckService,
         writeAckServiceMock,
         verify: () => {
-            dirtyServiceMock.verify();
             headRegistryMock.verify();
             readRegistryMock.verify();
             writeAckServiceMock.verify();

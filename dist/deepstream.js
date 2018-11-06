@@ -82,7 +82,7 @@ module.exports =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 32);
+/******/ 	return __webpack_require__(__webpack_require__.s = 13);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -126,7 +126,6 @@ var META_KEYS;
     META_KEYS["protocolVersion"] = "x";
     META_KEYS["requestorName"] = "rn";
     META_KEYS["requestorData"] = "rd";
-    META_KEYS["trustedSender"] = "ts";
     META_KEYS["registryTopic"] = "rt";
 })(META_KEYS || (META_KEYS = {}));
 var PAYLOAD_ENCODING;
@@ -577,196 +576,6 @@ var META_PAYLOAD_OVERFLOW_LENGTH = Math.pow(2, 24) - 1;
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-
-/***/ }),
-/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -799,199 +608,325 @@ var WRITE_ACK_TO_ACTION = reverseMapNumeric(ACTION_TO_WRITE_ACK);
 var RESPONSE_TO_REQUEST = (_RESPONSE_TO_REQUEST = {}, _defineProperty(_RESPONSE_TO_REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD, (_TOPIC$RECORD = {}, _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].HEAD_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].HEAD), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETE_SUCCESS, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETE), _TOPIC$RECORD)), _defineProperty(_RESPONSE_TO_REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PRESENCE, (_TOPIC$PRESENCE = {}, _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_ALL_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_ALL), _TOPIC$PRESENCE)), _defineProperty(_RESPONSE_TO_REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RPC, (_TOPIC$RPC = {}, _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].ACCEPT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].ERROR, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST), _TOPIC$RPC)), _defineProperty(_RESPONSE_TO_REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].EVENT, {}), _RESPONSE_TO_REQUEST);
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports) {
+/* 4 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-var g;
+"use strict";
+/* unused harmony export META_PARAMS_SPEC */
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return hasPayload; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return validateMeta; });
+/* unused harmony export hasCorrelationId */
+/* harmony import */ var _message_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(0);
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
+var _TOPIC$PARSER, _TOPIC$CONNECTION, _TOPIC$AUTH, _TOPIC$RECORD, _TOPIC$RPC, _TOPIC$EVENT, _TOPIC$PRESENCE, _TOPIC$CLUSTER, _TOPIC$STATE_REGISTRY, _META_PARAMS_SPEC, _payloadMap;
 
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+
+/*
+ * Specification of  fields within Meta Params used for message validation
+ * (see `validateMeta`)
+ *
+ * META_PARAMS_SPEC[topic][action] => [required, optional]
+ * The keys in `required` must be present in all instances of the message
+ * The keys in `optional` may be present in some instances of the message
+ */
+var META_PARAMS_SPEC = (_META_PARAMS_SPEC = {}, _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER, (_TOPIC$PARSER = {}, _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_TOPIC, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic], []]), _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_ACTION, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_MESSAGE, [[], []]), _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_META_PARAMS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$PARSER)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].CONNECTION, (_TOPIC$CONNECTION = {}, _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].PING, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].PONG, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].CHALLENGE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].url, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].protocolVersion], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].ACCEPT, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].REJECT, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].REDIRECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].url], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].CLOSING, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].CLOSED, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].ERROR, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].AUTHENTICATION_TIMEOUT, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].INVALID_MESSAGE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$CONNECTION)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].AUTH, (_TOPIC$AUTH = {}, _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].REQUEST, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_SUCCESSFUL, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_UNSUCCESSFUL, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].TOO_MANY_AUTH_ATTEMPTS, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].INVALID_MESSAGE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$AUTH)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD, (_TOPIC$RECORD = {}, _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNSUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNSUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].MULTIPLE_SUBSCRIPTIONS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].NOT_SUBSCRIBED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].HEAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBEANDHEAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].HEAD_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBEANDREAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].ERASE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].ERASE_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBECREATEANDUPDATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETE_SUCCESS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBECREATEANDREAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_HAS_PROVIDER, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_HAS_NO_PROVIDER, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].WRITE_ACKNOWLEDGEMENT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].VERSION_EXISTS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CACHE_RETRIEVAL_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].STORAGE_RETRIEVAL_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_LOAD_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_CREATE_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_UPDATE_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_DELETE_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_NOT_FOUND, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_VERSION, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_PATCH_ON_HOTPATH, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNLISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNLISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_FOUND, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_REMOVED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN_ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN_REJECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_LISTEN_REGEX, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _TOPIC$RECORD)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RPC, (_TOPIC$RPC = {}, _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].reason]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].requestorName, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].requestorData]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REJECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].PROVIDE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].PROVIDE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].UNPROVIDE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].UNPROVIDE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MULTIPLE_PROVIDERS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].NOT_PROVIDED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MULTIPLE_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].RESPONSE_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].INVALID_RPC_CORRELATION_ID, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MULTIPLE_ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].ACCEPT_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].NO_RPC_PROVIDER, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _TOPIC$RPC)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].EVENT, (_TOPIC$EVENT = {}, _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].EMIT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNSUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNSUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MULTIPLE_SUBSCRIPTIONS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].NOT_SUBSCRIBED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNLISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNLISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_FOUND, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_REMOVED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN_ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN_REJECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].INVALID_LISTEN_REGEX, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$EVENT)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PRESENCE, (_TOPIC$PRESENCE = {}, _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE_ALL, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE_ALL_ACK, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE_ALL, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE_ALL_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].NOT_SUBSCRIBED, [[], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].MULTIPLE_SUBSCRIPTIONS, [[], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_ALL, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_ALL_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_JOIN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_LEAVE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_JOIN_ALL, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_LEAVE_ALL, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].INVALID_PRESENCE_USERS, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name]]), _TOPIC$PRESENCE)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].CLUSTER, (_TOPIC$CLUSTER = {}, _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].CLOSE, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_REQUEST, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_RESPONSE, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].KNOWN_PEERS, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].PING, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].PONG, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].REJECT, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].REJECT_DUPLICATE, [[], []]), _TOPIC$CLUSTER)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].STATE_REGISTRY, (_TOPIC$STATE_REGISTRY = {}, _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].ADD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].REMOVE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].REQUEST_FULL_STATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].FULL_STATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _TOPIC$STATE_REGISTRY)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].LOCK, {}), _META_PARAMS_SPEC);
+var payloadMap = (_payloadMap = {}, _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].MESSAGE_PARSE_ERROR, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_META_PARAMS]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].AUTH, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_SUCCESSFUL, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_UNSUCCESSFUL]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].VERSION_EXISTS]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RPC, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST_ERROR]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].EVENT, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].EMIT]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PRESENCE, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_RESPONSE]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].CLUSTER, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].KNOWN_PEERS]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].STATE_REGISTRY, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].FULL_STATE]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].LOCK, []), _payloadMap);
+function mapOfArraysHas(map, topic, action) {
+    var actions = map[topic];
+    if (!actions) {
+        return false;
+    }
+    return actions.indexOf(action) !== -1;
+}
+var hasPayload = function hasPayload(topic, action) {
+    return mapOfArraysHas(payloadMap, topic, action);
+};
+function validateMeta(topic, action, meta) {
+    var spec = META_PARAMS_SPEC[topic][action];
+    if (!spec) {
+        return 'no meta spec';
+    }
+
+    var _spec = _slicedToArray(spec, 2),
+        required = _spec[0],
+        optional = _spec[1];
+
+    for (var key in meta) {
+        if (meta[key] !== undefined && required.indexOf(key) === -1 && optional.indexOf(key) === -1) {
+            return 'meta object has unknown key ' + key;
+        }
+    }
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+        for (var _iterator = required[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var req = _step.value;
+
+            if (meta[req] === undefined) {
+                return 'meta object does not have required key ' + req;
+            }
+        }
+    } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+            }
+        } finally {
+            if (_didIteratorError) {
+                throw _iteratorError;
+            }
+        }
+    }
+
+    return;
+}
+function hasCorrelationId(topic, action) {
+    var spec = META_PARAMS_SPEC[topic][action];
+    if (!spec) {
+        return;
+    }
+
+    var _spec2 = _slicedToArray(spec, 2),
+        required = _spec2[0],
+        optional = _spec2[1];
+
+    return required.indexOf(_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId) !== -1 || optional.indexOf(_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId) !== -1;
 }
 
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
+/***/ }),
+/* 5 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-module.exports = g;
+"use strict";
+/* WEBPACK VAR INJECTION */(function(Buffer) {/* unused harmony export isError */
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return parse; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return parseData; });
+/* unused harmony export parseJSON */
+/* harmony import */ var _message_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(0);
+/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+/* harmony import */ var _message_validator__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
+/* tslint:disable:no-bitwise */
+
+
+
+
+function isError(message) {
+    return message.action >= 0x50 && message.action < 0x70 || message.topic === _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER;
+}
+function parse(buffer) {
+    var queue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+
+    var offset = 0;
+    var messages = [];
+    do {
+        var _readBinary = readBinary(buffer, offset),
+            bytesConsumed = _readBinary.bytesConsumed,
+            rawMessage = _readBinary.rawMessage;
+
+        if (!rawMessage) {
+            break;
+        }
+        queue.push(rawMessage);
+        offset += bytesConsumed;
+        if (rawMessage.fin) {
+            var joinedMessage = joinMessages(queue);
+            var message = parseMessage(joinedMessage);
+            queue.length = 0;
+            messages.push(message);
+        }
+    } while (offset < buffer.length);
+    return messages;
+}
+function parseData(message) {
+    if (message.parsedData !== undefined || message.data === undefined) {
+        return true;
+    }
+    if (message.payloadEncoding && message.payloadEncoding !== _message_constants__WEBPACK_IMPORTED_MODULE_0__["PAYLOAD_ENCODING"].JSON) {
+        return new Error('unable to parse data of type \'' + message.payloadEncoding + '\'');
+    }
+    if (typeof message.data === 'string') {
+        return new Error('tried to parse string data with binary parser');
+    }
+    message.parsedData = parseJSON(message.data);
+    if (message.parsedData === undefined) {
+        return new Error('unable to parse data ' + message.data);
+    }
+    return true;
+}
+function readBinary(buff, offset) {
+    if (buff.length < offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"]) {
+        return { bytesConsumed: 0 };
+    }
+    var fin = !!(buff[offset] & 0x80);
+    var topic = buff[offset] & 0x7F;
+    var action = buff[offset + 1];
+    var metaLength = buff.readUIntBE(offset + 2, 3);
+    var payloadLength = buff.readUIntBE(offset + 5, 3);
+    var messageLength = _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"] + metaLength + payloadLength;
+    if (buff.length < offset + messageLength) {
+        return { bytesConsumed: 0 };
+    }
+    var rawHeader = buff.slice(offset, offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"]);
+    var rawMessage = { fin: fin, topic: topic, action: action, rawHeader: rawHeader };
+    if (metaLength > 0) {
+        rawMessage.meta = buff.slice(offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"], offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"] + metaLength);
+    }
+    if (payloadLength > 0) {
+        rawMessage.payload = buff.slice(offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"] + metaLength, offset + messageLength);
+    }
+    return {
+        bytesConsumed: messageLength,
+        rawMessage: rawMessage
+    };
+}
+function joinMessages(rawMessages) {
+    if (rawMessages.length === 0) {
+        throw new Error('parseMessage must not be called with an empty message queue');
+    }
+    if (rawMessages.length === 1) {
+        return rawMessages[0];
+    }
+    var _rawMessages$ = rawMessages[0],
+        topic = _rawMessages$.topic,
+        action = _rawMessages$.action,
+        rawHeader = _rawMessages$.rawHeader;
+
+    var payloadSections = [];
+    var metaSections = [];
+    rawMessages.forEach(function (_ref) {
+        var payloadSection = _ref.payload,
+            metaSection = _ref.meta;
+
+        if (payloadSection) {
+            payloadSections.push(payloadSection);
+        }
+        if (metaSection) {
+            metaSections.push(metaSection);
+        }
+    });
+    var payload = Buffer.concat(payloadSections);
+    var meta = Buffer.concat(metaSections);
+    return { fin: true, topic: topic, action: action, rawHeader: rawHeader, meta: meta, payload: payload };
+}
+function parseMessage(rawMessage) {
+    var rawTopic = rawMessage.topic,
+        rawAction = rawMessage.action,
+        rawHeader = rawMessage.rawHeader;
+
+    if (_message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"][rawTopic] === undefined) {
+        return {
+            parseError: true,
+            action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_TOPIC,
+            parsedMessage: {
+                topic: rawTopic,
+                action: rawAction
+            },
+            description: 'unknown topic ' + rawTopic,
+            raw: rawHeader
+        };
+    }
+    var topic = rawTopic;
+    if (_message_constants__WEBPACK_IMPORTED_MODULE_0__["ACTIONS"][topic][rawAction] === undefined) {
+        return {
+            parseError: true,
+            action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_ACTION,
+            parsedMessage: {
+                topic: topic,
+                action: rawAction
+            },
+            description: 'unknown ' + _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"][topic] + ' action ' + rawAction,
+            raw: rawHeader
+        };
+    }
+    // mask out uppermost bit(ACK)
+    var action = rawAction & 0x7F;
+    var message = { topic: topic, action: action };
+    if (rawMessage.meta && rawMessage.meta.length > 0) {
+        var meta = parseJSON(rawMessage.meta);
+        if (!meta || (typeof meta === 'undefined' ? 'undefined' : _typeof(meta)) !== 'object') {
+            return {
+                parseError: true,
+                action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].MESSAGE_PARSE_ERROR,
+                parsedMessage: message,
+                description: 'invalid meta field ' + rawMessage.meta.toString(),
+                raw: rawHeader
+            };
+        }
+        var metaError = Object(_message_validator__WEBPACK_IMPORTED_MODULE_3__[/* validateMeta */ "b"])(topic, rawAction, meta);
+        if (metaError) {
+            throw new Error('invalid meta ' + _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"][message.topic] + ' ' + _message_constants__WEBPACK_IMPORTED_MODULE_0__["ACTIONS"][message.topic][message.action] + ': ' + metaError);
+            // return {
+            //   parseError: true,
+            //   action: PARSER_ACTIONS.INVALID_META_PARAMS,
+            //   parsedMessage: message,
+            //   description: 'invalid ack'
+            // }
+        }
+        addMetadataToMessage(meta, message);
+    }
+    if (rawMessage.payload !== undefined) {
+        if (!Object(_message_validator__WEBPACK_IMPORTED_MODULE_3__[/* hasPayload */ "a"])(message.topic, rawAction)) {
+            return {
+                parseError: true,
+                action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_MESSAGE,
+                parsedMessage: message,
+                description: 'should not have a payload'
+            };
+        }
+        if (!message.payloadEncoding && topic === _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER) {
+            message.payloadEncoding = _message_constants__WEBPACK_IMPORTED_MODULE_0__["PAYLOAD_ENCODING"].BINARY;
+        }
+        message.data = rawMessage.payload;
+    }
+    // if (rawMessage.payload && rawMessage.payload.length > 0) {
+    //   const payload = parseJSON(rawMessage.payload)
+    //   if (payload === undefined) {
+    //     return {
+    //       parseError: true,
+    //       description: `invalid message data ${rawMessage.payload.toString()}`,
+    //       parsedMessage: message,
+    //       raw: rawHeader
+    //     }
+    //   }
+    //   message.data = payload
+    // }
+    message.isAck = rawAction >= 0x80;
+    message.isError = isError(message);
+    if (message.topic === _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD && Object(_utils__WEBPACK_IMPORTED_MODULE_2__[/* isWriteAck */ "c"])(rawAction)) {
+        message.isWriteAck = true;
+    }
+    return message;
+}
+function addMetadataToMessage(meta, message) {
+    for (var key in _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"]) {
+        var value = meta[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"][key]];
+        if (value !== undefined) {
+            message[key] = value;
+        }
+    }
+}
+function parseJSON(buff) {
+    try {
+        return JSON.parse(buff.toString());
+    } catch (err) {
+        return undefined;
+    }
+}
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6).Buffer))
 
 /***/ }),
 /* 6 */
-/***/ (function(module, exports) {
-
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    var TempCtor = function () {}
-    TempCtor.prototype = superCtor.prototype
-    ctor.prototype = new TempCtor()
-    ctor.prototype.constructor = ctor
-  }
-}
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// a duplex stream is just a stream that is both readable and writable.
-// Since JS doesn't have multiple prototypal inheritance, this class
-// prototypally inherits from Readable, and then parasitically from
-// Writable.
-
-
-
-/*<replacement>*/
-
-var pna = __webpack_require__(12);
-/*</replacement>*/
-
-/*<replacement>*/
-var objectKeys = Object.keys || function (obj) {
-  var keys = [];
-  for (var key in obj) {
-    keys.push(key);
-  }return keys;
-};
-/*</replacement>*/
-
-module.exports = Duplex;
-
-/*<replacement>*/
-var util = __webpack_require__(10);
-util.inherits = __webpack_require__(6);
-/*</replacement>*/
-
-var Readable = __webpack_require__(22);
-var Writable = __webpack_require__(17);
-
-util.inherits(Duplex, Readable);
-
-{
-  // avoid scope creep, the keys array can then be collected
-  var keys = objectKeys(Writable.prototype);
-  for (var v = 0; v < keys.length; v++) {
-    var method = keys[v];
-    if (!Duplex.prototype[method]) Duplex.prototype[method] = Writable.prototype[method];
-  }
-}
-
-function Duplex(options) {
-  if (!(this instanceof Duplex)) return new Duplex(options);
-
-  Readable.call(this, options);
-  Writable.call(this, options);
-
-  if (options && options.readable === false) this.readable = false;
-
-  if (options && options.writable === false) this.writable = false;
-
-  this.allowHalfOpen = true;
-  if (options && options.allowHalfOpen === false) this.allowHalfOpen = false;
-
-  this.once('end', onend);
-}
-
-Object.defineProperty(Duplex.prototype, 'writableHighWaterMark', {
-  // making it explicit this property is not enumerable
-  // because otherwise some prototype manipulation in
-  // userland will fail
-  enumerable: false,
-  get: function () {
-    return this._writableState.highWaterMark;
-  }
-});
-
-// the no-half-open enforcer
-function onend() {
-  // if we allow half-open state, or if the writable side ended,
-  // then we're ok.
-  if (this.allowHalfOpen || this._writableState.ended) return;
-
-  // no more data can be written.
-  // But allow more writes to happen in this tick.
-  pna.nextTick(onEndNT, this);
-}
-
-function onEndNT(self) {
-  self.end();
-}
-
-Object.defineProperty(Duplex.prototype, 'destroyed', {
-  get: function () {
-    if (this._readableState === undefined || this._writableState === undefined) {
-      return false;
-    }
-    return this._readableState.destroyed && this._writableState.destroyed;
-  },
-  set: function (value) {
-    // we ignore the value if the stream
-    // has not been initialized yet
-    if (this._readableState === undefined || this._writableState === undefined) {
-      return;
-    }
-
-    // backward compatibility, the user is explicitly
-    // managing destroyed
-    this._readableState.destroyed = value;
-    this._writableState.destroyed = value;
-  }
-});
-
-Duplex.prototype._destroy = function (err, cb) {
-  this.push(null);
-  this.end();
-
-  pna.nextTick(cb, err);
-};
-
-/***/ }),
-/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1005,9 +940,9 @@ Duplex.prototype._destroy = function (err, cb) {
 
 
 
-var base64 = __webpack_require__(33)
-var ieee754 = __webpack_require__(34)
-var isArray = __webpack_require__(20)
+var base64 = __webpack_require__(15)
+var ieee754 = __webpack_require__(16)
+var isArray = __webpack_require__(17)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -2785,2176 +2720,36 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
 
 /***/ }),
-/* 9 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* unused harmony export META_PARAMS_SPEC */
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return hasPayload; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return validateMeta; });
-/* unused harmony export hasCorrelationId */
-/* harmony import */ var _message_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(0);
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _TOPIC$PARSER, _TOPIC$CONNECTION, _TOPIC$AUTH, _TOPIC$RECORD, _TOPIC$RPC, _TOPIC$EVENT, _TOPIC$PRESENCE, _TOPIC$CLUSTER, _TOPIC$STATE_REGISTRY, _META_PARAMS_SPEC, _payloadMap;
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-
-/*
- * Specification of  fields within Meta Params used for message validation
- * (see `validateMeta`)
- *
- * META_PARAMS_SPEC[topic][action] => [required, optional]
- * The keys in `required` must be present in all instances of the message
- * The keys in `optional` may be present in some instances of the message
- */
-var META_PARAMS_SPEC = (_META_PARAMS_SPEC = {}, _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER, (_TOPIC$PARSER = {}, _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_TOPIC, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic], []]), _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_ACTION, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_MESSAGE, [[], []]), _defineProperty(_TOPIC$PARSER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_META_PARAMS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$PARSER)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].CONNECTION, (_TOPIC$CONNECTION = {}, _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].PING, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].PONG, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].CHALLENGE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].url, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].protocolVersion], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].ACCEPT, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].REJECT, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].REDIRECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].url], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].CLOSING, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].CLOSED, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].ERROR, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].AUTHENTICATION_TIMEOUT, [[], []]), _defineProperty(_TOPIC$CONNECTION, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CONNECTION_ACTIONS"].INVALID_MESSAGE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$CONNECTION)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].AUTH, (_TOPIC$AUTH = {}, _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].REQUEST, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_SUCCESSFUL, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_UNSUCCESSFUL, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].TOO_MANY_AUTH_ATTEMPTS, [[], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].INVALID_MESSAGE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalTopic, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$AUTH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$AUTH)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD, (_TOPIC$RECORD = {}, _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNSUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNSUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].MULTIPLE_SUBSCRIPTIONS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].NOT_SUBSCRIBED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].HEAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBEANDHEAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].HEAD_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBEANDREAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].ERASE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].ERASE_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBECREATEANDUPDATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH_WITH_WRITE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].path, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETE_SUCCESS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].DELETED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIBECREATEANDREAD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_HAS_PROVIDER, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_HAS_NO_PROVIDER, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].WRITE_ACKNOWLEDGEMENT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].VERSION_EXISTS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].version], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CACHE_RETRIEVAL_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].STORAGE_RETRIEVAL_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_LOAD_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_CREATE_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_UPDATE_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_DELETE_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].RECORD_NOT_FOUND, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_VERSION, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_PATCH_ON_HOTPATH, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNLISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UNLISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_FOUND, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_REMOVED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN_ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].LISTEN_REJECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_LISTEN_REGEX, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RECORD, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _TOPIC$RECORD)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RPC, (_TOPIC$RPC = {}, _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].reason]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].requestorName, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].requestorData, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].trustedSender]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REJECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].PROVIDE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].PROVIDE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].UNPROVIDE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].UNPROVIDE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MULTIPLE_PROVIDERS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].NOT_PROVIDED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MULTIPLE_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].RESPONSE_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].INVALID_RPC_CORRELATION_ID, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MULTIPLE_ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].ACCEPT_TIMEOUT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].NO_RPC_PROVIDER, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$RPC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _TOPIC$RPC)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].EVENT, (_TOPIC$EVENT = {}, _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].EMIT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNSUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNSUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MULTIPLE_SUBSCRIPTIONS, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].NOT_SUBSCRIBED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNLISTEN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].UNLISTEN_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_FOUND, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].SUBSCRIPTION_FOR_PATTERN_REMOVED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN_ACCEPT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].LISTEN_REJECT, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].subscription], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].INVALID_LISTEN_REGEX, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$EVENT, _message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].INVALID_MESSAGE_DATA, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], []]), _TOPIC$EVENT)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PRESENCE, (_TOPIC$PRESENCE = {}, _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE_ALL, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].SUBSCRIBE_ALL_ACK, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE_ALL, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].UNSUBSCRIBE_ALL_ACK, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].NOT_SUBSCRIBED, [[], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].MULTIPLE_SUBSCRIPTIONS, [[], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction]]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_ALL, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_ALL_RESPONSE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].names], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_JOIN, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_LEAVE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_JOIN_ALL, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].PRESENCE_LEAVE_ALL, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].INVALID_PRESENCE_USERS, [[], []]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].MESSAGE_PERMISSION_ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId]]), _defineProperty(_TOPIC$PRESENCE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].MESSAGE_DENIED, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].originalAction], [_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId, _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].name]]), _TOPIC$PRESENCE)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].CLUSTER, (_TOPIC$CLUSTER = {}, _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].CLOSE, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_REQUEST, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_RESPONSE, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].KNOWN_PEERS, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].PING, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].PONG, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].REJECT, [[], []]), _defineProperty(_TOPIC$CLUSTER, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].REJECT_DUPLICATE, [[], []]), _TOPIC$CLUSTER)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].STATE_REGISTRY, (_TOPIC$STATE_REGISTRY = {}, _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].ERROR, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].ADD, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].REMOVE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].REQUEST_FULL_STATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _defineProperty(_TOPIC$STATE_REGISTRY, _message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].FULL_STATE, [[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].registryTopic], []]), _TOPIC$STATE_REGISTRY)), _defineProperty(_META_PARAMS_SPEC, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].LOCK, {}), _META_PARAMS_SPEC);
-var payloadMap = (_payloadMap = {}, _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].MESSAGE_PARSE_ERROR, _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_META_PARAMS]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].AUTH, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_SUCCESSFUL, _message_constants__WEBPACK_IMPORTED_MODULE_0__["AUTH_ACTIONS"].AUTH_UNSUCCESSFUL]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].READ_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].UPDATE_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].PATCH_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDUPDATE_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].CREATEANDPATCH_WITH_WRITE_ACK, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RECORD_ACTIONS"].VERSION_EXISTS]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RPC, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["RPC_ACTIONS"].REQUEST_ERROR]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].EVENT, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["EVENT_ACTIONS"].EMIT]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PRESENCE, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["PRESENCE_ACTIONS"].QUERY_RESPONSE]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].CLUSTER, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_REQUEST, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].IDENTIFICATION_RESPONSE, _message_constants__WEBPACK_IMPORTED_MODULE_0__["CLUSTER_ACTIONS"].KNOWN_PEERS]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].STATE_REGISTRY, [_message_constants__WEBPACK_IMPORTED_MODULE_0__["STATE_ACTIONS"].FULL_STATE]), _defineProperty(_payloadMap, _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].LOCK, []), _payloadMap);
-function mapOfArraysHas(map, topic, action) {
-    var actions = map[topic];
-    if (!actions) {
-        return false;
-    }
-    return actions.indexOf(action) !== -1;
-}
-var hasPayload = function hasPayload(topic, action) {
-    return mapOfArraysHas(payloadMap, topic, action);
-};
-function validateMeta(topic, action, meta) {
-    var spec = META_PARAMS_SPEC[topic][action];
-    if (!spec) {
-        return 'no meta spec';
-    }
-
-    var _spec = _slicedToArray(spec, 2),
-        required = _spec[0],
-        optional = _spec[1];
-
-    for (var key in meta) {
-        if (meta[key] !== undefined && required.indexOf(key) === -1 && optional.indexOf(key) === -1) {
-            return 'meta object has unknown key ' + key;
-        }
-    }
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
-
-    try {
-        for (var _iterator = required[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var req = _step.value;
-
-            if (meta[req] === undefined) {
-                return 'meta object does not have required key ' + req;
-            }
-        }
-    } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-                _iterator.return();
-            }
-        } finally {
-            if (_didIteratorError) {
-                throw _iteratorError;
-            }
-        }
-    }
-
-    return;
-}
-function hasCorrelationId(topic, action) {
-    var spec = META_PARAMS_SPEC[topic][action];
-    if (!spec) {
-        return;
-    }
-
-    var _spec2 = _slicedToArray(spec, 2),
-        required = _spec2[0],
-        optional = _spec2[1];
-
-    return required.indexOf(_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId) !== -1 || optional.indexOf(_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"].correlationId) !== -1;
-}
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// NOTE: These type checking functions intentionally don't use `instanceof`
-// because it is fragile and can be easily faked with `Object.create()`.
-
-function isArray(arg) {
-  if (Array.isArray) {
-    return Array.isArray(arg);
-  }
-  return objectToString(arg) === '[object Array]';
-}
-exports.isArray = isArray;
-
-function isBoolean(arg) {
-  return typeof arg === 'boolean';
-}
-exports.isBoolean = isBoolean;
-
-function isNull(arg) {
-  return arg === null;
-}
-exports.isNull = isNull;
-
-function isNullOrUndefined(arg) {
-  return arg == null;
-}
-exports.isNullOrUndefined = isNullOrUndefined;
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-exports.isNumber = isNumber;
-
-function isString(arg) {
-  return typeof arg === 'string';
-}
-exports.isString = isString;
-
-function isSymbol(arg) {
-  return typeof arg === 'symbol';
-}
-exports.isSymbol = isSymbol;
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-exports.isUndefined = isUndefined;
-
-function isRegExp(re) {
-  return objectToString(re) === '[object RegExp]';
-}
-exports.isRegExp = isRegExp;
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-exports.isObject = isObject;
-
-function isDate(d) {
-  return objectToString(d) === '[object Date]';
-}
-exports.isDate = isDate;
-
-function isError(e) {
-  return (objectToString(e) === '[object Error]' || e instanceof Error);
-}
-exports.isError = isError;
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-exports.isFunction = isFunction;
-
-function isPrimitive(arg) {
-  return arg === null ||
-         typeof arg === 'boolean' ||
-         typeof arg === 'number' ||
-         typeof arg === 'string' ||
-         typeof arg === 'symbol' ||  // ES6 symbol
-         typeof arg === 'undefined';
-}
-exports.isPrimitive = isPrimitive;
-
-exports.isBuffer = Buffer.isBuffer;
-
-function objectToString(o) {
-  return Object.prototype.toString.call(o);
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8).Buffer))
-
-/***/ }),
-/* 11 */
+/* 7 */
 /***/ (function(module, exports) {
 
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
-}
-module.exports = EventEmitter;
-
-// Backwards-compat with node 0.10.x
-EventEmitter.EventEmitter = EventEmitter;
-
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined;
-
-// By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
-
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!isNumber(n) || n < 0 || isNaN(n))
-    throw TypeError('n must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-EventEmitter.prototype.emit = function(type) {
-  var er, handler, len, args, i, listeners;
-
-  if (!this._events)
-    this._events = {};
-
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events.error ||
-        (isObject(this._events.error) && !this._events.error.length)) {
-      er = arguments[1];
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      } else {
-        // At least give some kind of context to the user
-        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-        err.context = er;
-        throw err;
-      }
-    }
-  }
-
-  handler = this._events[type];
-
-  if (isUndefined(handler))
-    return false;
-
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
-    }
-  } else if (isObject(handler)) {
-    args = Array.prototype.slice.call(arguments, 1);
-    listeners = handler.slice();
-    len = listeners.length;
-    for (i = 0; i < len; i++)
-      listeners[i].apply(this, args);
-  }
-
-  return true;
-};
-
-EventEmitter.prototype.addListener = function(type, listener) {
-  var m;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events)
-    this._events = {};
-
-  // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-  if (this._events.newListener)
-    this.emit('newListener', type,
-              isFunction(listener.listener) ?
-              listener.listener : listener);
-
-  if (!this._events[type])
-    // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  else if (isObject(this._events[type]))
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  else
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-
-  // Check for listener leak
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
-    } else {
-      m = EventEmitter.defaultMaxListeners;
-    }
-
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' +
-                    'leak detected. %d listeners added. ' +
-                    'Use emitter.setMaxListeners() to increase limit.',
-                    this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
-    }
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function(type, listener) {
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
-  }
-
-  g.listener = listener;
-  this.on(type, g);
-
-  return this;
-};
-
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener = function(type, listener) {
-  var list, position, length, i;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events || !this._events[type])
-    return this;
-
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener ||
-      (isFunction(list.listener) && list.listener === listener)) {
-    delete this._events[type];
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener ||
-          (list[i].listener && list[i].listener === listener)) {
-        position = i;
-        break;
-      }
-    }
-
-    if (position < 0)
-      return this;
-
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
-
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.removeAllListeners = function(type) {
-  var key, listeners;
-
-  if (!this._events)
-    return this;
-
-  // not listening for removeListener, no need to emit
-  if (!this._events.removeListener) {
-    if (arguments.length === 0)
-      this._events = {};
-    else if (this._events[type])
-      delete this._events[type];
-    return this;
-  }
-
-  // emit removeListener for all listeners on all events
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else if (listeners) {
-    // LIFO order
-    while (listeners.length)
-      this.removeListener(type, listeners[listeners.length - 1]);
-  }
-  delete this._events[type];
-
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  var ret;
-  if (!this._events || !this._events[type])
-    ret = [];
-  else if (isFunction(this._events[type]))
-    ret = [this._events[type]];
-  else
-    ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.prototype.listenerCount = function(type) {
-  if (this._events) {
-    var evlistener = this._events[type];
-
-    if (isFunction(evlistener))
-      return 1;
-    else if (evlistener)
-      return evlistener.length;
-  }
-  return 0;
-};
-
-EventEmitter.listenerCount = function(emitter, type) {
-  return emitter.listenerCount(type);
-};
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {
-
-if (!process.version ||
-    process.version.indexOf('v0.') === 0 ||
-    process.version.indexOf('v1.') === 0 && process.version.indexOf('v1.8.') !== 0) {
-  module.exports = { nextTick: nextTick };
-} else {
-  module.exports = process
-}
-
-function nextTick(fn, arg1, arg2, arg3) {
-  if (typeof fn !== 'function') {
-    throw new TypeError('"callback" argument must be a function');
-  }
-  var len = arguments.length;
-  var args, i;
-  switch (len) {
-  case 0:
-  case 1:
-    return process.nextTick(fn);
-  case 2:
-    return process.nextTick(function afterTickOne() {
-      fn.call(null, arg1);
-    });
-  case 3:
-    return process.nextTick(function afterTickTwo() {
-      fn.call(null, arg1, arg2);
-    });
-  case 4:
-    return process.nextTick(function afterTickThree() {
-      fn.call(null, arg1, arg2, arg3);
-    });
-  default:
-    args = new Array(len - 1);
-    i = 0;
-    while (i < args.length) {
-      args[i++] = arguments[i];
-    }
-    return process.nextTick(function afterTick() {
-      fn.apply(null, args);
-    });
-  }
-}
-
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* eslint-disable node/no-deprecated-api */
-var buffer = __webpack_require__(8)
-var Buffer = buffer.Buffer
-
-// alternative to using Object.keys for old browsers
-function copyProps (src, dst) {
-  for (var key in src) {
-    dst[key] = src[key]
-  }
-}
-if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow) {
-  module.exports = buffer
-} else {
-  // Copy properties from require('buffer')
-  copyProps(buffer, exports)
-  exports.Buffer = SafeBuffer
-}
-
-function SafeBuffer (arg, encodingOrOffset, length) {
-  return Buffer(arg, encodingOrOffset, length)
-}
-
-// Copy static methods from Buffer
-copyProps(Buffer, SafeBuffer)
-
-SafeBuffer.from = function (arg, encodingOrOffset, length) {
-  if (typeof arg === 'number') {
-    throw new TypeError('Argument must not be a number')
-  }
-  return Buffer(arg, encodingOrOffset, length)
-}
-
-SafeBuffer.alloc = function (size, fill, encoding) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  var buf = Buffer(size)
-  if (fill !== undefined) {
-    if (typeof encoding === 'string') {
-      buf.fill(fill, encoding)
-    } else {
-      buf.fill(fill)
-    }
-  } else {
-    buf.fill(0)
-  }
-  return buf
-}
-
-SafeBuffer.allocUnsafe = function (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  return Buffer(size)
-}
-
-SafeBuffer.allocUnsafeSlow = function (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  return buffer.SlowBuffer(size)
-}
-
-
-/***/ }),
-/* 14 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(Buffer) {/* unused harmony export isError */
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return parse; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return parseData; });
-/* unused harmony export parseJSON */
-/* harmony import */ var _message_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(0);
-/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
-/* harmony import */ var _message_validator__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(9);
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-/* tslint:disable:no-bitwise */
-
-
-
-
-function isError(message) {
-    return message.action >= 0x50 && message.action < 0x70 || message.topic === _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER;
-}
-function parse(buffer) {
-    var queue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-
-    var offset = 0;
-    var messages = [];
-    do {
-        var _readBinary = readBinary(buffer, offset),
-            bytesConsumed = _readBinary.bytesConsumed,
-            rawMessage = _readBinary.rawMessage;
-
-        if (!rawMessage) {
-            break;
-        }
-        queue.push(rawMessage);
-        offset += bytesConsumed;
-        if (rawMessage.fin) {
-            var joinedMessage = joinMessages(queue);
-            var message = parseMessage(joinedMessage);
-            queue.length = 0;
-            messages.push(message);
-        }
-    } while (offset < buffer.length);
-    return messages;
-}
-function parseData(message) {
-    if (message.parsedData !== undefined || message.data === undefined) {
-        return true;
-    }
-    if (message.payloadEncoding && message.payloadEncoding !== _message_constants__WEBPACK_IMPORTED_MODULE_0__["PAYLOAD_ENCODING"].JSON) {
-        return new Error('unable to parse data of type \'' + message.payloadEncoding + '\'');
-    }
-    if (typeof message.data === 'string') {
-        return new Error('tried to parse string data with binary parser');
-    }
-    message.parsedData = parseJSON(message.data);
-    if (message.parsedData === undefined) {
-        return new Error('unable to parse data ' + message.data);
-    }
-    return true;
-}
-function readBinary(buff, offset) {
-    if (buff.length < offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"]) {
-        return { bytesConsumed: 0 };
-    }
-    var fin = !!(buff[offset] & 0x80);
-    var topic = buff[offset] & 0x7F;
-    var action = buff[offset + 1];
-    var metaLength = buff.readUIntBE(offset + 2, 3);
-    var payloadLength = buff.readUIntBE(offset + 5, 3);
-    var messageLength = _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"] + metaLength + payloadLength;
-    if (buff.length < offset + messageLength) {
-        return { bytesConsumed: 0 };
-    }
-    var rawHeader = buff.slice(offset, offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"]);
-    var rawMessage = { fin: fin, topic: topic, action: action, rawHeader: rawHeader };
-    if (metaLength > 0) {
-        rawMessage.meta = buff.slice(offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"], offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"] + metaLength);
-    }
-    if (payloadLength > 0) {
-        rawMessage.payload = buff.slice(offset + _constants__WEBPACK_IMPORTED_MODULE_1__[/* HEADER_LENGTH */ "a"] + metaLength, offset + messageLength);
-    }
-    return {
-        bytesConsumed: messageLength,
-        rawMessage: rawMessage
-    };
-}
-function joinMessages(rawMessages) {
-    if (rawMessages.length === 0) {
-        throw new Error('parseMessage must not be called with an empty message queue');
-    }
-    if (rawMessages.length === 1) {
-        return rawMessages[0];
-    }
-    var _rawMessages$ = rawMessages[0],
-        topic = _rawMessages$.topic,
-        action = _rawMessages$.action,
-        rawHeader = _rawMessages$.rawHeader;
-
-    var payloadSections = [];
-    var metaSections = [];
-    rawMessages.forEach(function (_ref) {
-        var payloadSection = _ref.payload,
-            metaSection = _ref.meta;
-
-        if (payloadSection) {
-            payloadSections.push(payloadSection);
-        }
-        if (metaSection) {
-            metaSections.push(metaSection);
-        }
-    });
-    var payload = Buffer.concat(payloadSections);
-    var meta = Buffer.concat(metaSections);
-    return { fin: true, topic: topic, action: action, rawHeader: rawHeader, meta: meta, payload: payload };
-}
-function parseMessage(rawMessage) {
-    var rawTopic = rawMessage.topic,
-        rawAction = rawMessage.action,
-        rawHeader = rawMessage.rawHeader;
-
-    if (_message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"][rawTopic] === undefined) {
-        return {
-            parseError: true,
-            action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_TOPIC,
-            parsedMessage: {
-                topic: rawTopic,
-                action: rawAction
-            },
-            description: 'unknown topic ' + rawTopic,
-            raw: rawHeader
-        };
-    }
-    var topic = rawTopic;
-    if (_message_constants__WEBPACK_IMPORTED_MODULE_0__["ACTIONS"][topic][rawAction] === undefined) {
-        return {
-            parseError: true,
-            action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].UNKNOWN_ACTION,
-            parsedMessage: {
-                topic: topic,
-                action: rawAction
-            },
-            description: 'unknown ' + _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"][topic] + ' action ' + rawAction,
-            raw: rawHeader
-        };
-    }
-    // mask out uppermost bit(ACK)
-    var action = rawAction & 0x7F;
-    var message = { topic: topic, action: action };
-    if (rawMessage.meta && rawMessage.meta.length > 0) {
-        var meta = parseJSON(rawMessage.meta);
-        if (!meta || (typeof meta === 'undefined' ? 'undefined' : _typeof(meta)) !== 'object') {
-            return {
-                parseError: true,
-                action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].MESSAGE_PARSE_ERROR,
-                parsedMessage: message,
-                description: 'invalid meta field ' + rawMessage.meta.toString(),
-                raw: rawHeader
-            };
-        }
-        var metaError = Object(_message_validator__WEBPACK_IMPORTED_MODULE_3__[/* validateMeta */ "b"])(topic, rawAction, meta);
-        if (metaError) {
-            throw new Error('invalid meta ' + _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"][message.topic] + ' ' + _message_constants__WEBPACK_IMPORTED_MODULE_0__["ACTIONS"][message.topic][message.action] + ': ' + metaError);
-            // return {
-            //   parseError: true,
-            //   action: PARSER_ACTIONS.INVALID_META_PARAMS,
-            //   parsedMessage: message,
-            //   description: 'invalid ack'
-            // }
-        }
-        addMetadataToMessage(meta, message);
-    }
-    if (rawMessage.payload !== undefined) {
-        if (!Object(_message_validator__WEBPACK_IMPORTED_MODULE_3__[/* hasPayload */ "a"])(message.topic, rawAction)) {
-            return {
-                parseError: true,
-                action: _message_constants__WEBPACK_IMPORTED_MODULE_0__["PARSER_ACTIONS"].INVALID_MESSAGE,
-                parsedMessage: message,
-                description: 'should not have a payload'
-            };
-        }
-        if (!message.payloadEncoding && topic === _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].PARSER) {
-            message.payloadEncoding = _message_constants__WEBPACK_IMPORTED_MODULE_0__["PAYLOAD_ENCODING"].BINARY;
-        }
-        message.data = rawMessage.payload;
-    }
-    // if (rawMessage.payload && rawMessage.payload.length > 0) {
-    //   const payload = parseJSON(rawMessage.payload)
-    //   if (payload === undefined) {
-    //     return {
-    //       parseError: true,
-    //       description: `invalid message data ${rawMessage.payload.toString()}`,
-    //       parsedMessage: message,
-    //       raw: rawHeader
-    //     }
-    //   }
-    //   message.data = payload
-    // }
-    message.isAck = rawAction >= 0x80;
-    message.isError = isError(message);
-    if (message.topic === _message_constants__WEBPACK_IMPORTED_MODULE_0__["TOPIC"].RECORD && Object(_utils__WEBPACK_IMPORTED_MODULE_2__[/* isWriteAck */ "c"])(rawAction)) {
-        message.isWriteAck = true;
-    }
-    return message;
-}
-function addMetadataToMessage(meta, message) {
-    for (var key in _message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"]) {
-        var value = meta[_message_constants__WEBPACK_IMPORTED_MODULE_0__["META_KEYS"][key]];
-        if (value !== undefined) {
-            message[key] = value;
-        }
-    }
-}
-function parseJSON(buff) {
-    try {
-        return JSON.parse(buff.toString());
-    } catch (err) {
-        return undefined;
-    }
-}
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8).Buffer))
-
-/***/ }),
-/* 15 */
-/***/ (function(module, exports) {
-
-
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(22);
-exports.Stream = exports;
-exports.Readable = exports;
-exports.Writable = __webpack_require__(17);
-exports.Duplex = __webpack_require__(7);
-exports.Transform = __webpack_require__(26);
-exports.PassThrough = __webpack_require__(55);
-
-
-/***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process, setImmediate, global) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// A bit simpler than readable streams.
-// Implement an async ._write(chunk, encoding, cb), and it'll handle all
-// the drain event emission and buffering.
-
-
-
-/*<replacement>*/
-
-var pna = __webpack_require__(12);
-/*</replacement>*/
-
-module.exports = Writable;
-
-/* <replacement> */
-function WriteReq(chunk, encoding, cb) {
-  this.chunk = chunk;
-  this.encoding = encoding;
-  this.callback = cb;
-  this.next = null;
-}
-
-// It seems a linked list but it is not
-// there will be only 2 of these for each stream
-function CorkedRequest(state) {
-  var _this = this;
-
-  this.next = null;
-  this.entry = null;
-  this.finish = function () {
-    onCorkedFinish(_this, state);
-  };
-}
-/* </replacement> */
-
-/*<replacement>*/
-var asyncWrite = !process.browser && ['v0.10', 'v0.9.'].indexOf(process.version.slice(0, 5)) > -1 ? setImmediate : pna.nextTick;
-/*</replacement>*/
-
-/*<replacement>*/
-var Duplex;
-/*</replacement>*/
-
-Writable.WritableState = WritableState;
-
-/*<replacement>*/
-var util = __webpack_require__(10);
-util.inherits = __webpack_require__(6);
-/*</replacement>*/
-
-/*<replacement>*/
-var internalUtil = {
-  deprecate: __webpack_require__(54)
-};
-/*</replacement>*/
-
-/*<replacement>*/
-var Stream = __webpack_require__(23);
-/*</replacement>*/
-
-/*<replacement>*/
-
-var Buffer = __webpack_require__(13).Buffer;
-var OurUint8Array = global.Uint8Array || function () {};
-function _uint8ArrayToBuffer(chunk) {
-  return Buffer.from(chunk);
-}
-function _isUint8Array(obj) {
-  return Buffer.isBuffer(obj) || obj instanceof OurUint8Array;
-}
-
-/*</replacement>*/
-
-var destroyImpl = __webpack_require__(24);
-
-util.inherits(Writable, Stream);
-
-function nop() {}
-
-function WritableState(options, stream) {
-  Duplex = Duplex || __webpack_require__(7);
-
-  options = options || {};
-
-  // Duplex streams are both readable and writable, but share
-  // the same options object.
-  // However, some cases require setting options to different
-  // values for the readable and the writable sides of the duplex stream.
-  // These options can be provided separately as readableXXX and writableXXX.
-  var isDuplex = stream instanceof Duplex;
-
-  // object stream flag to indicate whether or not this stream
-  // contains buffers or objects.
-  this.objectMode = !!options.objectMode;
-
-  if (isDuplex) this.objectMode = this.objectMode || !!options.writableObjectMode;
-
-  // the point at which write() starts returning false
-  // Note: 0 is a valid value, means that we always return false if
-  // the entire buffer is not flushed immediately on write()
-  var hwm = options.highWaterMark;
-  var writableHwm = options.writableHighWaterMark;
-  var defaultHwm = this.objectMode ? 16 : 16 * 1024;
-
-  if (hwm || hwm === 0) this.highWaterMark = hwm;else if (isDuplex && (writableHwm || writableHwm === 0)) this.highWaterMark = writableHwm;else this.highWaterMark = defaultHwm;
-
-  // cast to ints.
-  this.highWaterMark = Math.floor(this.highWaterMark);
-
-  // if _final has been called
-  this.finalCalled = false;
-
-  // drain event flag.
-  this.needDrain = false;
-  // at the start of calling end()
-  this.ending = false;
-  // when end() has been called, and returned
-  this.ended = false;
-  // when 'finish' is emitted
-  this.finished = false;
-
-  // has it been destroyed
-  this.destroyed = false;
-
-  // should we decode strings into buffers before passing to _write?
-  // this is here so that some node-core streams can optimize string
-  // handling at a lower level.
-  var noDecode = options.decodeStrings === false;
-  this.decodeStrings = !noDecode;
-
-  // Crypto is kind of old and crusty.  Historically, its default string
-  // encoding is 'binary' so we have to make this configurable.
-  // Everything else in the universe uses 'utf8', though.
-  this.defaultEncoding = options.defaultEncoding || 'utf8';
-
-  // not an actual buffer we keep track of, but a measurement
-  // of how much we're waiting to get pushed to some underlying
-  // socket or file.
-  this.length = 0;
-
-  // a flag to see when we're in the middle of a write.
-  this.writing = false;
-
-  // when true all writes will be buffered until .uncork() call
-  this.corked = 0;
-
-  // a flag to be able to tell if the onwrite cb is called immediately,
-  // or on a later tick.  We set this to true at first, because any
-  // actions that shouldn't happen until "later" should generally also
-  // not happen before the first write call.
-  this.sync = true;
-
-  // a flag to know if we're processing previously buffered items, which
-  // may call the _write() callback in the same tick, so that we don't
-  // end up in an overlapped onwrite situation.
-  this.bufferProcessing = false;
-
-  // the callback that's passed to _write(chunk,cb)
-  this.onwrite = function (er) {
-    onwrite(stream, er);
-  };
-
-  // the callback that the user supplies to write(chunk,encoding,cb)
-  this.writecb = null;
-
-  // the amount that is being written when _write is called.
-  this.writelen = 0;
-
-  this.bufferedRequest = null;
-  this.lastBufferedRequest = null;
-
-  // number of pending user-supplied write callbacks
-  // this must be 0 before 'finish' can be emitted
-  this.pendingcb = 0;
-
-  // emit prefinish if the only thing we're waiting for is _write cbs
-  // This is relevant for synchronous Transform streams
-  this.prefinished = false;
-
-  // True if the error was already emitted and should not be thrown again
-  this.errorEmitted = false;
-
-  // count buffered requests
-  this.bufferedRequestCount = 0;
-
-  // allocate the first CorkedRequest, there is always
-  // one allocated and free to use, and we maintain at most two
-  this.corkedRequestsFree = new CorkedRequest(this);
-}
-
-WritableState.prototype.getBuffer = function getBuffer() {
-  var current = this.bufferedRequest;
-  var out = [];
-  while (current) {
-    out.push(current);
-    current = current.next;
-  }
-  return out;
-};
-
-(function () {
-  try {
-    Object.defineProperty(WritableState.prototype, 'buffer', {
-      get: internalUtil.deprecate(function () {
-        return this.getBuffer();
-      }, '_writableState.buffer is deprecated. Use _writableState.getBuffer ' + 'instead.', 'DEP0003')
-    });
-  } catch (_) {}
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
 })();
 
-// Test _writableState for inheritance to account for Duplex streams,
-// whose prototype chain only points to Readable.
-var realHasInstance;
-if (typeof Symbol === 'function' && Symbol.hasInstance && typeof Function.prototype[Symbol.hasInstance] === 'function') {
-  realHasInstance = Function.prototype[Symbol.hasInstance];
-  Object.defineProperty(Writable, Symbol.hasInstance, {
-    value: function (object) {
-      if (realHasInstance.call(this, object)) return true;
-      if (this !== Writable) return false;
-
-      return object && object._writableState instanceof WritableState;
-    }
-  });
-} else {
-  realHasInstance = function (object) {
-    return object instanceof this;
-  };
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
 }
 
-function Writable(options) {
-  Duplex = Duplex || __webpack_require__(7);
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
 
-  // Writable ctor is applied to Duplexes, too.
-  // `realHasInstance` is necessary because using plain `instanceof`
-  // would return false, as no `_writableState` property is attached.
+module.exports = g;
 
-  // Trying to use the custom `instanceof` for Writable here will also break the
-  // Node.js LazyTransform implementation, which has a non-trivial getter for
-  // `_writableState` that would lead to infinite recursion.
-  if (!realHasInstance.call(Writable, this) && !(this instanceof Duplex)) {
-    return new Writable(options);
-  }
-
-  this._writableState = new WritableState(options, this);
-
-  // legacy.
-  this.writable = true;
-
-  if (options) {
-    if (typeof options.write === 'function') this._write = options.write;
-
-    if (typeof options.writev === 'function') this._writev = options.writev;
-
-    if (typeof options.destroy === 'function') this._destroy = options.destroy;
-
-    if (typeof options.final === 'function') this._final = options.final;
-  }
-
-  Stream.call(this);
-}
-
-// Otherwise people can pipe Writable streams, which is just wrong.
-Writable.prototype.pipe = function () {
-  this.emit('error', new Error('Cannot pipe, not readable'));
-};
-
-function writeAfterEnd(stream, cb) {
-  var er = new Error('write after end');
-  // TODO: defer error events consistently everywhere, not just the cb
-  stream.emit('error', er);
-  pna.nextTick(cb, er);
-}
-
-// Checks that a user-supplied chunk is valid, especially for the particular
-// mode the stream is in. Currently this means that `null` is never accepted
-// and undefined/non-string values are only allowed in object mode.
-function validChunk(stream, state, chunk, cb) {
-  var valid = true;
-  var er = false;
-
-  if (chunk === null) {
-    er = new TypeError('May not write null values to stream');
-  } else if (typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
-    er = new TypeError('Invalid non-string/buffer chunk');
-  }
-  if (er) {
-    stream.emit('error', er);
-    pna.nextTick(cb, er);
-    valid = false;
-  }
-  return valid;
-}
-
-Writable.prototype.write = function (chunk, encoding, cb) {
-  var state = this._writableState;
-  var ret = false;
-  var isBuf = !state.objectMode && _isUint8Array(chunk);
-
-  if (isBuf && !Buffer.isBuffer(chunk)) {
-    chunk = _uint8ArrayToBuffer(chunk);
-  }
-
-  if (typeof encoding === 'function') {
-    cb = encoding;
-    encoding = null;
-  }
-
-  if (isBuf) encoding = 'buffer';else if (!encoding) encoding = state.defaultEncoding;
-
-  if (typeof cb !== 'function') cb = nop;
-
-  if (state.ended) writeAfterEnd(this, cb);else if (isBuf || validChunk(this, state, chunk, cb)) {
-    state.pendingcb++;
-    ret = writeOrBuffer(this, state, isBuf, chunk, encoding, cb);
-  }
-
-  return ret;
-};
-
-Writable.prototype.cork = function () {
-  var state = this._writableState;
-
-  state.corked++;
-};
-
-Writable.prototype.uncork = function () {
-  var state = this._writableState;
-
-  if (state.corked) {
-    state.corked--;
-
-    if (!state.writing && !state.corked && !state.finished && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
-  }
-};
-
-Writable.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
-  // node::ParseEncoding() requires lower case.
-  if (typeof encoding === 'string') encoding = encoding.toLowerCase();
-  if (!(['hex', 'utf8', 'utf-8', 'ascii', 'binary', 'base64', 'ucs2', 'ucs-2', 'utf16le', 'utf-16le', 'raw'].indexOf((encoding + '').toLowerCase()) > -1)) throw new TypeError('Unknown encoding: ' + encoding);
-  this._writableState.defaultEncoding = encoding;
-  return this;
-};
-
-function decodeChunk(state, chunk, encoding) {
-  if (!state.objectMode && state.decodeStrings !== false && typeof chunk === 'string') {
-    chunk = Buffer.from(chunk, encoding);
-  }
-  return chunk;
-}
-
-Object.defineProperty(Writable.prototype, 'writableHighWaterMark', {
-  // making it explicit this property is not enumerable
-  // because otherwise some prototype manipulation in
-  // userland will fail
-  enumerable: false,
-  get: function () {
-    return this._writableState.highWaterMark;
-  }
-});
-
-// if we're already writing something, then just put this
-// in the queue, and wait our turn.  Otherwise, call _write
-// If we return false, then we need a drain event, so set that flag.
-function writeOrBuffer(stream, state, isBuf, chunk, encoding, cb) {
-  if (!isBuf) {
-    var newChunk = decodeChunk(state, chunk, encoding);
-    if (chunk !== newChunk) {
-      isBuf = true;
-      encoding = 'buffer';
-      chunk = newChunk;
-    }
-  }
-  var len = state.objectMode ? 1 : chunk.length;
-
-  state.length += len;
-
-  var ret = state.length < state.highWaterMark;
-  // we must ensure that previous needDrain will not be reset to false.
-  if (!ret) state.needDrain = true;
-
-  if (state.writing || state.corked) {
-    var last = state.lastBufferedRequest;
-    state.lastBufferedRequest = {
-      chunk: chunk,
-      encoding: encoding,
-      isBuf: isBuf,
-      callback: cb,
-      next: null
-    };
-    if (last) {
-      last.next = state.lastBufferedRequest;
-    } else {
-      state.bufferedRequest = state.lastBufferedRequest;
-    }
-    state.bufferedRequestCount += 1;
-  } else {
-    doWrite(stream, state, false, len, chunk, encoding, cb);
-  }
-
-  return ret;
-}
-
-function doWrite(stream, state, writev, len, chunk, encoding, cb) {
-  state.writelen = len;
-  state.writecb = cb;
-  state.writing = true;
-  state.sync = true;
-  if (writev) stream._writev(chunk, state.onwrite);else stream._write(chunk, encoding, state.onwrite);
-  state.sync = false;
-}
-
-function onwriteError(stream, state, sync, er, cb) {
-  --state.pendingcb;
-
-  if (sync) {
-    // defer the callback if we are being called synchronously
-    // to avoid piling up things on the stack
-    pna.nextTick(cb, er);
-    // this can emit finish, and it will always happen
-    // after error
-    pna.nextTick(finishMaybe, stream, state);
-    stream._writableState.errorEmitted = true;
-    stream.emit('error', er);
-  } else {
-    // the caller expect this to happen before if
-    // it is async
-    cb(er);
-    stream._writableState.errorEmitted = true;
-    stream.emit('error', er);
-    // this can emit finish, but finish must
-    // always follow error
-    finishMaybe(stream, state);
-  }
-}
-
-function onwriteStateUpdate(state) {
-  state.writing = false;
-  state.writecb = null;
-  state.length -= state.writelen;
-  state.writelen = 0;
-}
-
-function onwrite(stream, er) {
-  var state = stream._writableState;
-  var sync = state.sync;
-  var cb = state.writecb;
-
-  onwriteStateUpdate(state);
-
-  if (er) onwriteError(stream, state, sync, er, cb);else {
-    // Check if we're actually ready to finish, but don't emit yet
-    var finished = needFinish(state);
-
-    if (!finished && !state.corked && !state.bufferProcessing && state.bufferedRequest) {
-      clearBuffer(stream, state);
-    }
-
-    if (sync) {
-      /*<replacement>*/
-      asyncWrite(afterWrite, stream, state, finished, cb);
-      /*</replacement>*/
-    } else {
-      afterWrite(stream, state, finished, cb);
-    }
-  }
-}
-
-function afterWrite(stream, state, finished, cb) {
-  if (!finished) onwriteDrain(stream, state);
-  state.pendingcb--;
-  cb();
-  finishMaybe(stream, state);
-}
-
-// Must force callback to be called on nextTick, so that we don't
-// emit 'drain' before the write() consumer gets the 'false' return
-// value, and has a chance to attach a 'drain' listener.
-function onwriteDrain(stream, state) {
-  if (state.length === 0 && state.needDrain) {
-    state.needDrain = false;
-    stream.emit('drain');
-  }
-}
-
-// if there's something in the buffer waiting, then process it
-function clearBuffer(stream, state) {
-  state.bufferProcessing = true;
-  var entry = state.bufferedRequest;
-
-  if (stream._writev && entry && entry.next) {
-    // Fast case, write everything using _writev()
-    var l = state.bufferedRequestCount;
-    var buffer = new Array(l);
-    var holder = state.corkedRequestsFree;
-    holder.entry = entry;
-
-    var count = 0;
-    var allBuffers = true;
-    while (entry) {
-      buffer[count] = entry;
-      if (!entry.isBuf) allBuffers = false;
-      entry = entry.next;
-      count += 1;
-    }
-    buffer.allBuffers = allBuffers;
-
-    doWrite(stream, state, true, state.length, buffer, '', holder.finish);
-
-    // doWrite is almost always async, defer these to save a bit of time
-    // as the hot path ends with doWrite
-    state.pendingcb++;
-    state.lastBufferedRequest = null;
-    if (holder.next) {
-      state.corkedRequestsFree = holder.next;
-      holder.next = null;
-    } else {
-      state.corkedRequestsFree = new CorkedRequest(state);
-    }
-    state.bufferedRequestCount = 0;
-  } else {
-    // Slow case, write chunks one-by-one
-    while (entry) {
-      var chunk = entry.chunk;
-      var encoding = entry.encoding;
-      var cb = entry.callback;
-      var len = state.objectMode ? 1 : chunk.length;
-
-      doWrite(stream, state, false, len, chunk, encoding, cb);
-      entry = entry.next;
-      state.bufferedRequestCount--;
-      // if we didn't call the onwrite immediately, then
-      // it means that we need to wait until it does.
-      // also, that means that the chunk and cb are currently
-      // being processed, so move the buffer counter past them.
-      if (state.writing) {
-        break;
-      }
-    }
-
-    if (entry === null) state.lastBufferedRequest = null;
-  }
-
-  state.bufferedRequest = entry;
-  state.bufferProcessing = false;
-}
-
-Writable.prototype._write = function (chunk, encoding, cb) {
-  cb(new Error('_write() is not implemented'));
-};
-
-Writable.prototype._writev = null;
-
-Writable.prototype.end = function (chunk, encoding, cb) {
-  var state = this._writableState;
-
-  if (typeof chunk === 'function') {
-    cb = chunk;
-    chunk = null;
-    encoding = null;
-  } else if (typeof encoding === 'function') {
-    cb = encoding;
-    encoding = null;
-  }
-
-  if (chunk !== null && chunk !== undefined) this.write(chunk, encoding);
-
-  // .end() fully uncorks
-  if (state.corked) {
-    state.corked = 1;
-    this.uncork();
-  }
-
-  // ignore unnecessary end() calls.
-  if (!state.ending && !state.finished) endWritable(this, state, cb);
-};
-
-function needFinish(state) {
-  return state.ending && state.length === 0 && state.bufferedRequest === null && !state.finished && !state.writing;
-}
-function callFinal(stream, state) {
-  stream._final(function (err) {
-    state.pendingcb--;
-    if (err) {
-      stream.emit('error', err);
-    }
-    state.prefinished = true;
-    stream.emit('prefinish');
-    finishMaybe(stream, state);
-  });
-}
-function prefinish(stream, state) {
-  if (!state.prefinished && !state.finalCalled) {
-    if (typeof stream._final === 'function') {
-      state.pendingcb++;
-      state.finalCalled = true;
-      pna.nextTick(callFinal, stream, state);
-    } else {
-      state.prefinished = true;
-      stream.emit('prefinish');
-    }
-  }
-}
-
-function finishMaybe(stream, state) {
-  var need = needFinish(state);
-  if (need) {
-    prefinish(stream, state);
-    if (state.pendingcb === 0) {
-      state.finished = true;
-      stream.emit('finish');
-    }
-  }
-  return need;
-}
-
-function endWritable(stream, state, cb) {
-  state.ending = true;
-  finishMaybe(stream, state);
-  if (cb) {
-    if (state.finished) pna.nextTick(cb);else stream.once('finish', cb);
-  }
-  state.ended = true;
-  stream.writable = false;
-}
-
-function onCorkedFinish(corkReq, state, err) {
-  var entry = corkReq.entry;
-  corkReq.entry = null;
-  while (entry) {
-    var cb = entry.callback;
-    state.pendingcb--;
-    cb(err);
-    entry = entry.next;
-  }
-  if (state.corkedRequestsFree) {
-    state.corkedRequestsFree.next = corkReq;
-  } else {
-    state.corkedRequestsFree = corkReq;
-  }
-}
-
-Object.defineProperty(Writable.prototype, 'destroyed', {
-  get: function () {
-    if (this._writableState === undefined) {
-      return false;
-    }
-    return this._writableState.destroyed;
-  },
-  set: function (value) {
-    // we ignore the value if the stream
-    // has not been initialized yet
-    if (!this._writableState) {
-      return;
-    }
-
-    // backward compatibility, the user is explicitly
-    // managing destroyed
-    this._writableState.destroyed = value;
-  }
-});
-
-Writable.prototype.destroy = destroyImpl.destroy;
-Writable.prototype._undestroy = destroyImpl.undestroy;
-Writable.prototype._destroy = function (err, cb) {
-  this.end();
-  cb(err);
-};
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3), __webpack_require__(52).setImmediate, __webpack_require__(5)))
 
 /***/ }),
-/* 18 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var formatRegExp = /%[sdj%]/g;
-exports.format = function(f) {
-  if (!isString(f)) {
-    var objects = [];
-    for (var i = 0; i < arguments.length; i++) {
-      objects.push(inspect(arguments[i]));
-    }
-    return objects.join(' ');
-  }
-
-  var i = 1;
-  var args = arguments;
-  var len = args.length;
-  var str = String(f).replace(formatRegExp, function(x) {
-    if (x === '%%') return '%';
-    if (i >= len) return x;
-    switch (x) {
-      case '%s': return String(args[i++]);
-      case '%d': return Number(args[i++]);
-      case '%j':
-        try {
-          return JSON.stringify(args[i++]);
-        } catch (_) {
-          return '[Circular]';
-        }
-      default:
-        return x;
-    }
-  });
-  for (var x = args[i]; i < len; x = args[++i]) {
-    if (isNull(x) || !isObject(x)) {
-      str += ' ' + x;
-    } else {
-      str += ' ' + inspect(x);
-    }
-  }
-  return str;
-};
-
-
-// Mark that a method should not be used.
-// Returns a modified function which warns once by default.
-// If --no-deprecation is set, then it is a no-op.
-exports.deprecate = function(fn, msg) {
-  // Allow for deprecating things in the process of starting up.
-  if (isUndefined(global.process)) {
-    return function() {
-      return exports.deprecate(fn, msg).apply(this, arguments);
-    };
-  }
-
-  if (process.noDeprecation === true) {
-    return fn;
-  }
-
-  var warned = false;
-  function deprecated() {
-    if (!warned) {
-      if (process.throwDeprecation) {
-        throw new Error(msg);
-      } else if (process.traceDeprecation) {
-        console.trace(msg);
-      } else {
-        console.error(msg);
-      }
-      warned = true;
-    }
-    return fn.apply(this, arguments);
-  }
-
-  return deprecated;
-};
-
-
-var debugs = {};
-var debugEnviron;
-exports.debuglog = function(set) {
-  if (isUndefined(debugEnviron))
-    debugEnviron = process.env.NODE_DEBUG || '';
-  set = set.toUpperCase();
-  if (!debugs[set]) {
-    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-      var pid = process.pid;
-      debugs[set] = function() {
-        var msg = exports.format.apply(exports, arguments);
-        console.error('%s %d: %s', set, pid, msg);
-      };
-    } else {
-      debugs[set] = function() {};
-    }
-  }
-  return debugs[set];
-};
-
-
-/**
- * Echos the value of a value. Trys to print the value out
- * in the best way possible given the different types.
- *
- * @param {Object} obj The object to print out.
- * @param {Object} opts Optional options object that alters the output.
- */
-/* legacy: obj, showHidden, depth, colors*/
-function inspect(obj, opts) {
-  // default options
-  var ctx = {
-    seen: [],
-    stylize: stylizeNoColor
-  };
-  // legacy...
-  if (arguments.length >= 3) ctx.depth = arguments[2];
-  if (arguments.length >= 4) ctx.colors = arguments[3];
-  if (isBoolean(opts)) {
-    // legacy...
-    ctx.showHidden = opts;
-  } else if (opts) {
-    // got an "options" object
-    exports._extend(ctx, opts);
-  }
-  // set default options
-  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
-  if (isUndefined(ctx.depth)) ctx.depth = 2;
-  if (isUndefined(ctx.colors)) ctx.colors = false;
-  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
-  if (ctx.colors) ctx.stylize = stylizeWithColor;
-  return formatValue(ctx, obj, ctx.depth);
-}
-exports.inspect = inspect;
-
-
-// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-inspect.colors = {
-  'bold' : [1, 22],
-  'italic' : [3, 23],
-  'underline' : [4, 24],
-  'inverse' : [7, 27],
-  'white' : [37, 39],
-  'grey' : [90, 39],
-  'black' : [30, 39],
-  'blue' : [34, 39],
-  'cyan' : [36, 39],
-  'green' : [32, 39],
-  'magenta' : [35, 39],
-  'red' : [31, 39],
-  'yellow' : [33, 39]
-};
-
-// Don't use 'blue' not visible on cmd.exe
-inspect.styles = {
-  'special': 'cyan',
-  'number': 'yellow',
-  'boolean': 'yellow',
-  'undefined': 'grey',
-  'null': 'bold',
-  'string': 'green',
-  'date': 'magenta',
-  // "name": intentionally not styling
-  'regexp': 'red'
-};
-
-
-function stylizeWithColor(str, styleType) {
-  var style = inspect.styles[styleType];
-
-  if (style) {
-    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-           '\u001b[' + inspect.colors[style][1] + 'm';
-  } else {
-    return str;
-  }
-}
-
-
-function stylizeNoColor(str, styleType) {
-  return str;
-}
-
-
-function arrayToHash(array) {
-  var hash = {};
-
-  array.forEach(function(val, idx) {
-    hash[val] = true;
-  });
-
-  return hash;
-}
-
-
-function formatValue(ctx, value, recurseTimes) {
-  // Provide a hook for user-specified inspect functions.
-  // Check that value is an object with an inspect function on it
-  if (ctx.customInspect &&
-      value &&
-      isFunction(value.inspect) &&
-      // Filter out the util module, it's inspect function is special
-      value.inspect !== exports.inspect &&
-      // Also filter out any prototype objects using the circular check.
-      !(value.constructor && value.constructor.prototype === value)) {
-    var ret = value.inspect(recurseTimes, ctx);
-    if (!isString(ret)) {
-      ret = formatValue(ctx, ret, recurseTimes);
-    }
-    return ret;
-  }
-
-  // Primitive types cannot have properties
-  var primitive = formatPrimitive(ctx, value);
-  if (primitive) {
-    return primitive;
-  }
-
-  // Look up the keys of the object.
-  var keys = Object.keys(value);
-  var visibleKeys = arrayToHash(keys);
-
-  if (ctx.showHidden) {
-    keys = Object.getOwnPropertyNames(value);
-  }
-
-  // IE doesn't make error fields non-enumerable
-  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
-  if (isError(value)
-      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
-    return formatError(value);
-  }
-
-  // Some type of object without properties can be shortcutted.
-  if (keys.length === 0) {
-    if (isFunction(value)) {
-      var name = value.name ? ': ' + value.name : '';
-      return ctx.stylize('[Function' + name + ']', 'special');
-    }
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    }
-    if (isDate(value)) {
-      return ctx.stylize(Date.prototype.toString.call(value), 'date');
-    }
-    if (isError(value)) {
-      return formatError(value);
-    }
-  }
-
-  var base = '', array = false, braces = ['{', '}'];
-
-  // Make Array say that they are Array
-  if (isArray(value)) {
-    array = true;
-    braces = ['[', ']'];
-  }
-
-  // Make functions say that they are functions
-  if (isFunction(value)) {
-    var n = value.name ? ': ' + value.name : '';
-    base = ' [Function' + n + ']';
-  }
-
-  // Make RegExps say that they are RegExps
-  if (isRegExp(value)) {
-    base = ' ' + RegExp.prototype.toString.call(value);
-  }
-
-  // Make dates with properties first say the date
-  if (isDate(value)) {
-    base = ' ' + Date.prototype.toUTCString.call(value);
-  }
-
-  // Make error with message first say the error
-  if (isError(value)) {
-    base = ' ' + formatError(value);
-  }
-
-  if (keys.length === 0 && (!array || value.length == 0)) {
-    return braces[0] + base + braces[1];
-  }
-
-  if (recurseTimes < 0) {
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    } else {
-      return ctx.stylize('[Object]', 'special');
-    }
-  }
-
-  ctx.seen.push(value);
-
-  var output;
-  if (array) {
-    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
-  } else {
-    output = keys.map(function(key) {
-      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
-    });
-  }
-
-  ctx.seen.pop();
-
-  return reduceToSingleString(output, base, braces);
-}
-
-
-function formatPrimitive(ctx, value) {
-  if (isUndefined(value))
-    return ctx.stylize('undefined', 'undefined');
-  if (isString(value)) {
-    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                             .replace(/'/g, "\\'")
-                                             .replace(/\\"/g, '"') + '\'';
-    return ctx.stylize(simple, 'string');
-  }
-  if (isNumber(value))
-    return ctx.stylize('' + value, 'number');
-  if (isBoolean(value))
-    return ctx.stylize('' + value, 'boolean');
-  // For some reason typeof null is "object", so special case here.
-  if (isNull(value))
-    return ctx.stylize('null', 'null');
-}
-
-
-function formatError(value) {
-  return '[' + Error.prototype.toString.call(value) + ']';
-}
-
-
-function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
-  var output = [];
-  for (var i = 0, l = value.length; i < l; ++i) {
-    if (hasOwnProperty(value, String(i))) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          String(i), true));
-    } else {
-      output.push('');
-    }
-  }
-  keys.forEach(function(key) {
-    if (!key.match(/^\d+$/)) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          key, true));
-    }
-  });
-  return output;
-}
-
-
-function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
-  var name, str, desc;
-  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
-  if (desc.get) {
-    if (desc.set) {
-      str = ctx.stylize('[Getter/Setter]', 'special');
-    } else {
-      str = ctx.stylize('[Getter]', 'special');
-    }
-  } else {
-    if (desc.set) {
-      str = ctx.stylize('[Setter]', 'special');
-    }
-  }
-  if (!hasOwnProperty(visibleKeys, key)) {
-    name = '[' + key + ']';
-  }
-  if (!str) {
-    if (ctx.seen.indexOf(desc.value) < 0) {
-      if (isNull(recurseTimes)) {
-        str = formatValue(ctx, desc.value, null);
-      } else {
-        str = formatValue(ctx, desc.value, recurseTimes - 1);
-      }
-      if (str.indexOf('\n') > -1) {
-        if (array) {
-          str = str.split('\n').map(function(line) {
-            return '  ' + line;
-          }).join('\n').substr(2);
-        } else {
-          str = '\n' + str.split('\n').map(function(line) {
-            return '   ' + line;
-          }).join('\n');
-        }
-      }
-    } else {
-      str = ctx.stylize('[Circular]', 'special');
-    }
-  }
-  if (isUndefined(name)) {
-    if (array && key.match(/^\d+$/)) {
-      return str;
-    }
-    name = JSON.stringify('' + key);
-    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-      name = name.substr(1, name.length - 2);
-      name = ctx.stylize(name, 'name');
-    } else {
-      name = name.replace(/'/g, "\\'")
-                 .replace(/\\"/g, '"')
-                 .replace(/(^"|"$)/g, "'");
-      name = ctx.stylize(name, 'string');
-    }
-  }
-
-  return name + ': ' + str;
-}
-
-
-function reduceToSingleString(output, base, braces) {
-  var numLinesEst = 0;
-  var length = output.reduce(function(prev, cur) {
-    numLinesEst++;
-    if (cur.indexOf('\n') >= 0) numLinesEst++;
-    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
-  }, 0);
-
-  if (length > 60) {
-    return braces[0] +
-           (base === '' ? '' : base + '\n ') +
-           ' ' +
-           output.join(',\n  ') +
-           ' ' +
-           braces[1];
-  }
-
-  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-}
-
-
-// NOTE: These type checking functions intentionally don't use `instanceof`
-// because it is fragile and can be easily faked with `Object.create()`.
-function isArray(ar) {
-  return Array.isArray(ar);
-}
-exports.isArray = isArray;
-
-function isBoolean(arg) {
-  return typeof arg === 'boolean';
-}
-exports.isBoolean = isBoolean;
-
-function isNull(arg) {
-  return arg === null;
-}
-exports.isNull = isNull;
-
-function isNullOrUndefined(arg) {
-  return arg == null;
-}
-exports.isNullOrUndefined = isNullOrUndefined;
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-exports.isNumber = isNumber;
-
-function isString(arg) {
-  return typeof arg === 'string';
-}
-exports.isString = isString;
-
-function isSymbol(arg) {
-  return typeof arg === 'symbol';
-}
-exports.isSymbol = isSymbol;
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-exports.isUndefined = isUndefined;
-
-function isRegExp(re) {
-  return isObject(re) && objectToString(re) === '[object RegExp]';
-}
-exports.isRegExp = isRegExp;
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-exports.isObject = isObject;
-
-function isDate(d) {
-  return isObject(d) && objectToString(d) === '[object Date]';
-}
-exports.isDate = isDate;
-
-function isError(e) {
-  return isObject(e) &&
-      (objectToString(e) === '[object Error]' || e instanceof Error);
-}
-exports.isError = isError;
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-exports.isFunction = isFunction;
-
-function isPrimitive(arg) {
-  return arg === null ||
-         typeof arg === 'boolean' ||
-         typeof arg === 'number' ||
-         typeof arg === 'string' ||
-         typeof arg === 'symbol' ||  // ES6 symbol
-         typeof arg === 'undefined';
-}
-exports.isPrimitive = isPrimitive;
-
-exports.isBuffer = __webpack_require__(60);
-
-function objectToString(o) {
-  return Object.prototype.toString.call(o);
-}
-
-
-function pad(n) {
-  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-              'Oct', 'Nov', 'Dec'];
-
-// 26 Feb 16:19:34
-function timestamp() {
-  var d = new Date();
-  var time = [pad(d.getHours()),
-              pad(d.getMinutes()),
-              pad(d.getSeconds())].join(':');
-  return [d.getDate(), months[d.getMonth()], time].join(' ');
-}
-
-
-// log is just a thin wrapper to console.log that prepends a timestamp
-exports.log = function() {
-  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
-};
-
-
-/**
- * Inherit the prototype methods from one constructor into another.
- *
- * The Function.prototype.inherits from lang.js rewritten as a standalone
- * function (not on Function.prototype). NOTE: If this file is to be loaded
- * during bootstrapping this function needs to be rewritten using some native
- * functions as prototype setup using normal JavaScript does not work as
- * expected during bootstrapping (see mirror.js in r114903).
- *
- * @param {function} ctor Constructor function which needs to inherit the
- *     prototype.
- * @param {function} superCtor Constructor function to inherit prototype from.
- */
-exports.inherits = __webpack_require__(6);
-
-exports._extend = function(origin, add) {
-  // Don't do anything if add isn't an object
-  if (!add || !isObject(add)) return origin;
-
-  var keys = Object.keys(add);
-  var i = keys.length;
-  while (i--) {
-    origin[keys[i]] = add[keys[i]];
-  }
-  return origin;
-};
-
-function hasOwnProperty(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5), __webpack_require__(3)))
-
-/***/ }),
-/* 19 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4981,8 +2776,8 @@ function hasOwnProperty(obj, prop) {
 
 
 
-var punycode = __webpack_require__(35);
-var util = __webpack_require__(37);
+var punycode = __webpack_require__(18);
+var util = __webpack_require__(20);
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
@@ -5057,7 +2852,7 @@ var protocolPattern = /^([a-z0-9.+-]+:)/i,
       'gopher:': true,
       'file:': true
     },
-    querystring = __webpack_require__(38);
+    querystring = __webpack_require__(21);
 
 function urlParse(url, parseQueryString, slashesDenoteHost) {
   if (url && util.isObject(url) && url instanceof Url) return url;
@@ -5693,1703 +3488,7 @@ Url.prototype.parseHost = function() {
 
 
 /***/ }),
-/* 20 */
-/***/ (function(module, exports) {
-
-var toString = {}.toString;
-
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
-
-
-/***/ }),
-/* 21 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var fs = __webpack_require__(15)
-
-module.exports = clone(fs)
-
-function clone (obj) {
-  if (obj === null || typeof obj !== 'object')
-    return obj
-
-  if (obj instanceof Object)
-    var copy = { __proto__: obj.__proto__ }
-  else
-    var copy = Object.create(null)
-
-  Object.getOwnPropertyNames(obj).forEach(function (key) {
-    Object.defineProperty(copy, key, Object.getOwnPropertyDescriptor(obj, key))
-  })
-
-  return copy
-}
-
-
-/***/ }),
-/* 22 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-
-/*<replacement>*/
-
-var pna = __webpack_require__(12);
-/*</replacement>*/
-
-module.exports = Readable;
-
-/*<replacement>*/
-var isArray = __webpack_require__(20);
-/*</replacement>*/
-
-/*<replacement>*/
-var Duplex;
-/*</replacement>*/
-
-Readable.ReadableState = ReadableState;
-
-/*<replacement>*/
-var EE = __webpack_require__(11).EventEmitter;
-
-var EElistenerCount = function (emitter, type) {
-  return emitter.listeners(type).length;
-};
-/*</replacement>*/
-
-/*<replacement>*/
-var Stream = __webpack_require__(23);
-/*</replacement>*/
-
-/*<replacement>*/
-
-var Buffer = __webpack_require__(13).Buffer;
-var OurUint8Array = global.Uint8Array || function () {};
-function _uint8ArrayToBuffer(chunk) {
-  return Buffer.from(chunk);
-}
-function _isUint8Array(obj) {
-  return Buffer.isBuffer(obj) || obj instanceof OurUint8Array;
-}
-
-/*</replacement>*/
-
-/*<replacement>*/
-var util = __webpack_require__(10);
-util.inherits = __webpack_require__(6);
-/*</replacement>*/
-
-/*<replacement>*/
-var debugUtil = __webpack_require__(49);
-var debug = void 0;
-if (debugUtil && debugUtil.debuglog) {
-  debug = debugUtil.debuglog('stream');
-} else {
-  debug = function () {};
-}
-/*</replacement>*/
-
-var BufferList = __webpack_require__(50);
-var destroyImpl = __webpack_require__(24);
-var StringDecoder;
-
-util.inherits(Readable, Stream);
-
-var kProxyEvents = ['error', 'close', 'destroy', 'pause', 'resume'];
-
-function prependListener(emitter, event, fn) {
-  // Sadly this is not cacheable as some libraries bundle their own
-  // event emitter implementation with them.
-  if (typeof emitter.prependListener === 'function') return emitter.prependListener(event, fn);
-
-  // This is a hack to make sure that our error handler is attached before any
-  // userland ones.  NEVER DO THIS. This is here only because this code needs
-  // to continue to work with older versions of Node.js that do not include
-  // the prependListener() method. The goal is to eventually remove this hack.
-  if (!emitter._events || !emitter._events[event]) emitter.on(event, fn);else if (isArray(emitter._events[event])) emitter._events[event].unshift(fn);else emitter._events[event] = [fn, emitter._events[event]];
-}
-
-function ReadableState(options, stream) {
-  Duplex = Duplex || __webpack_require__(7);
-
-  options = options || {};
-
-  // Duplex streams are both readable and writable, but share
-  // the same options object.
-  // However, some cases require setting options to different
-  // values for the readable and the writable sides of the duplex stream.
-  // These options can be provided separately as readableXXX and writableXXX.
-  var isDuplex = stream instanceof Duplex;
-
-  // object stream flag. Used to make read(n) ignore n and to
-  // make all the buffer merging and length checks go away
-  this.objectMode = !!options.objectMode;
-
-  if (isDuplex) this.objectMode = this.objectMode || !!options.readableObjectMode;
-
-  // the point at which it stops calling _read() to fill the buffer
-  // Note: 0 is a valid value, means "don't call _read preemptively ever"
-  var hwm = options.highWaterMark;
-  var readableHwm = options.readableHighWaterMark;
-  var defaultHwm = this.objectMode ? 16 : 16 * 1024;
-
-  if (hwm || hwm === 0) this.highWaterMark = hwm;else if (isDuplex && (readableHwm || readableHwm === 0)) this.highWaterMark = readableHwm;else this.highWaterMark = defaultHwm;
-
-  // cast to ints.
-  this.highWaterMark = Math.floor(this.highWaterMark);
-
-  // A linked list is used to store data chunks instead of an array because the
-  // linked list can remove elements from the beginning faster than
-  // array.shift()
-  this.buffer = new BufferList();
-  this.length = 0;
-  this.pipes = null;
-  this.pipesCount = 0;
-  this.flowing = null;
-  this.ended = false;
-  this.endEmitted = false;
-  this.reading = false;
-
-  // a flag to be able to tell if the event 'readable'/'data' is emitted
-  // immediately, or on a later tick.  We set this to true at first, because
-  // any actions that shouldn't happen until "later" should generally also
-  // not happen before the first read call.
-  this.sync = true;
-
-  // whenever we return null, then we set a flag to say
-  // that we're awaiting a 'readable' event emission.
-  this.needReadable = false;
-  this.emittedReadable = false;
-  this.readableListening = false;
-  this.resumeScheduled = false;
-
-  // has it been destroyed
-  this.destroyed = false;
-
-  // Crypto is kind of old and crusty.  Historically, its default string
-  // encoding is 'binary' so we have to make this configurable.
-  // Everything else in the universe uses 'utf8', though.
-  this.defaultEncoding = options.defaultEncoding || 'utf8';
-
-  // the number of writers that are awaiting a drain event in .pipe()s
-  this.awaitDrain = 0;
-
-  // if true, a maybeReadMore has been scheduled
-  this.readingMore = false;
-
-  this.decoder = null;
-  this.encoding = null;
-  if (options.encoding) {
-    if (!StringDecoder) StringDecoder = __webpack_require__(25).StringDecoder;
-    this.decoder = new StringDecoder(options.encoding);
-    this.encoding = options.encoding;
-  }
-}
-
-function Readable(options) {
-  Duplex = Duplex || __webpack_require__(7);
-
-  if (!(this instanceof Readable)) return new Readable(options);
-
-  this._readableState = new ReadableState(options, this);
-
-  // legacy
-  this.readable = true;
-
-  if (options) {
-    if (typeof options.read === 'function') this._read = options.read;
-
-    if (typeof options.destroy === 'function') this._destroy = options.destroy;
-  }
-
-  Stream.call(this);
-}
-
-Object.defineProperty(Readable.prototype, 'destroyed', {
-  get: function () {
-    if (this._readableState === undefined) {
-      return false;
-    }
-    return this._readableState.destroyed;
-  },
-  set: function (value) {
-    // we ignore the value if the stream
-    // has not been initialized yet
-    if (!this._readableState) {
-      return;
-    }
-
-    // backward compatibility, the user is explicitly
-    // managing destroyed
-    this._readableState.destroyed = value;
-  }
-});
-
-Readable.prototype.destroy = destroyImpl.destroy;
-Readable.prototype._undestroy = destroyImpl.undestroy;
-Readable.prototype._destroy = function (err, cb) {
-  this.push(null);
-  cb(err);
-};
-
-// Manually shove something into the read() buffer.
-// This returns true if the highWaterMark has not been hit yet,
-// similar to how Writable.write() returns true if you should
-// write() some more.
-Readable.prototype.push = function (chunk, encoding) {
-  var state = this._readableState;
-  var skipChunkCheck;
-
-  if (!state.objectMode) {
-    if (typeof chunk === 'string') {
-      encoding = encoding || state.defaultEncoding;
-      if (encoding !== state.encoding) {
-        chunk = Buffer.from(chunk, encoding);
-        encoding = '';
-      }
-      skipChunkCheck = true;
-    }
-  } else {
-    skipChunkCheck = true;
-  }
-
-  return readableAddChunk(this, chunk, encoding, false, skipChunkCheck);
-};
-
-// Unshift should *always* be something directly out of read()
-Readable.prototype.unshift = function (chunk) {
-  return readableAddChunk(this, chunk, null, true, false);
-};
-
-function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
-  var state = stream._readableState;
-  if (chunk === null) {
-    state.reading = false;
-    onEofChunk(stream, state);
-  } else {
-    var er;
-    if (!skipChunkCheck) er = chunkInvalid(state, chunk);
-    if (er) {
-      stream.emit('error', er);
-    } else if (state.objectMode || chunk && chunk.length > 0) {
-      if (typeof chunk !== 'string' && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer.prototype) {
-        chunk = _uint8ArrayToBuffer(chunk);
-      }
-
-      if (addToFront) {
-        if (state.endEmitted) stream.emit('error', new Error('stream.unshift() after end event'));else addChunk(stream, state, chunk, true);
-      } else if (state.ended) {
-        stream.emit('error', new Error('stream.push() after EOF'));
-      } else {
-        state.reading = false;
-        if (state.decoder && !encoding) {
-          chunk = state.decoder.write(chunk);
-          if (state.objectMode || chunk.length !== 0) addChunk(stream, state, chunk, false);else maybeReadMore(stream, state);
-        } else {
-          addChunk(stream, state, chunk, false);
-        }
-      }
-    } else if (!addToFront) {
-      state.reading = false;
-    }
-  }
-
-  return needMoreData(state);
-}
-
-function addChunk(stream, state, chunk, addToFront) {
-  if (state.flowing && state.length === 0 && !state.sync) {
-    stream.emit('data', chunk);
-    stream.read(0);
-  } else {
-    // update the buffer info.
-    state.length += state.objectMode ? 1 : chunk.length;
-    if (addToFront) state.buffer.unshift(chunk);else state.buffer.push(chunk);
-
-    if (state.needReadable) emitReadable(stream);
-  }
-  maybeReadMore(stream, state);
-}
-
-function chunkInvalid(state, chunk) {
-  var er;
-  if (!_isUint8Array(chunk) && typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
-    er = new TypeError('Invalid non-string/buffer chunk');
-  }
-  return er;
-}
-
-// if it's past the high water mark, we can push in some more.
-// Also, if we have no data yet, we can stand some
-// more bytes.  This is to work around cases where hwm=0,
-// such as the repl.  Also, if the push() triggered a
-// readable event, and the user called read(largeNumber) such that
-// needReadable was set, then we ought to push more, so that another
-// 'readable' event will be triggered.
-function needMoreData(state) {
-  return !state.ended && (state.needReadable || state.length < state.highWaterMark || state.length === 0);
-}
-
-Readable.prototype.isPaused = function () {
-  return this._readableState.flowing === false;
-};
-
-// backwards compatibility.
-Readable.prototype.setEncoding = function (enc) {
-  if (!StringDecoder) StringDecoder = __webpack_require__(25).StringDecoder;
-  this._readableState.decoder = new StringDecoder(enc);
-  this._readableState.encoding = enc;
-  return this;
-};
-
-// Don't raise the hwm > 8MB
-var MAX_HWM = 0x800000;
-function computeNewHighWaterMark(n) {
-  if (n >= MAX_HWM) {
-    n = MAX_HWM;
-  } else {
-    // Get the next highest power of 2 to prevent increasing hwm excessively in
-    // tiny amounts
-    n--;
-    n |= n >>> 1;
-    n |= n >>> 2;
-    n |= n >>> 4;
-    n |= n >>> 8;
-    n |= n >>> 16;
-    n++;
-  }
-  return n;
-}
-
-// This function is designed to be inlinable, so please take care when making
-// changes to the function body.
-function howMuchToRead(n, state) {
-  if (n <= 0 || state.length === 0 && state.ended) return 0;
-  if (state.objectMode) return 1;
-  if (n !== n) {
-    // Only flow one buffer at a time
-    if (state.flowing && state.length) return state.buffer.head.data.length;else return state.length;
-  }
-  // If we're asking for more than the current hwm, then raise the hwm.
-  if (n > state.highWaterMark) state.highWaterMark = computeNewHighWaterMark(n);
-  if (n <= state.length) return n;
-  // Don't have enough
-  if (!state.ended) {
-    state.needReadable = true;
-    return 0;
-  }
-  return state.length;
-}
-
-// you can override either this method, or the async _read(n) below.
-Readable.prototype.read = function (n) {
-  debug('read', n);
-  n = parseInt(n, 10);
-  var state = this._readableState;
-  var nOrig = n;
-
-  if (n !== 0) state.emittedReadable = false;
-
-  // if we're doing read(0) to trigger a readable event, but we
-  // already have a bunch of data in the buffer, then just trigger
-  // the 'readable' event and move on.
-  if (n === 0 && state.needReadable && (state.length >= state.highWaterMark || state.ended)) {
-    debug('read: emitReadable', state.length, state.ended);
-    if (state.length === 0 && state.ended) endReadable(this);else emitReadable(this);
-    return null;
-  }
-
-  n = howMuchToRead(n, state);
-
-  // if we've ended, and we're now clear, then finish it up.
-  if (n === 0 && state.ended) {
-    if (state.length === 0) endReadable(this);
-    return null;
-  }
-
-  // All the actual chunk generation logic needs to be
-  // *below* the call to _read.  The reason is that in certain
-  // synthetic stream cases, such as passthrough streams, _read
-  // may be a completely synchronous operation which may change
-  // the state of the read buffer, providing enough data when
-  // before there was *not* enough.
-  //
-  // So, the steps are:
-  // 1. Figure out what the state of things will be after we do
-  // a read from the buffer.
-  //
-  // 2. If that resulting state will trigger a _read, then call _read.
-  // Note that this may be asynchronous, or synchronous.  Yes, it is
-  // deeply ugly to write APIs this way, but that still doesn't mean
-  // that the Readable class should behave improperly, as streams are
-  // designed to be sync/async agnostic.
-  // Take note if the _read call is sync or async (ie, if the read call
-  // has returned yet), so that we know whether or not it's safe to emit
-  // 'readable' etc.
-  //
-  // 3. Actually pull the requested chunks out of the buffer and return.
-
-  // if we need a readable event, then we need to do some reading.
-  var doRead = state.needReadable;
-  debug('need readable', doRead);
-
-  // if we currently have less than the highWaterMark, then also read some
-  if (state.length === 0 || state.length - n < state.highWaterMark) {
-    doRead = true;
-    debug('length less than watermark', doRead);
-  }
-
-  // however, if we've ended, then there's no point, and if we're already
-  // reading, then it's unnecessary.
-  if (state.ended || state.reading) {
-    doRead = false;
-    debug('reading or ended', doRead);
-  } else if (doRead) {
-    debug('do read');
-    state.reading = true;
-    state.sync = true;
-    // if the length is currently zero, then we *need* a readable event.
-    if (state.length === 0) state.needReadable = true;
-    // call internal read method
-    this._read(state.highWaterMark);
-    state.sync = false;
-    // If _read pushed data synchronously, then `reading` will be false,
-    // and we need to re-evaluate how much data we can return to the user.
-    if (!state.reading) n = howMuchToRead(nOrig, state);
-  }
-
-  var ret;
-  if (n > 0) ret = fromList(n, state);else ret = null;
-
-  if (ret === null) {
-    state.needReadable = true;
-    n = 0;
-  } else {
-    state.length -= n;
-  }
-
-  if (state.length === 0) {
-    // If we have nothing in the buffer, then we want to know
-    // as soon as we *do* get something into the buffer.
-    if (!state.ended) state.needReadable = true;
-
-    // If we tried to read() past the EOF, then emit end on the next tick.
-    if (nOrig !== n && state.ended) endReadable(this);
-  }
-
-  if (ret !== null) this.emit('data', ret);
-
-  return ret;
-};
-
-function onEofChunk(stream, state) {
-  if (state.ended) return;
-  if (state.decoder) {
-    var chunk = state.decoder.end();
-    if (chunk && chunk.length) {
-      state.buffer.push(chunk);
-      state.length += state.objectMode ? 1 : chunk.length;
-    }
-  }
-  state.ended = true;
-
-  // emit 'readable' now to make sure it gets picked up.
-  emitReadable(stream);
-}
-
-// Don't emit readable right away in sync mode, because this can trigger
-// another read() call => stack overflow.  This way, it might trigger
-// a nextTick recursion warning, but that's not so bad.
-function emitReadable(stream) {
-  var state = stream._readableState;
-  state.needReadable = false;
-  if (!state.emittedReadable) {
-    debug('emitReadable', state.flowing);
-    state.emittedReadable = true;
-    if (state.sync) pna.nextTick(emitReadable_, stream);else emitReadable_(stream);
-  }
-}
-
-function emitReadable_(stream) {
-  debug('emit readable');
-  stream.emit('readable');
-  flow(stream);
-}
-
-// at this point, the user has presumably seen the 'readable' event,
-// and called read() to consume some data.  that may have triggered
-// in turn another _read(n) call, in which case reading = true if
-// it's in progress.
-// However, if we're not ended, or reading, and the length < hwm,
-// then go ahead and try to read some more preemptively.
-function maybeReadMore(stream, state) {
-  if (!state.readingMore) {
-    state.readingMore = true;
-    pna.nextTick(maybeReadMore_, stream, state);
-  }
-}
-
-function maybeReadMore_(stream, state) {
-  var len = state.length;
-  while (!state.reading && !state.flowing && !state.ended && state.length < state.highWaterMark) {
-    debug('maybeReadMore read 0');
-    stream.read(0);
-    if (len === state.length)
-      // didn't get any data, stop spinning.
-      break;else len = state.length;
-  }
-  state.readingMore = false;
-}
-
-// abstract method.  to be overridden in specific implementation classes.
-// call cb(er, data) where data is <= n in length.
-// for virtual (non-string, non-buffer) streams, "length" is somewhat
-// arbitrary, and perhaps not very meaningful.
-Readable.prototype._read = function (n) {
-  this.emit('error', new Error('_read() is not implemented'));
-};
-
-Readable.prototype.pipe = function (dest, pipeOpts) {
-  var src = this;
-  var state = this._readableState;
-
-  switch (state.pipesCount) {
-    case 0:
-      state.pipes = dest;
-      break;
-    case 1:
-      state.pipes = [state.pipes, dest];
-      break;
-    default:
-      state.pipes.push(dest);
-      break;
-  }
-  state.pipesCount += 1;
-  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts);
-
-  var doEnd = (!pipeOpts || pipeOpts.end !== false) && dest !== process.stdout && dest !== process.stderr;
-
-  var endFn = doEnd ? onend : unpipe;
-  if (state.endEmitted) pna.nextTick(endFn);else src.once('end', endFn);
-
-  dest.on('unpipe', onunpipe);
-  function onunpipe(readable, unpipeInfo) {
-    debug('onunpipe');
-    if (readable === src) {
-      if (unpipeInfo && unpipeInfo.hasUnpiped === false) {
-        unpipeInfo.hasUnpiped = true;
-        cleanup();
-      }
-    }
-  }
-
-  function onend() {
-    debug('onend');
-    dest.end();
-  }
-
-  // when the dest drains, it reduces the awaitDrain counter
-  // on the source.  This would be more elegant with a .once()
-  // handler in flow(), but adding and removing repeatedly is
-  // too slow.
-  var ondrain = pipeOnDrain(src);
-  dest.on('drain', ondrain);
-
-  var cleanedUp = false;
-  function cleanup() {
-    debug('cleanup');
-    // cleanup event handlers once the pipe is broken
-    dest.removeListener('close', onclose);
-    dest.removeListener('finish', onfinish);
-    dest.removeListener('drain', ondrain);
-    dest.removeListener('error', onerror);
-    dest.removeListener('unpipe', onunpipe);
-    src.removeListener('end', onend);
-    src.removeListener('end', unpipe);
-    src.removeListener('data', ondata);
-
-    cleanedUp = true;
-
-    // if the reader is waiting for a drain event from this
-    // specific writer, then it would cause it to never start
-    // flowing again.
-    // So, if this is awaiting a drain, then we just call it now.
-    // If we don't know, then assume that we are waiting for one.
-    if (state.awaitDrain && (!dest._writableState || dest._writableState.needDrain)) ondrain();
-  }
-
-  // If the user pushes more data while we're writing to dest then we'll end up
-  // in ondata again. However, we only want to increase awaitDrain once because
-  // dest will only emit one 'drain' event for the multiple writes.
-  // => Introduce a guard on increasing awaitDrain.
-  var increasedAwaitDrain = false;
-  src.on('data', ondata);
-  function ondata(chunk) {
-    debug('ondata');
-    increasedAwaitDrain = false;
-    var ret = dest.write(chunk);
-    if (false === ret && !increasedAwaitDrain) {
-      // If the user unpiped during `dest.write()`, it is possible
-      // to get stuck in a permanently paused state if that write
-      // also returned false.
-      // => Check whether `dest` is still a piping destination.
-      if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
-        debug('false write response, pause', src._readableState.awaitDrain);
-        src._readableState.awaitDrain++;
-        increasedAwaitDrain = true;
-      }
-      src.pause();
-    }
-  }
-
-  // if the dest has an error, then stop piping into it.
-  // however, don't suppress the throwing behavior for this.
-  function onerror(er) {
-    debug('onerror', er);
-    unpipe();
-    dest.removeListener('error', onerror);
-    if (EElistenerCount(dest, 'error') === 0) dest.emit('error', er);
-  }
-
-  // Make sure our error handler is attached before userland ones.
-  prependListener(dest, 'error', onerror);
-
-  // Both close and finish should trigger unpipe, but only once.
-  function onclose() {
-    dest.removeListener('finish', onfinish);
-    unpipe();
-  }
-  dest.once('close', onclose);
-  function onfinish() {
-    debug('onfinish');
-    dest.removeListener('close', onclose);
-    unpipe();
-  }
-  dest.once('finish', onfinish);
-
-  function unpipe() {
-    debug('unpipe');
-    src.unpipe(dest);
-  }
-
-  // tell the dest that it's being piped to
-  dest.emit('pipe', src);
-
-  // start the flow if it hasn't been started already.
-  if (!state.flowing) {
-    debug('pipe resume');
-    src.resume();
-  }
-
-  return dest;
-};
-
-function pipeOnDrain(src) {
-  return function () {
-    var state = src._readableState;
-    debug('pipeOnDrain', state.awaitDrain);
-    if (state.awaitDrain) state.awaitDrain--;
-    if (state.awaitDrain === 0 && EElistenerCount(src, 'data')) {
-      state.flowing = true;
-      flow(src);
-    }
-  };
-}
-
-Readable.prototype.unpipe = function (dest) {
-  var state = this._readableState;
-  var unpipeInfo = { hasUnpiped: false };
-
-  // if we're not piping anywhere, then do nothing.
-  if (state.pipesCount === 0) return this;
-
-  // just one destination.  most common case.
-  if (state.pipesCount === 1) {
-    // passed in one, but it's not the right one.
-    if (dest && dest !== state.pipes) return this;
-
-    if (!dest) dest = state.pipes;
-
-    // got a match.
-    state.pipes = null;
-    state.pipesCount = 0;
-    state.flowing = false;
-    if (dest) dest.emit('unpipe', this, unpipeInfo);
-    return this;
-  }
-
-  // slow case. multiple pipe destinations.
-
-  if (!dest) {
-    // remove all.
-    var dests = state.pipes;
-    var len = state.pipesCount;
-    state.pipes = null;
-    state.pipesCount = 0;
-    state.flowing = false;
-
-    for (var i = 0; i < len; i++) {
-      dests[i].emit('unpipe', this, unpipeInfo);
-    }return this;
-  }
-
-  // try to find the right one.
-  var index = indexOf(state.pipes, dest);
-  if (index === -1) return this;
-
-  state.pipes.splice(index, 1);
-  state.pipesCount -= 1;
-  if (state.pipesCount === 1) state.pipes = state.pipes[0];
-
-  dest.emit('unpipe', this, unpipeInfo);
-
-  return this;
-};
-
-// set up data events if they are asked for
-// Ensure readable listeners eventually get something
-Readable.prototype.on = function (ev, fn) {
-  var res = Stream.prototype.on.call(this, ev, fn);
-
-  if (ev === 'data') {
-    // Start flowing on next tick if stream isn't explicitly paused
-    if (this._readableState.flowing !== false) this.resume();
-  } else if (ev === 'readable') {
-    var state = this._readableState;
-    if (!state.endEmitted && !state.readableListening) {
-      state.readableListening = state.needReadable = true;
-      state.emittedReadable = false;
-      if (!state.reading) {
-        pna.nextTick(nReadingNextTick, this);
-      } else if (state.length) {
-        emitReadable(this);
-      }
-    }
-  }
-
-  return res;
-};
-Readable.prototype.addListener = Readable.prototype.on;
-
-function nReadingNextTick(self) {
-  debug('readable nexttick read 0');
-  self.read(0);
-}
-
-// pause() and resume() are remnants of the legacy readable stream API
-// If the user uses them, then switch into old mode.
-Readable.prototype.resume = function () {
-  var state = this._readableState;
-  if (!state.flowing) {
-    debug('resume');
-    state.flowing = true;
-    resume(this, state);
-  }
-  return this;
-};
-
-function resume(stream, state) {
-  if (!state.resumeScheduled) {
-    state.resumeScheduled = true;
-    pna.nextTick(resume_, stream, state);
-  }
-}
-
-function resume_(stream, state) {
-  if (!state.reading) {
-    debug('resume read 0');
-    stream.read(0);
-  }
-
-  state.resumeScheduled = false;
-  state.awaitDrain = 0;
-  stream.emit('resume');
-  flow(stream);
-  if (state.flowing && !state.reading) stream.read(0);
-}
-
-Readable.prototype.pause = function () {
-  debug('call pause flowing=%j', this._readableState.flowing);
-  if (false !== this._readableState.flowing) {
-    debug('pause');
-    this._readableState.flowing = false;
-    this.emit('pause');
-  }
-  return this;
-};
-
-function flow(stream) {
-  var state = stream._readableState;
-  debug('flow', state.flowing);
-  while (state.flowing && stream.read() !== null) {}
-}
-
-// wrap an old-style stream as the async data source.
-// This is *not* part of the readable stream interface.
-// It is an ugly unfortunate mess of history.
-Readable.prototype.wrap = function (stream) {
-  var _this = this;
-
-  var state = this._readableState;
-  var paused = false;
-
-  stream.on('end', function () {
-    debug('wrapped end');
-    if (state.decoder && !state.ended) {
-      var chunk = state.decoder.end();
-      if (chunk && chunk.length) _this.push(chunk);
-    }
-
-    _this.push(null);
-  });
-
-  stream.on('data', function (chunk) {
-    debug('wrapped data');
-    if (state.decoder) chunk = state.decoder.write(chunk);
-
-    // don't skip over falsy values in objectMode
-    if (state.objectMode && (chunk === null || chunk === undefined)) return;else if (!state.objectMode && (!chunk || !chunk.length)) return;
-
-    var ret = _this.push(chunk);
-    if (!ret) {
-      paused = true;
-      stream.pause();
-    }
-  });
-
-  // proxy all the other methods.
-  // important when wrapping filters and duplexes.
-  for (var i in stream) {
-    if (this[i] === undefined && typeof stream[i] === 'function') {
-      this[i] = function (method) {
-        return function () {
-          return stream[method].apply(stream, arguments);
-        };
-      }(i);
-    }
-  }
-
-  // proxy certain important events.
-  for (var n = 0; n < kProxyEvents.length; n++) {
-    stream.on(kProxyEvents[n], this.emit.bind(this, kProxyEvents[n]));
-  }
-
-  // when we try to consume some more bytes, simply unpause the
-  // underlying stream.
-  this._read = function (n) {
-    debug('wrapped _read', n);
-    if (paused) {
-      paused = false;
-      stream.resume();
-    }
-  };
-
-  return this;
-};
-
-Object.defineProperty(Readable.prototype, 'readableHighWaterMark', {
-  // making it explicit this property is not enumerable
-  // because otherwise some prototype manipulation in
-  // userland will fail
-  enumerable: false,
-  get: function () {
-    return this._readableState.highWaterMark;
-  }
-});
-
-// exposed for testing purposes only.
-Readable._fromList = fromList;
-
-// Pluck off n bytes from an array of buffers.
-// Length is the combined lengths of all the buffers in the list.
-// This function is designed to be inlinable, so please take care when making
-// changes to the function body.
-function fromList(n, state) {
-  // nothing buffered
-  if (state.length === 0) return null;
-
-  var ret;
-  if (state.objectMode) ret = state.buffer.shift();else if (!n || n >= state.length) {
-    // read it all, truncate the list
-    if (state.decoder) ret = state.buffer.join('');else if (state.buffer.length === 1) ret = state.buffer.head.data;else ret = state.buffer.concat(state.length);
-    state.buffer.clear();
-  } else {
-    // read part of list
-    ret = fromListPartial(n, state.buffer, state.decoder);
-  }
-
-  return ret;
-}
-
-// Extracts only enough buffered data to satisfy the amount requested.
-// This function is designed to be inlinable, so please take care when making
-// changes to the function body.
-function fromListPartial(n, list, hasStrings) {
-  var ret;
-  if (n < list.head.data.length) {
-    // slice is the same for buffers and strings
-    ret = list.head.data.slice(0, n);
-    list.head.data = list.head.data.slice(n);
-  } else if (n === list.head.data.length) {
-    // first chunk is a perfect match
-    ret = list.shift();
-  } else {
-    // result spans more than one buffer
-    ret = hasStrings ? copyFromBufferString(n, list) : copyFromBuffer(n, list);
-  }
-  return ret;
-}
-
-// Copies a specified amount of characters from the list of buffered data
-// chunks.
-// This function is designed to be inlinable, so please take care when making
-// changes to the function body.
-function copyFromBufferString(n, list) {
-  var p = list.head;
-  var c = 1;
-  var ret = p.data;
-  n -= ret.length;
-  while (p = p.next) {
-    var str = p.data;
-    var nb = n > str.length ? str.length : n;
-    if (nb === str.length) ret += str;else ret += str.slice(0, n);
-    n -= nb;
-    if (n === 0) {
-      if (nb === str.length) {
-        ++c;
-        if (p.next) list.head = p.next;else list.head = list.tail = null;
-      } else {
-        list.head = p;
-        p.data = str.slice(nb);
-      }
-      break;
-    }
-    ++c;
-  }
-  list.length -= c;
-  return ret;
-}
-
-// Copies a specified amount of bytes from the list of buffered data chunks.
-// This function is designed to be inlinable, so please take care when making
-// changes to the function body.
-function copyFromBuffer(n, list) {
-  var ret = Buffer.allocUnsafe(n);
-  var p = list.head;
-  var c = 1;
-  p.data.copy(ret);
-  n -= p.data.length;
-  while (p = p.next) {
-    var buf = p.data;
-    var nb = n > buf.length ? buf.length : n;
-    buf.copy(ret, ret.length - n, 0, nb);
-    n -= nb;
-    if (n === 0) {
-      if (nb === buf.length) {
-        ++c;
-        if (p.next) list.head = p.next;else list.head = list.tail = null;
-      } else {
-        list.head = p;
-        p.data = buf.slice(nb);
-      }
-      break;
-    }
-    ++c;
-  }
-  list.length -= c;
-  return ret;
-}
-
-function endReadable(stream) {
-  var state = stream._readableState;
-
-  // If we get here before consuming all the bytes, then that is a
-  // bug in node.  Should never happen.
-  if (state.length > 0) throw new Error('"endReadable()" called on non-empty stream');
-
-  if (!state.endEmitted) {
-    state.ended = true;
-    pna.nextTick(endReadableNT, state, stream);
-  }
-}
-
-function endReadableNT(state, stream) {
-  // Check that we didn't get one last unshift.
-  if (!state.endEmitted && state.length === 0) {
-    state.endEmitted = true;
-    stream.readable = false;
-    stream.emit('end');
-  }
-}
-
-function indexOf(xs, x) {
-  for (var i = 0, l = xs.length; i < l; i++) {
-    if (xs[i] === x) return i;
-  }
-  return -1;
-}
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5), __webpack_require__(3)))
-
-/***/ }),
-/* 23 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(11).EventEmitter;
-
-
-/***/ }),
-/* 24 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/*<replacement>*/
-
-var pna = __webpack_require__(12);
-/*</replacement>*/
-
-// undocumented cb() API, needed for core, not for public API
-function destroy(err, cb) {
-  var _this = this;
-
-  var readableDestroyed = this._readableState && this._readableState.destroyed;
-  var writableDestroyed = this._writableState && this._writableState.destroyed;
-
-  if (readableDestroyed || writableDestroyed) {
-    if (cb) {
-      cb(err);
-    } else if (err && (!this._writableState || !this._writableState.errorEmitted)) {
-      pna.nextTick(emitErrorNT, this, err);
-    }
-    return this;
-  }
-
-  // we set destroyed to true before firing error callbacks in order
-  // to make it re-entrance safe in case destroy() is called within callbacks
-
-  if (this._readableState) {
-    this._readableState.destroyed = true;
-  }
-
-  // if this is a duplex stream mark the writable part as destroyed as well
-  if (this._writableState) {
-    this._writableState.destroyed = true;
-  }
-
-  this._destroy(err || null, function (err) {
-    if (!cb && err) {
-      pna.nextTick(emitErrorNT, _this, err);
-      if (_this._writableState) {
-        _this._writableState.errorEmitted = true;
-      }
-    } else if (cb) {
-      cb(err);
-    }
-  });
-
-  return this;
-}
-
-function undestroy() {
-  if (this._readableState) {
-    this._readableState.destroyed = false;
-    this._readableState.reading = false;
-    this._readableState.ended = false;
-    this._readableState.endEmitted = false;
-  }
-
-  if (this._writableState) {
-    this._writableState.destroyed = false;
-    this._writableState.ended = false;
-    this._writableState.ending = false;
-    this._writableState.finished = false;
-    this._writableState.errorEmitted = false;
-  }
-}
-
-function emitErrorNT(self, err) {
-  self.emit('error', err);
-}
-
-module.exports = {
-  destroy: destroy,
-  undestroy: undestroy
-};
-
-/***/ }),
-/* 25 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-
-/*<replacement>*/
-
-var Buffer = __webpack_require__(13).Buffer;
-/*</replacement>*/
-
-var isEncoding = Buffer.isEncoding || function (encoding) {
-  encoding = '' + encoding;
-  switch (encoding && encoding.toLowerCase()) {
-    case 'hex':case 'utf8':case 'utf-8':case 'ascii':case 'binary':case 'base64':case 'ucs2':case 'ucs-2':case 'utf16le':case 'utf-16le':case 'raw':
-      return true;
-    default:
-      return false;
-  }
-};
-
-function _normalizeEncoding(enc) {
-  if (!enc) return 'utf8';
-  var retried;
-  while (true) {
-    switch (enc) {
-      case 'utf8':
-      case 'utf-8':
-        return 'utf8';
-      case 'ucs2':
-      case 'ucs-2':
-      case 'utf16le':
-      case 'utf-16le':
-        return 'utf16le';
-      case 'latin1':
-      case 'binary':
-        return 'latin1';
-      case 'base64':
-      case 'ascii':
-      case 'hex':
-        return enc;
-      default:
-        if (retried) return; // undefined
-        enc = ('' + enc).toLowerCase();
-        retried = true;
-    }
-  }
-};
-
-// Do not cache `Buffer.isEncoding` when checking encoding names as some
-// modules monkey-patch it to support additional encodings
-function normalizeEncoding(enc) {
-  var nenc = _normalizeEncoding(enc);
-  if (typeof nenc !== 'string' && (Buffer.isEncoding === isEncoding || !isEncoding(enc))) throw new Error('Unknown encoding: ' + enc);
-  return nenc || enc;
-}
-
-// StringDecoder provides an interface for efficiently splitting a series of
-// buffers into a series of JS strings without breaking apart multi-byte
-// characters.
-exports.StringDecoder = StringDecoder;
-function StringDecoder(encoding) {
-  this.encoding = normalizeEncoding(encoding);
-  var nb;
-  switch (this.encoding) {
-    case 'utf16le':
-      this.text = utf16Text;
-      this.end = utf16End;
-      nb = 4;
-      break;
-    case 'utf8':
-      this.fillLast = utf8FillLast;
-      nb = 4;
-      break;
-    case 'base64':
-      this.text = base64Text;
-      this.end = base64End;
-      nb = 3;
-      break;
-    default:
-      this.write = simpleWrite;
-      this.end = simpleEnd;
-      return;
-  }
-  this.lastNeed = 0;
-  this.lastTotal = 0;
-  this.lastChar = Buffer.allocUnsafe(nb);
-}
-
-StringDecoder.prototype.write = function (buf) {
-  if (buf.length === 0) return '';
-  var r;
-  var i;
-  if (this.lastNeed) {
-    r = this.fillLast(buf);
-    if (r === undefined) return '';
-    i = this.lastNeed;
-    this.lastNeed = 0;
-  } else {
-    i = 0;
-  }
-  if (i < buf.length) return r ? r + this.text(buf, i) : this.text(buf, i);
-  return r || '';
-};
-
-StringDecoder.prototype.end = utf8End;
-
-// Returns only complete characters in a Buffer
-StringDecoder.prototype.text = utf8Text;
-
-// Attempts to complete a partial non-UTF-8 character using bytes from a Buffer
-StringDecoder.prototype.fillLast = function (buf) {
-  if (this.lastNeed <= buf.length) {
-    buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, this.lastNeed);
-    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
-  }
-  buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, buf.length);
-  this.lastNeed -= buf.length;
-};
-
-// Checks the type of a UTF-8 byte, whether it's ASCII, a leading byte, or a
-// continuation byte. If an invalid byte is detected, -2 is returned.
-function utf8CheckByte(byte) {
-  if (byte <= 0x7F) return 0;else if (byte >> 5 === 0x06) return 2;else if (byte >> 4 === 0x0E) return 3;else if (byte >> 3 === 0x1E) return 4;
-  return byte >> 6 === 0x02 ? -1 : -2;
-}
-
-// Checks at most 3 bytes at the end of a Buffer in order to detect an
-// incomplete multi-byte UTF-8 character. The total number of bytes (2, 3, or 4)
-// needed to complete the UTF-8 character (if applicable) are returned.
-function utf8CheckIncomplete(self, buf, i) {
-  var j = buf.length - 1;
-  if (j < i) return 0;
-  var nb = utf8CheckByte(buf[j]);
-  if (nb >= 0) {
-    if (nb > 0) self.lastNeed = nb - 1;
-    return nb;
-  }
-  if (--j < i || nb === -2) return 0;
-  nb = utf8CheckByte(buf[j]);
-  if (nb >= 0) {
-    if (nb > 0) self.lastNeed = nb - 2;
-    return nb;
-  }
-  if (--j < i || nb === -2) return 0;
-  nb = utf8CheckByte(buf[j]);
-  if (nb >= 0) {
-    if (nb > 0) {
-      if (nb === 2) nb = 0;else self.lastNeed = nb - 3;
-    }
-    return nb;
-  }
-  return 0;
-}
-
-// Validates as many continuation bytes for a multi-byte UTF-8 character as
-// needed or are available. If we see a non-continuation byte where we expect
-// one, we "replace" the validated continuation bytes we've seen so far with
-// a single UTF-8 replacement character ('\ufffd'), to match v8's UTF-8 decoding
-// behavior. The continuation byte check is included three times in the case
-// where all of the continuation bytes for a character exist in the same buffer.
-// It is also done this way as a slight performance increase instead of using a
-// loop.
-function utf8CheckExtraBytes(self, buf, p) {
-  if ((buf[0] & 0xC0) !== 0x80) {
-    self.lastNeed = 0;
-    return '\ufffd';
-  }
-  if (self.lastNeed > 1 && buf.length > 1) {
-    if ((buf[1] & 0xC0) !== 0x80) {
-      self.lastNeed = 1;
-      return '\ufffd';
-    }
-    if (self.lastNeed > 2 && buf.length > 2) {
-      if ((buf[2] & 0xC0) !== 0x80) {
-        self.lastNeed = 2;
-        return '\ufffd';
-      }
-    }
-  }
-}
-
-// Attempts to complete a multi-byte UTF-8 character using bytes from a Buffer.
-function utf8FillLast(buf) {
-  var p = this.lastTotal - this.lastNeed;
-  var r = utf8CheckExtraBytes(this, buf, p);
-  if (r !== undefined) return r;
-  if (this.lastNeed <= buf.length) {
-    buf.copy(this.lastChar, p, 0, this.lastNeed);
-    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
-  }
-  buf.copy(this.lastChar, p, 0, buf.length);
-  this.lastNeed -= buf.length;
-}
-
-// Returns all complete UTF-8 characters in a Buffer. If the Buffer ended on a
-// partial character, the character's bytes are buffered until the required
-// number of bytes are available.
-function utf8Text(buf, i) {
-  var total = utf8CheckIncomplete(this, buf, i);
-  if (!this.lastNeed) return buf.toString('utf8', i);
-  this.lastTotal = total;
-  var end = buf.length - (total - this.lastNeed);
-  buf.copy(this.lastChar, 0, end);
-  return buf.toString('utf8', i, end);
-}
-
-// For UTF-8, a replacement character is added when ending on a partial
-// character.
-function utf8End(buf) {
-  var r = buf && buf.length ? this.write(buf) : '';
-  if (this.lastNeed) return r + '\ufffd';
-  return r;
-}
-
-// UTF-16LE typically needs two bytes per character, but even if we have an even
-// number of bytes available, we need to check if we end on a leading/high
-// surrogate. In that case, we need to wait for the next two bytes in order to
-// decode the last character properly.
-function utf16Text(buf, i) {
-  if ((buf.length - i) % 2 === 0) {
-    var r = buf.toString('utf16le', i);
-    if (r) {
-      var c = r.charCodeAt(r.length - 1);
-      if (c >= 0xD800 && c <= 0xDBFF) {
-        this.lastNeed = 2;
-        this.lastTotal = 4;
-        this.lastChar[0] = buf[buf.length - 2];
-        this.lastChar[1] = buf[buf.length - 1];
-        return r.slice(0, -1);
-      }
-    }
-    return r;
-  }
-  this.lastNeed = 1;
-  this.lastTotal = 2;
-  this.lastChar[0] = buf[buf.length - 1];
-  return buf.toString('utf16le', i, buf.length - 1);
-}
-
-// For UTF-16LE we do not explicitly append special replacement characters if we
-// end on a partial character, we simply let v8 handle that.
-function utf16End(buf) {
-  var r = buf && buf.length ? this.write(buf) : '';
-  if (this.lastNeed) {
-    var end = this.lastTotal - this.lastNeed;
-    return r + this.lastChar.toString('utf16le', 0, end);
-  }
-  return r;
-}
-
-function base64Text(buf, i) {
-  var n = (buf.length - i) % 3;
-  if (n === 0) return buf.toString('base64', i);
-  this.lastNeed = 3 - n;
-  this.lastTotal = 3;
-  if (n === 1) {
-    this.lastChar[0] = buf[buf.length - 1];
-  } else {
-    this.lastChar[0] = buf[buf.length - 2];
-    this.lastChar[1] = buf[buf.length - 1];
-  }
-  return buf.toString('base64', i, buf.length - n);
-}
-
-function base64End(buf) {
-  var r = buf && buf.length ? this.write(buf) : '';
-  if (this.lastNeed) return r + this.lastChar.toString('base64', 0, 3 - this.lastNeed);
-  return r;
-}
-
-// Pass bytes on through for single-byte encodings (e.g. ascii, latin1, hex)
-function simpleWrite(buf) {
-  return buf.toString(this.encoding);
-}
-
-function simpleEnd(buf) {
-  return buf && buf.length ? this.write(buf) : '';
-}
-
-/***/ }),
-/* 26 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// a transform stream is a readable/writable stream where you do
-// something with the data.  Sometimes it's called a "filter",
-// but that's not a great name for it, since that implies a thing where
-// some bits pass through, and others are simply ignored.  (That would
-// be a valid example of a transform, of course.)
-//
-// While the output is causally related to the input, it's not a
-// necessarily symmetric or synchronous transformation.  For example,
-// a zlib stream might take multiple plain-text writes(), and then
-// emit a single compressed chunk some time in the future.
-//
-// Here's how this works:
-//
-// The Transform stream has all the aspects of the readable and writable
-// stream classes.  When you write(chunk), that calls _write(chunk,cb)
-// internally, and returns false if there's a lot of pending writes
-// buffered up.  When you call read(), that calls _read(n) until
-// there's enough pending readable data buffered up.
-//
-// In a transform stream, the written data is placed in a buffer.  When
-// _read(n) is called, it transforms the queued up data, calling the
-// buffered _write cb's as it consumes chunks.  If consuming a single
-// written chunk would result in multiple output chunks, then the first
-// outputted bit calls the readcb, and subsequent chunks just go into
-// the read buffer, and will cause it to emit 'readable' if necessary.
-//
-// This way, back-pressure is actually determined by the reading side,
-// since _read has to be called to start processing a new chunk.  However,
-// a pathological inflate type of transform can cause excessive buffering
-// here.  For example, imagine a stream where every byte of input is
-// interpreted as an integer from 0-255, and then results in that many
-// bytes of output.  Writing the 4 bytes {ff,ff,ff,ff} would result in
-// 1kb of data being output.  In this case, you could write a very small
-// amount of input, and end up with a very large amount of output.  In
-// such a pathological inflating mechanism, there'd be no way to tell
-// the system to stop doing the transform.  A single 4MB write could
-// cause the system to run out of memory.
-//
-// However, even in such a pathological case, only a single written chunk
-// would be consumed, and then the rest would wait (un-transformed) until
-// the results of the previous transformed chunk were consumed.
-
-
-
-module.exports = Transform;
-
-var Duplex = __webpack_require__(7);
-
-/*<replacement>*/
-var util = __webpack_require__(10);
-util.inherits = __webpack_require__(6);
-/*</replacement>*/
-
-util.inherits(Transform, Duplex);
-
-function afterTransform(er, data) {
-  var ts = this._transformState;
-  ts.transforming = false;
-
-  var cb = ts.writecb;
-
-  if (!cb) {
-    return this.emit('error', new Error('write callback called multiple times'));
-  }
-
-  ts.writechunk = null;
-  ts.writecb = null;
-
-  if (data != null) // single equals check for both `null` and `undefined`
-    this.push(data);
-
-  cb(er);
-
-  var rs = this._readableState;
-  rs.reading = false;
-  if (rs.needReadable || rs.length < rs.highWaterMark) {
-    this._read(rs.highWaterMark);
-  }
-}
-
-function Transform(options) {
-  if (!(this instanceof Transform)) return new Transform(options);
-
-  Duplex.call(this, options);
-
-  this._transformState = {
-    afterTransform: afterTransform.bind(this),
-    needTransform: false,
-    transforming: false,
-    writecb: null,
-    writechunk: null,
-    writeencoding: null
-  };
-
-  // start out asking for a readable event once data is transformed.
-  this._readableState.needReadable = true;
-
-  // we have implemented the _read method, and done the other things
-  // that Readable wants before the first _read call, so unset the
-  // sync guard flag.
-  this._readableState.sync = false;
-
-  if (options) {
-    if (typeof options.transform === 'function') this._transform = options.transform;
-
-    if (typeof options.flush === 'function') this._flush = options.flush;
-  }
-
-  // When the writable side finishes, then flush out anything remaining.
-  this.on('prefinish', prefinish);
-}
-
-function prefinish() {
-  var _this = this;
-
-  if (typeof this._flush === 'function') {
-    this._flush(function (er, data) {
-      done(_this, er, data);
-    });
-  } else {
-    done(this, null, null);
-  }
-}
-
-Transform.prototype.push = function (chunk, encoding) {
-  this._transformState.needTransform = false;
-  return Duplex.prototype.push.call(this, chunk, encoding);
-};
-
-// This is the part where you do stuff!
-// override this function in implementation classes.
-// 'chunk' is an input chunk.
-//
-// Call `push(newChunk)` to pass along transformed output
-// to the readable side.  You may call 'push' zero or more times.
-//
-// Call `cb(err)` when you are done with this chunk.  If you pass
-// an error, then that'll put the hurt on the whole operation.  If you
-// never call cb(), then you'll never get another chunk.
-Transform.prototype._transform = function (chunk, encoding, cb) {
-  throw new Error('_transform() is not implemented');
-};
-
-Transform.prototype._write = function (chunk, encoding, cb) {
-  var ts = this._transformState;
-  ts.writecb = cb;
-  ts.writechunk = chunk;
-  ts.writeencoding = encoding;
-  if (!ts.transforming) {
-    var rs = this._readableState;
-    if (ts.needTransform || rs.needReadable || rs.length < rs.highWaterMark) this._read(rs.highWaterMark);
-  }
-};
-
-// Doesn't matter what the args are here.
-// _transform does all the work.
-// That we got here means that the readable side wants more data.
-Transform.prototype._read = function (n) {
-  var ts = this._transformState;
-
-  if (ts.writechunk !== null && ts.writecb && !ts.transforming) {
-    ts.transforming = true;
-    this._transform(ts.writechunk, ts.writeencoding, ts.afterTransform);
-  } else {
-    // mark that we need a transform, so that any data that comes in
-    // will get processed, now that we've asked for it.
-    ts.needTransform = true;
-  }
-};
-
-Transform.prototype._destroy = function (err, cb) {
-  var _this2 = this;
-
-  Duplex.prototype._destroy.call(this, err, function (err2) {
-    cb(err2);
-    _this2.emit('close');
-  });
-};
-
-function done(stream, er, data) {
-  if (er) return stream.emit('error', er);
-
-  if (data != null) // single equals check for both `null` and `undefined`
-    stream.push(data);
-
-  // if there's nothing in the write buffer, then that means
-  // that nothing more will ever be provided
-  if (stream._writableState.length) throw new Error('Calling transform done when ws.length != 0');
-
-  if (stream._transformState.transforming) throw new Error('Calling transform done when still transforming');
-
-  return stream.push(null);
-}
-
-/***/ }),
-/* 27 */
-/***/ (function(module, exports) {
-
-module.exports = bindActor
-function bindActor () {
-  var args = 
-        Array.prototype.slice.call
-        (arguments) // jswtf.
-    , obj = null
-    , fn
-  if (typeof args[0] === "object") {
-    obj = args.shift()
-    fn = args.shift()
-    if (typeof fn === "string")
-      fn = obj[ fn ]
-  } else fn = args.shift()
-  return function (cb) {
-    fn.apply(obj, args.concat(cb)) }
-}
-
-
-/***/ }),
-/* 28 */
+/* 9 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -7423,18 +3522,18 @@ var TimerRegistry = function () {
 
     return TimerRegistry;
 }();
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(14)))
 
 /***/ }),
-/* 29 */
+/* 10 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(global, Buffer) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return socketFactory; });
-/* harmony import */ var _binary_protocol_src_message_parser__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(14);
-/* harmony import */ var _binary_protocol_src_message_builder__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(30);
+/* harmony import */ var _binary_protocol_src_message_parser__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
+/* harmony import */ var _binary_protocol_src_message_builder__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(11);
 /* harmony import */ var _binary_protocol_src_message_constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(0);
-/* harmony import */ var ws__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(31);
+/* harmony import */ var ws__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(12);
 /* harmony import */ var ws__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(ws__WEBPACK_IMPORTED_MODULE_3__);
 
 
@@ -7468,18 +3567,18 @@ var socketFactory = function socketFactory(url, options) {
     };
     return socket;
 };
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5), __webpack_require__(8).Buffer))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7), __webpack_require__(6).Buffer))
 
 /***/ }),
-/* 30 */
+/* 11 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Buffer) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return getMessage; });
 /* harmony import */ var _message_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(0);
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
 /* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2);
-/* harmony import */ var _message_validator__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(9);
+/* harmony import */ var _message_validator__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
 /**
  * Functions for handling (de)serialization of the deepstream binary realtime protocol.
  *
@@ -7603,23 +3702,213 @@ function buildRaw(fin, topic, action, meta, payload) {
     }
     return messageBuffer;
 }
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8).Buffer))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6).Buffer))
 
 /***/ }),
-/* 31 */
+/* 12 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 32 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(66);
+module.exports = __webpack_require__(24);
 
 
 /***/ }),
-/* 33 */
+/* 14 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7777,7 +4066,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 34 */
+/* 16 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -7867,16 +4156,27 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 35 */
+/* 17 */
+/***/ (function(module, exports) {
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+
+/***/ }),
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(module, global) {var __WEBPACK_AMD_DEFINE_RESULT__;/*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
 
 	/** Detect free variables */
-	var freeExports = typeof exports == 'object' && exports &&
+	var freeExports =  true && exports &&
 		!exports.nodeType && exports;
-	var freeModule = typeof module == 'object' && module &&
+	var freeModule =  true && module &&
 		!module.nodeType && module;
 	var freeGlobal = typeof global == 'object' && global;
 	if (
@@ -8390,10 +4690,10 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 }(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(36)(module), __webpack_require__(5)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(19)(module), __webpack_require__(7)))
 
 /***/ }),
-/* 36 */
+/* 19 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -8421,7 +4721,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 37 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8444,18 +4744,18 @@ module.exports = {
 
 
 /***/ }),
-/* 38 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-exports.decode = exports.parse = __webpack_require__(39);
-exports.encode = exports.stringify = __webpack_require__(40);
+exports.decode = exports.parse = __webpack_require__(22);
+exports.encode = exports.stringify = __webpack_require__(23);
 
 
 /***/ }),
-/* 39 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8546,7 +4846,7 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 40 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8638,2831 +4938,7 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /***/ }),
-/* 41 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {// Generated by CoffeeScript 1.10.0
-(function() {
-  var JSONStorage, KEY_FOR_EMPTY_STRING, LocalStorage, MetaKey, QUOTA_EXCEEDED_ERR, StorageEvent, _emptyDirectory, _escapeKey, _rm, createMap, events, fs, path, writeSync,
-    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
-
-  path = __webpack_require__(42);
-
-  fs = __webpack_require__(15);
-
-  events = __webpack_require__(11);
-
-  writeSync = __webpack_require__(43).sync;
-
-  KEY_FOR_EMPTY_STRING = '---.EMPTY_STRING.---';
-
-  _emptyDirectory = function(target) {
-    var i, len, p, ref, results;
-    ref = fs.readdirSync(target);
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      p = ref[i];
-      results.push(_rm(path.join(target, p)));
-    }
-    return results;
-  };
-
-  _rm = function(target) {
-    if (fs.statSync(target).isDirectory()) {
-      _emptyDirectory(target);
-      return fs.rmdirSync(target);
-    } else {
-      return fs.unlinkSync(target);
-    }
-  };
-
-  _escapeKey = function(key) {
-    var newKey;
-    if (key === '') {
-      newKey = KEY_FOR_EMPTY_STRING;
-    } else {
-      newKey = key.toString();
-    }
-    return newKey;
-  };
-
-  QUOTA_EXCEEDED_ERR = (function(superClass) {
-    extend(QUOTA_EXCEEDED_ERR, superClass);
-
-    function QUOTA_EXCEEDED_ERR(message) {
-      this.message = message != null ? message : 'Unknown error.';
-      if (Error.captureStackTrace != null) {
-        Error.captureStackTrace(this, this.constructor);
-      }
-      this.name = this.constructor.name;
-    }
-
-    QUOTA_EXCEEDED_ERR.prototype.toString = function() {
-      return this.name + ": " + this.message;
-    };
-
-    return QUOTA_EXCEEDED_ERR;
-
-  })(Error);
-
-  StorageEvent = (function() {
-    function StorageEvent(key1, oldValue1, newValue1, url, storageArea) {
-      this.key = key1;
-      this.oldValue = oldValue1;
-      this.newValue = newValue1;
-      this.url = url;
-      this.storageArea = storageArea != null ? storageArea : 'localStorage';
-    }
-
-    return StorageEvent;
-
-  })();
-
-  MetaKey = (function() {
-    function MetaKey(key1, index1) {
-      this.key = key1;
-      this.index = index1;
-      if (!(this instanceof MetaKey)) {
-        return new MetaKey(this.key, this.index);
-      }
-    }
-
-    return MetaKey;
-
-  })();
-
-  createMap = function() {
-    var Map;
-    Map = function() {};
-    Map.prototype = Object.create(null);
-    return new Map();
-  };
-
-  LocalStorage = (function(superClass) {
-    var instanceMap;
-
-    extend(LocalStorage, superClass);
-
-    instanceMap = {};
-
-    function LocalStorage(_location, quota) {
-      this._location = _location;
-      this.quota = quota != null ? quota : 5 * 1024 * 1024;
-      if (!(this instanceof LocalStorage)) {
-        return new LocalStorage(this._location, this.quota);
-      }
-      this._location = path.resolve(this._location);
-      if (instanceMap[this._location] != null) {
-        return instanceMap[this._location];
-      }
-      this.length = 0;
-      this._bytesInUse = 0;
-      this._keys = [];
-      this._metaKeyMap = createMap();
-      this._eventUrl = "pid:" + process.pid;
-      this._init();
-      this._QUOTA_EXCEEDED_ERR = QUOTA_EXCEEDED_ERR;
-      instanceMap[this._location] = this;
-      return instanceMap[this._location];
-    }
-
-    LocalStorage.prototype._init = function() {
-      var _MetaKey, _decodedKey, _keys, e, error, error1, i, index, k, len, stat;
-      try {
-        stat = fs.statSync(this._location);
-        if ((stat != null) && !stat.isDirectory()) {
-          throw new Error("A file exists at the location '" + this._location + "' when trying to create/open localStorage");
-        }
-        this._bytesInUse = 0;
-        this.length = 0;
-        _keys = fs.readdirSync(this._location);
-        for (index = i = 0, len = _keys.length; i < len; index = ++i) {
-          k = _keys[index];
-          _decodedKey = decodeURIComponent(k);
-          this._keys.push(_decodedKey);
-          _MetaKey = new MetaKey(k, index);
-          this._metaKeyMap[_decodedKey] = _MetaKey;
-          stat = this._getStat(k);
-          if ((stat != null ? stat.size : void 0) != null) {
-            _MetaKey.size = stat.size;
-            this._bytesInUse += stat.size;
-          }
-        }
-        this.length = _keys.length;
-      } catch (error) {
-        e = error;
-        if (e.code !== "ENOENT") {
-          throw e;
-        }
-        try {
-          fs.mkdirSync(this._location);
-        } catch (error1) {
-          e = error1;
-          if (e.code !== "EEXIST") {
-            throw e;
-          }
-        }
-      }
-    };
-
-    LocalStorage.prototype.setItem = function(key, value) {
-      var encodedKey, evnt, existsBeforeSet, filename, hasListeners, metaKey, oldLength, oldValue, valueString, valueStringLength;
-      hasListeners = events.EventEmitter.listenerCount(this, 'storage');
-      oldValue = null;
-      if (hasListeners) {
-        oldValue = this.getItem(key);
-      }
-      key = _escapeKey(key);
-      encodedKey = encodeURIComponent(key);
-      filename = path.join(this._location, encodedKey);
-      valueString = value.toString();
-      valueStringLength = valueString.length;
-      metaKey = this._metaKeyMap[key];
-      existsBeforeSet = !!metaKey;
-      if (existsBeforeSet) {
-        oldLength = metaKey.size;
-      } else {
-        oldLength = 0;
-      }
-      if (this._bytesInUse - oldLength + valueStringLength > this.quota) {
-        throw new QUOTA_EXCEEDED_ERR();
-      }
-      writeSync(filename, valueString, 'utf8');
-      if (!existsBeforeSet) {
-        metaKey = new MetaKey(encodedKey, (this._keys.push(key)) - 1);
-        metaKey.size = valueStringLength;
-        this._metaKeyMap[key] = metaKey;
-        this.length += 1;
-        this._bytesInUse += valueStringLength;
-      }
-      if (hasListeners) {
-        evnt = new StorageEvent(key, oldValue, value, this._eventUrl);
-        return this.emit('storage', evnt);
-      }
-    };
-
-    LocalStorage.prototype.getItem = function(key) {
-      var filename, metaKey;
-      key = _escapeKey(key);
-      metaKey = this._metaKeyMap[key];
-      if (!!metaKey) {
-        filename = path.join(this._location, metaKey.key);
-        return fs.readFileSync(filename, 'utf8');
-      } else {
-        return null;
-      }
-    };
-
-    LocalStorage.prototype._getStat = function(key) {
-      var error, filename;
-      key = _escapeKey(key);
-      filename = path.join(this._location, encodeURIComponent(key));
-      try {
-        return fs.statSync(filename);
-      } catch (error) {
-        return null;
-      }
-    };
-
-    LocalStorage.prototype.removeItem = function(key) {
-      var evnt, filename, hasListeners, k, meta, metaKey, oldValue, ref, v;
-      key = _escapeKey(key);
-      metaKey = this._metaKeyMap[key];
-      if (!!metaKey) {
-        hasListeners = events.EventEmitter.listenerCount(this, 'storage');
-        oldValue = null;
-        if (hasListeners) {
-          oldValue = this.getItem(key);
-        }
-        delete this._metaKeyMap[key];
-        this.length -= 1;
-        this._bytesInUse -= metaKey.size;
-        filename = path.join(this._location, metaKey.key);
-        this._keys.splice(metaKey.index, 1);
-        ref = this._metaKeyMap;
-        for (k in ref) {
-          v = ref[k];
-          meta = this._metaKeyMap[k];
-          if (meta.index > metaKey.index) {
-            meta.index -= 1;
-          }
-        }
-        _rm(filename);
-        if (hasListeners) {
-          evnt = new StorageEvent(key, oldValue, null, this._eventUrl);
-          return this.emit('storage', evnt);
-        }
-      }
-    };
-
-    LocalStorage.prototype.key = function(n) {
-      return this._keys[n];
-    };
-
-    LocalStorage.prototype.clear = function() {
-      var evnt;
-      _emptyDirectory(this._location);
-      this._metaKeyMap = createMap();
-      this._keys = [];
-      this.length = 0;
-      this._bytesInUse = 0;
-      if (events.EventEmitter.listenerCount(this, 'storage')) {
-        evnt = new StorageEvent(null, null, null, this._eventUrl);
-        return this.emit('storage', evnt);
-      }
-    };
-
-    LocalStorage.prototype._getBytesInUse = function() {
-      return this._bytesInUse;
-    };
-
-    LocalStorage.prototype._deleteLocation = function() {
-      delete instanceMap[this._location];
-      _rm(this._location);
-      this._metaKeyMap = {};
-      this._keys = [];
-      this.length = 0;
-      return this._bytesInUse = 0;
-    };
-
-    return LocalStorage;
-
-  })(events.EventEmitter);
-
-  JSONStorage = (function(superClass) {
-    extend(JSONStorage, superClass);
-
-    function JSONStorage() {
-      return JSONStorage.__super__.constructor.apply(this, arguments);
-    }
-
-    JSONStorage.prototype.setItem = function(key, value) {
-      var newValue;
-      newValue = JSON.stringify(value);
-      return JSONStorage.__super__.setItem.call(this, key, newValue);
-    };
-
-    JSONStorage.prototype.getItem = function(key) {
-      return JSON.parse(JSONStorage.__super__.getItem.call(this, key));
-    };
-
-    return JSONStorage;
-
-  })(LocalStorage);
-
-  exports.LocalStorage = LocalStorage;
-
-  exports.JSONStorage = JSONStorage;
-
-  exports.QUOTA_EXCEEDED_ERR = QUOTA_EXCEEDED_ERR;
-
-}).call(this);
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 42 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length - 1; i >= 0; i--) {
-    var last = parts[i];
-    if (last === '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
-}
-
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-  var resolvedPath = '',
-      resolvedAbsolute = false;
-
-  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    var path = (i >= 0) ? arguments[i] : process.cwd();
-
-    // Skip empty and invalid entries
-    if (typeof path !== 'string') {
-      throw new TypeError('Arguments to path.resolve must be strings');
-    } else if (!path) {
-      continue;
-    }
-
-    resolvedPath = path + '/' + resolvedPath;
-    resolvedAbsolute = path.charAt(0) === '/';
-  }
-
-  // At this point the path should be resolved to a full absolute path, but
-  // handle relative paths to be safe (might happen when process.cwd() fails)
-
-  // Normalize the path
-  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-  var isAbsolute = exports.isAbsolute(path),
-      trailingSlash = substr(path, -1) === '/';
-
-  // Normalize the path
-  path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-
-  return (isAbsolute ? '/' : '') + path;
-};
-
-// posix version
-exports.isAbsolute = function(path) {
-  return path.charAt(0) === '/';
-};
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    if (typeof p !== 'string') {
-      throw new TypeError('Arguments to path.join must be strings');
-    }
-    return p;
-  }).join('/'));
-};
-
-
-// path.relative(from, to)
-// posix version
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
-    }
-  }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
-};
-
-exports.sep = '/';
-exports.delimiter = ':';
-
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
-  }
-
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
-  }
-
-  return root + dir;
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPath(path)[3];
-};
-
-function filter (xs, f) {
-    if (xs.filter) return xs.filter(f);
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (f(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// String.prototype.substr - negative index don't work in IE8
-var substr = 'ab'.substr(-1) === 'b'
-    ? function (str, start, len) { return str.substr(start, len) }
-    : function (str, start, len) {
-        if (start < 0) start = str.length + start;
-        return str.substr(start, len);
-    }
-;
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 43 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(__filename, process, Buffer) {
-module.exports = writeFile
-module.exports.sync = writeFileSync
-module.exports._getTmpname = getTmpname // for testing
-
-var fs = __webpack_require__(44)
-var chain = __webpack_require__(62).chain
-var MurmurHash3 = __webpack_require__(65)
-var extend = Object.assign || __webpack_require__(18)._extend
-
-var invocations = 0
-function getTmpname (filename) {
-  return filename + '.' +
-    MurmurHash3(__filename)
-      .hash(String(process.pid))
-      .hash(String(++invocations))
-      .result()
-}
-
-function writeFile (filename, data, options, callback) {
-  if (options instanceof Function) {
-    callback = options
-    options = null
-  }
-  if (!options) options = {}
-  fs.realpath(filename, function (_, realname) {
-    _writeFile(realname || filename, data, options, callback)
-  })
-}
-function _writeFile (filename, data, options, callback) {
-  var tmpfile = getTmpname(filename)
-
-  if (options.mode && options.chown) {
-    return thenWriteFile()
-  } else {
-    // Either mode or chown is not explicitly set
-    // Default behavior is to copy it from original file
-    return fs.stat(filename, function (err, stats) {
-      if (err || !stats) return thenWriteFile()
-
-      options = extend({}, options)
-      if (!options.mode) {
-        options.mode = stats.mode
-      }
-      if (!options.chown && process.getuid) {
-        options.chown = { uid: stats.uid, gid: stats.gid }
-      }
-      return thenWriteFile()
-    })
-  }
-
-  function thenWriteFile () {
-    chain([
-      [writeFileAsync, tmpfile, data, options.mode, options.encoding || 'utf8'],
-      options.chown && [fs, fs.chown, tmpfile, options.chown.uid, options.chown.gid],
-      options.mode && [fs, fs.chmod, tmpfile, options.mode],
-      [fs, fs.rename, tmpfile, filename]
-    ], function (err) {
-      err ? fs.unlink(tmpfile, function () { callback(err) })
-        : callback()
-    })
-  }
-
-  // doing this instead of `fs.writeFile` in order to get the ability to
-  // call `fsync`.
-  function writeFileAsync (file, data, mode, encoding, cb) {
-    fs.open(file, 'w', options.mode, function (err, fd) {
-      if (err) return cb(err)
-      if (Buffer.isBuffer(data)) {
-        return fs.write(fd, data, 0, data.length, 0, syncAndClose)
-      } else if (data != null) {
-        return fs.write(fd, String(data), 0, String(encoding), syncAndClose)
-      } else {
-        return syncAndClose()
-      }
-      function syncAndClose (err) {
-        if (err) return cb(err)
-        fs.fsync(fd, function (err) {
-          if (err) return cb(err)
-          fs.close(fd, cb)
-        })
-      }
-    })
-  }
-}
-
-function writeFileSync (filename, data, options) {
-  if (!options) options = {}
-  try {
-    filename = fs.realpathSync(filename)
-  } catch (ex) {
-    // it's ok, it'll happen on a not yet existing file
-  }
-  var tmpfile = getTmpname(filename)
-
-  try {
-    if (!options.mode || !options.chown) {
-      // Either mode or chown is not explicitly set
-      // Default behavior is to copy it from original file
-      try {
-        var stats = fs.statSync(filename)
-        options = extend({}, options)
-        if (!options.mode) {
-          options.mode = stats.mode
-        }
-        if (!options.chown && process.getuid) {
-          options.chown = { uid: stats.uid, gid: stats.gid }
-        }
-      } catch (ex) {
-        // ignore stat errors
-      }
-    }
-
-    var fd = fs.openSync(tmpfile, 'w', options.mode)
-    if (Buffer.isBuffer(data)) {
-      fs.writeSync(fd, data, 0, data.length, 0)
-    } else if (data != null) {
-      fs.writeSync(fd, String(data), 0, String(options.encoding || 'utf8'))
-    }
-    fs.fsyncSync(fd)
-    fs.closeSync(fd)
-    if (options.chown) fs.chownSync(tmpfile, options.chown.uid, options.chown.gid)
-    if (options.mode) fs.chmodSync(tmpfile, options.mode)
-    fs.renameSync(tmpfile, filename)
-  } catch (err) {
-    try { fs.unlinkSync(tmpfile) } catch (e) {}
-    throw err
-  }
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, "/index.js", __webpack_require__(3), __webpack_require__(8).Buffer))
-
-/***/ }),
-/* 44 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {var fs = __webpack_require__(15)
-var polyfills = __webpack_require__(45)
-var legacy = __webpack_require__(47)
-var queue = []
-
-var util = __webpack_require__(18)
-
-function noop () {}
-
-var debug = noop
-if (util.debuglog)
-  debug = util.debuglog('gfs4')
-else if (/\bgfs4\b/i.test(process.env.NODE_DEBUG || ''))
-  debug = function() {
-    var m = util.format.apply(util, arguments)
-    m = 'GFS4: ' + m.split(/\n/).join('\nGFS4: ')
-    console.error(m)
-  }
-
-if (/\bgfs4\b/i.test(process.env.NODE_DEBUG || '')) {
-  process.on('exit', function() {
-    debug(queue)
-    __webpack_require__(61).equal(queue.length, 0)
-  })
-}
-
-module.exports = patch(__webpack_require__(21))
-if (process.env.TEST_GRACEFUL_FS_GLOBAL_PATCH) {
-  module.exports = patch(fs)
-}
-
-// Always patch fs.close/closeSync, because we want to
-// retry() whenever a close happens *anywhere* in the program.
-// This is essential when multiple graceful-fs instances are
-// in play at the same time.
-module.exports.close =
-fs.close = (function (fs$close) { return function (fd, cb) {
-  return fs$close.call(fs, fd, function (err) {
-    if (!err)
-      retry()
-
-    if (typeof cb === 'function')
-      cb.apply(this, arguments)
-  })
-}})(fs.close)
-
-module.exports.closeSync =
-fs.closeSync = (function (fs$closeSync) { return function (fd) {
-  // Note that graceful-fs also retries when fs.closeSync() fails.
-  // Looks like a bug to me, although it's probably a harmless one.
-  var rval = fs$closeSync.apply(fs, arguments)
-  retry()
-  return rval
-}})(fs.closeSync)
-
-function patch (fs) {
-  // Everything that references the open() function needs to be in here
-  polyfills(fs)
-  fs.gracefulify = patch
-  fs.FileReadStream = ReadStream;  // Legacy name.
-  fs.FileWriteStream = WriteStream;  // Legacy name.
-  fs.createReadStream = createReadStream
-  fs.createWriteStream = createWriteStream
-  var fs$readFile = fs.readFile
-  fs.readFile = readFile
-  function readFile (path, options, cb) {
-    if (typeof options === 'function')
-      cb = options, options = null
-
-    return go$readFile(path, options, cb)
-
-    function go$readFile (path, options, cb) {
-      return fs$readFile(path, options, function (err) {
-        if (err && (err.code === 'EMFILE' || err.code === 'ENFILE'))
-          enqueue([go$readFile, [path, options, cb]])
-        else {
-          if (typeof cb === 'function')
-            cb.apply(this, arguments)
-          retry()
-        }
-      })
-    }
-  }
-
-  var fs$writeFile = fs.writeFile
-  fs.writeFile = writeFile
-  function writeFile (path, data, options, cb) {
-    if (typeof options === 'function')
-      cb = options, options = null
-
-    return go$writeFile(path, data, options, cb)
-
-    function go$writeFile (path, data, options, cb) {
-      return fs$writeFile(path, data, options, function (err) {
-        if (err && (err.code === 'EMFILE' || err.code === 'ENFILE'))
-          enqueue([go$writeFile, [path, data, options, cb]])
-        else {
-          if (typeof cb === 'function')
-            cb.apply(this, arguments)
-          retry()
-        }
-      })
-    }
-  }
-
-  var fs$appendFile = fs.appendFile
-  if (fs$appendFile)
-    fs.appendFile = appendFile
-  function appendFile (path, data, options, cb) {
-    if (typeof options === 'function')
-      cb = options, options = null
-
-    return go$appendFile(path, data, options, cb)
-
-    function go$appendFile (path, data, options, cb) {
-      return fs$appendFile(path, data, options, function (err) {
-        if (err && (err.code === 'EMFILE' || err.code === 'ENFILE'))
-          enqueue([go$appendFile, [path, data, options, cb]])
-        else {
-          if (typeof cb === 'function')
-            cb.apply(this, arguments)
-          retry()
-        }
-      })
-    }
-  }
-
-  var fs$readdir = fs.readdir
-  fs.readdir = readdir
-  function readdir (path, options, cb) {
-    var args = [path]
-    if (typeof options !== 'function') {
-      args.push(options)
-    } else {
-      cb = options
-    }
-    args.push(go$readdir$cb)
-
-    return go$readdir(args)
-
-    function go$readdir$cb (err, files) {
-      if (files && files.sort)
-        files.sort()
-
-      if (err && (err.code === 'EMFILE' || err.code === 'ENFILE'))
-        enqueue([go$readdir, [args]])
-      else {
-        if (typeof cb === 'function')
-          cb.apply(this, arguments)
-        retry()
-      }
-    }
-  }
-
-  function go$readdir (args) {
-    return fs$readdir.apply(fs, args)
-  }
-
-  if (process.version.substr(0, 4) === 'v0.8') {
-    var legStreams = legacy(fs)
-    ReadStream = legStreams.ReadStream
-    WriteStream = legStreams.WriteStream
-  }
-
-  var fs$ReadStream = fs.ReadStream
-  ReadStream.prototype = Object.create(fs$ReadStream.prototype)
-  ReadStream.prototype.open = ReadStream$open
-
-  var fs$WriteStream = fs.WriteStream
-  WriteStream.prototype = Object.create(fs$WriteStream.prototype)
-  WriteStream.prototype.open = WriteStream$open
-
-  fs.ReadStream = ReadStream
-  fs.WriteStream = WriteStream
-
-  function ReadStream (path, options) {
-    if (this instanceof ReadStream)
-      return fs$ReadStream.apply(this, arguments), this
-    else
-      return ReadStream.apply(Object.create(ReadStream.prototype), arguments)
-  }
-
-  function ReadStream$open () {
-    var that = this
-    open(that.path, that.flags, that.mode, function (err, fd) {
-      if (err) {
-        if (that.autoClose)
-          that.destroy()
-
-        that.emit('error', err)
-      } else {
-        that.fd = fd
-        that.emit('open', fd)
-        that.read()
-      }
-    })
-  }
-
-  function WriteStream (path, options) {
-    if (this instanceof WriteStream)
-      return fs$WriteStream.apply(this, arguments), this
-    else
-      return WriteStream.apply(Object.create(WriteStream.prototype), arguments)
-  }
-
-  function WriteStream$open () {
-    var that = this
-    open(that.path, that.flags, that.mode, function (err, fd) {
-      if (err) {
-        that.destroy()
-        that.emit('error', err)
-      } else {
-        that.fd = fd
-        that.emit('open', fd)
-      }
-    })
-  }
-
-  function createReadStream (path, options) {
-    return new ReadStream(path, options)
-  }
-
-  function createWriteStream (path, options) {
-    return new WriteStream(path, options)
-  }
-
-  var fs$open = fs.open
-  fs.open = open
-  function open (path, flags, mode, cb) {
-    if (typeof mode === 'function')
-      cb = mode, mode = null
-
-    return go$open(path, flags, mode, cb)
-
-    function go$open (path, flags, mode, cb) {
-      return fs$open(path, flags, mode, function (err, fd) {
-        if (err && (err.code === 'EMFILE' || err.code === 'ENFILE'))
-          enqueue([go$open, [path, flags, mode, cb]])
-        else {
-          if (typeof cb === 'function')
-            cb.apply(this, arguments)
-          retry()
-        }
-      })
-    }
-  }
-
-  return fs
-}
-
-function enqueue (elem) {
-  debug('ENQUEUE', elem[0].name, elem[1])
-  queue.push(elem)
-}
-
-function retry () {
-  var elem = queue.shift()
-  if (elem) {
-    debug('RETRY', elem[0].name, elem[1])
-    elem[0].apply(null, elem[1])
-  }
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 45 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {var fs = __webpack_require__(21)
-var constants = __webpack_require__(46)
-
-var origCwd = process.cwd
-var cwd = null
-
-var platform = process.env.GRACEFUL_FS_PLATFORM || process.platform
-
-process.cwd = function() {
-  if (!cwd)
-    cwd = origCwd.call(process)
-  return cwd
-}
-try {
-  process.cwd()
-} catch (er) {}
-
-var chdir = process.chdir
-process.chdir = function(d) {
-  cwd = null
-  chdir.call(process, d)
-}
-
-module.exports = patch
-
-function patch (fs) {
-  // (re-)implement some things that are known busted or missing.
-
-  // lchmod, broken prior to 0.6.2
-  // back-port the fix here.
-  if (constants.hasOwnProperty('O_SYMLINK') &&
-      process.version.match(/^v0\.6\.[0-2]|^v0\.5\./)) {
-    patchLchmod(fs)
-  }
-
-  // lutimes implementation, or no-op
-  if (!fs.lutimes) {
-    patchLutimes(fs)
-  }
-
-  // https://github.com/isaacs/node-graceful-fs/issues/4
-  // Chown should not fail on einval or eperm if non-root.
-  // It should not fail on enosys ever, as this just indicates
-  // that a fs doesn't support the intended operation.
-
-  fs.chown = chownFix(fs.chown)
-  fs.fchown = chownFix(fs.fchown)
-  fs.lchown = chownFix(fs.lchown)
-
-  fs.chmod = chmodFix(fs.chmod)
-  fs.fchmod = chmodFix(fs.fchmod)
-  fs.lchmod = chmodFix(fs.lchmod)
-
-  fs.chownSync = chownFixSync(fs.chownSync)
-  fs.fchownSync = chownFixSync(fs.fchownSync)
-  fs.lchownSync = chownFixSync(fs.lchownSync)
-
-  fs.chmodSync = chmodFixSync(fs.chmodSync)
-  fs.fchmodSync = chmodFixSync(fs.fchmodSync)
-  fs.lchmodSync = chmodFixSync(fs.lchmodSync)
-
-  fs.stat = statFix(fs.stat)
-  fs.fstat = statFix(fs.fstat)
-  fs.lstat = statFix(fs.lstat)
-
-  fs.statSync = statFixSync(fs.statSync)
-  fs.fstatSync = statFixSync(fs.fstatSync)
-  fs.lstatSync = statFixSync(fs.lstatSync)
-
-  // if lchmod/lchown do not exist, then make them no-ops
-  if (!fs.lchmod) {
-    fs.lchmod = function (path, mode, cb) {
-      if (cb) process.nextTick(cb)
-    }
-    fs.lchmodSync = function () {}
-  }
-  if (!fs.lchown) {
-    fs.lchown = function (path, uid, gid, cb) {
-      if (cb) process.nextTick(cb)
-    }
-    fs.lchownSync = function () {}
-  }
-
-  // on Windows, A/V software can lock the directory, causing this
-  // to fail with an EACCES or EPERM if the directory contains newly
-  // created files.  Try again on failure, for up to 60 seconds.
-
-  // Set the timeout this long because some Windows Anti-Virus, such as Parity
-  // bit9, may lock files for up to a minute, causing npm package install
-  // failures. Also, take care to yield the scheduler. Windows scheduling gives
-  // CPU to a busy looping process, which can cause the program causing the lock
-  // contention to be starved of CPU by node, so the contention doesn't resolve.
-  if (platform === "win32") {
-    fs.rename = (function (fs$rename) { return function (from, to, cb) {
-      var start = Date.now()
-      var backoff = 0;
-      fs$rename(from, to, function CB (er) {
-        if (er
-            && (er.code === "EACCES" || er.code === "EPERM")
-            && Date.now() - start < 60000) {
-          setTimeout(function() {
-            fs.stat(to, function (stater, st) {
-              if (stater && stater.code === "ENOENT")
-                fs$rename(from, to, CB);
-              else
-                cb(er)
-            })
-          }, backoff)
-          if (backoff < 100)
-            backoff += 10;
-          return;
-        }
-        if (cb) cb(er)
-      })
-    }})(fs.rename)
-  }
-
-  // if read() returns EAGAIN, then just try it again.
-  fs.read = (function (fs$read) { return function (fd, buffer, offset, length, position, callback_) {
-    var callback
-    if (callback_ && typeof callback_ === 'function') {
-      var eagCounter = 0
-      callback = function (er, _, __) {
-        if (er && er.code === 'EAGAIN' && eagCounter < 10) {
-          eagCounter ++
-          return fs$read.call(fs, fd, buffer, offset, length, position, callback)
-        }
-        callback_.apply(this, arguments)
-      }
-    }
-    return fs$read.call(fs, fd, buffer, offset, length, position, callback)
-  }})(fs.read)
-
-  fs.readSync = (function (fs$readSync) { return function (fd, buffer, offset, length, position) {
-    var eagCounter = 0
-    while (true) {
-      try {
-        return fs$readSync.call(fs, fd, buffer, offset, length, position)
-      } catch (er) {
-        if (er.code === 'EAGAIN' && eagCounter < 10) {
-          eagCounter ++
-          continue
-        }
-        throw er
-      }
-    }
-  }})(fs.readSync)
-}
-
-function patchLchmod (fs) {
-  fs.lchmod = function (path, mode, callback) {
-    fs.open( path
-           , constants.O_WRONLY | constants.O_SYMLINK
-           , mode
-           , function (err, fd) {
-      if (err) {
-        if (callback) callback(err)
-        return
-      }
-      // prefer to return the chmod error, if one occurs,
-      // but still try to close, and report closing errors if they occur.
-      fs.fchmod(fd, mode, function (err) {
-        fs.close(fd, function(err2) {
-          if (callback) callback(err || err2)
-        })
-      })
-    })
-  }
-
-  fs.lchmodSync = function (path, mode) {
-    var fd = fs.openSync(path, constants.O_WRONLY | constants.O_SYMLINK, mode)
-
-    // prefer to return the chmod error, if one occurs,
-    // but still try to close, and report closing errors if they occur.
-    var threw = true
-    var ret
-    try {
-      ret = fs.fchmodSync(fd, mode)
-      threw = false
-    } finally {
-      if (threw) {
-        try {
-          fs.closeSync(fd)
-        } catch (er) {}
-      } else {
-        fs.closeSync(fd)
-      }
-    }
-    return ret
-  }
-}
-
-function patchLutimes (fs) {
-  if (constants.hasOwnProperty("O_SYMLINK")) {
-    fs.lutimes = function (path, at, mt, cb) {
-      fs.open(path, constants.O_SYMLINK, function (er, fd) {
-        if (er) {
-          if (cb) cb(er)
-          return
-        }
-        fs.futimes(fd, at, mt, function (er) {
-          fs.close(fd, function (er2) {
-            if (cb) cb(er || er2)
-          })
-        })
-      })
-    }
-
-    fs.lutimesSync = function (path, at, mt) {
-      var fd = fs.openSync(path, constants.O_SYMLINK)
-      var ret
-      var threw = true
-      try {
-        ret = fs.futimesSync(fd, at, mt)
-        threw = false
-      } finally {
-        if (threw) {
-          try {
-            fs.closeSync(fd)
-          } catch (er) {}
-        } else {
-          fs.closeSync(fd)
-        }
-      }
-      return ret
-    }
-
-  } else {
-    fs.lutimes = function (_a, _b, _c, cb) { if (cb) process.nextTick(cb) }
-    fs.lutimesSync = function () {}
-  }
-}
-
-function chmodFix (orig) {
-  if (!orig) return orig
-  return function (target, mode, cb) {
-    return orig.call(fs, target, mode, function (er) {
-      if (chownErOk(er)) er = null
-      if (cb) cb.apply(this, arguments)
-    })
-  }
-}
-
-function chmodFixSync (orig) {
-  if (!orig) return orig
-  return function (target, mode) {
-    try {
-      return orig.call(fs, target, mode)
-    } catch (er) {
-      if (!chownErOk(er)) throw er
-    }
-  }
-}
-
-
-function chownFix (orig) {
-  if (!orig) return orig
-  return function (target, uid, gid, cb) {
-    return orig.call(fs, target, uid, gid, function (er) {
-      if (chownErOk(er)) er = null
-      if (cb) cb.apply(this, arguments)
-    })
-  }
-}
-
-function chownFixSync (orig) {
-  if (!orig) return orig
-  return function (target, uid, gid) {
-    try {
-      return orig.call(fs, target, uid, gid)
-    } catch (er) {
-      if (!chownErOk(er)) throw er
-    }
-  }
-}
-
-
-function statFix (orig) {
-  if (!orig) return orig
-  // Older versions of Node erroneously returned signed integers for
-  // uid + gid.
-  return function (target, cb) {
-    return orig.call(fs, target, function (er, stats) {
-      if (!stats) return cb.apply(this, arguments)
-      if (stats.uid < 0) stats.uid += 0x100000000
-      if (stats.gid < 0) stats.gid += 0x100000000
-      if (cb) cb.apply(this, arguments)
-    })
-  }
-}
-
-function statFixSync (orig) {
-  if (!orig) return orig
-  // Older versions of Node erroneously returned signed integers for
-  // uid + gid.
-  return function (target) {
-    var stats = orig.call(fs, target)
-    if (stats.uid < 0) stats.uid += 0x100000000
-    if (stats.gid < 0) stats.gid += 0x100000000
-    return stats;
-  }
-}
-
-// ENOSYS means that the fs doesn't support the op. Just ignore
-// that, because it doesn't matter.
-//
-// if there's no getuid, or if getuid() is something other
-// than 0, and the error is EINVAL or EPERM, then just ignore
-// it.
-//
-// This specific case is a silent failure in cp, install, tar,
-// and most other unix tools that manage permissions.
-//
-// When running as root, or if other types of errors are
-// encountered, then it's strict.
-function chownErOk (er) {
-  if (!er)
-    return true
-
-  if (er.code === "ENOSYS")
-    return true
-
-  var nonroot = !process.getuid || process.getuid() !== 0
-  if (nonroot) {
-    if (er.code === "EINVAL" || er.code === "EPERM")
-      return true
-  }
-
-  return false
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 46 */
-/***/ (function(module) {
-
-module.exports = {"O_RDONLY":0,"O_WRONLY":1,"O_RDWR":2,"S_IFMT":61440,"S_IFREG":32768,"S_IFDIR":16384,"S_IFCHR":8192,"S_IFBLK":24576,"S_IFIFO":4096,"S_IFLNK":40960,"S_IFSOCK":49152,"O_CREAT":512,"O_EXCL":2048,"O_NOCTTY":131072,"O_TRUNC":1024,"O_APPEND":8,"O_DIRECTORY":1048576,"O_NOFOLLOW":256,"O_SYNC":128,"O_SYMLINK":2097152,"O_NONBLOCK":4,"S_IRWXU":448,"S_IRUSR":256,"S_IWUSR":128,"S_IXUSR":64,"S_IRWXG":56,"S_IRGRP":32,"S_IWGRP":16,"S_IXGRP":8,"S_IRWXO":7,"S_IROTH":4,"S_IWOTH":2,"S_IXOTH":1,"E2BIG":7,"EACCES":13,"EADDRINUSE":48,"EADDRNOTAVAIL":49,"EAFNOSUPPORT":47,"EAGAIN":35,"EALREADY":37,"EBADF":9,"EBADMSG":94,"EBUSY":16,"ECANCELED":89,"ECHILD":10,"ECONNABORTED":53,"ECONNREFUSED":61,"ECONNRESET":54,"EDEADLK":11,"EDESTADDRREQ":39,"EDOM":33,"EDQUOT":69,"EEXIST":17,"EFAULT":14,"EFBIG":27,"EHOSTUNREACH":65,"EIDRM":90,"EILSEQ":92,"EINPROGRESS":36,"EINTR":4,"EINVAL":22,"EIO":5,"EISCONN":56,"EISDIR":21,"ELOOP":62,"EMFILE":24,"EMLINK":31,"EMSGSIZE":40,"EMULTIHOP":95,"ENAMETOOLONG":63,"ENETDOWN":50,"ENETRESET":52,"ENETUNREACH":51,"ENFILE":23,"ENOBUFS":55,"ENODATA":96,"ENODEV":19,"ENOENT":2,"ENOEXEC":8,"ENOLCK":77,"ENOLINK":97,"ENOMEM":12,"ENOMSG":91,"ENOPROTOOPT":42,"ENOSPC":28,"ENOSR":98,"ENOSTR":99,"ENOSYS":78,"ENOTCONN":57,"ENOTDIR":20,"ENOTEMPTY":66,"ENOTSOCK":38,"ENOTSUP":45,"ENOTTY":25,"ENXIO":6,"EOPNOTSUPP":102,"EOVERFLOW":84,"EPERM":1,"EPIPE":32,"EPROTO":100,"EPROTONOSUPPORT":43,"EPROTOTYPE":41,"ERANGE":34,"EROFS":30,"ESPIPE":29,"ESRCH":3,"ESTALE":70,"ETIME":101,"ETIMEDOUT":60,"ETXTBSY":26,"EWOULDBLOCK":35,"EXDEV":18,"SIGHUP":1,"SIGINT":2,"SIGQUIT":3,"SIGILL":4,"SIGTRAP":5,"SIGABRT":6,"SIGIOT":6,"SIGBUS":10,"SIGFPE":8,"SIGKILL":9,"SIGUSR1":30,"SIGSEGV":11,"SIGUSR2":31,"SIGPIPE":13,"SIGALRM":14,"SIGTERM":15,"SIGCHLD":20,"SIGCONT":19,"SIGSTOP":17,"SIGTSTP":18,"SIGTTIN":21,"SIGTTOU":22,"SIGURG":16,"SIGXCPU":24,"SIGXFSZ":25,"SIGVTALRM":26,"SIGPROF":27,"SIGWINCH":28,"SIGIO":23,"SIGSYS":12,"SSL_OP_ALL":2147486719,"SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION":262144,"SSL_OP_CIPHER_SERVER_PREFERENCE":4194304,"SSL_OP_CISCO_ANYCONNECT":32768,"SSL_OP_COOKIE_EXCHANGE":8192,"SSL_OP_CRYPTOPRO_TLSEXT_BUG":2147483648,"SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS":2048,"SSL_OP_EPHEMERAL_RSA":0,"SSL_OP_LEGACY_SERVER_CONNECT":4,"SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER":32,"SSL_OP_MICROSOFT_SESS_ID_BUG":1,"SSL_OP_MSIE_SSLV2_RSA_PADDING":0,"SSL_OP_NETSCAPE_CA_DN_BUG":536870912,"SSL_OP_NETSCAPE_CHALLENGE_BUG":2,"SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG":1073741824,"SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG":8,"SSL_OP_NO_COMPRESSION":131072,"SSL_OP_NO_QUERY_MTU":4096,"SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION":65536,"SSL_OP_NO_SSLv2":16777216,"SSL_OP_NO_SSLv3":33554432,"SSL_OP_NO_TICKET":16384,"SSL_OP_NO_TLSv1":67108864,"SSL_OP_NO_TLSv1_1":268435456,"SSL_OP_NO_TLSv1_2":134217728,"SSL_OP_PKCS1_CHECK_1":0,"SSL_OP_PKCS1_CHECK_2":0,"SSL_OP_SINGLE_DH_USE":1048576,"SSL_OP_SINGLE_ECDH_USE":524288,"SSL_OP_SSLEAY_080_CLIENT_DH_BUG":128,"SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG":0,"SSL_OP_TLS_BLOCK_PADDING_BUG":512,"SSL_OP_TLS_D5_BUG":256,"SSL_OP_TLS_ROLLBACK_BUG":8388608,"ENGINE_METHOD_DSA":2,"ENGINE_METHOD_DH":4,"ENGINE_METHOD_RAND":8,"ENGINE_METHOD_ECDH":16,"ENGINE_METHOD_ECDSA":32,"ENGINE_METHOD_CIPHERS":64,"ENGINE_METHOD_DIGESTS":128,"ENGINE_METHOD_STORE":256,"ENGINE_METHOD_PKEY_METHS":512,"ENGINE_METHOD_PKEY_ASN1_METHS":1024,"ENGINE_METHOD_ALL":65535,"ENGINE_METHOD_NONE":0,"DH_CHECK_P_NOT_SAFE_PRIME":2,"DH_CHECK_P_NOT_PRIME":1,"DH_UNABLE_TO_CHECK_GENERATOR":4,"DH_NOT_SUITABLE_GENERATOR":8,"NPN_ENABLED":1,"RSA_PKCS1_PADDING":1,"RSA_SSLV23_PADDING":2,"RSA_NO_PADDING":3,"RSA_PKCS1_OAEP_PADDING":4,"RSA_X931_PADDING":5,"RSA_PKCS1_PSS_PADDING":6,"POINT_CONVERSION_COMPRESSED":2,"POINT_CONVERSION_UNCOMPRESSED":4,"POINT_CONVERSION_HYBRID":6,"F_OK":0,"R_OK":4,"W_OK":2,"X_OK":1,"UV_UDP_REUSEADDR":4};
-
-/***/ }),
-/* 47 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {var Stream = __webpack_require__(48).Stream
-
-module.exports = legacy
-
-function legacy (fs) {
-  return {
-    ReadStream: ReadStream,
-    WriteStream: WriteStream
-  }
-
-  function ReadStream (path, options) {
-    if (!(this instanceof ReadStream)) return new ReadStream(path, options);
-
-    Stream.call(this);
-
-    var self = this;
-
-    this.path = path;
-    this.fd = null;
-    this.readable = true;
-    this.paused = false;
-
-    this.flags = 'r';
-    this.mode = 438; /*=0666*/
-    this.bufferSize = 64 * 1024;
-
-    options = options || {};
-
-    // Mixin options into this
-    var keys = Object.keys(options);
-    for (var index = 0, length = keys.length; index < length; index++) {
-      var key = keys[index];
-      this[key] = options[key];
-    }
-
-    if (this.encoding) this.setEncoding(this.encoding);
-
-    if (this.start !== undefined) {
-      if ('number' !== typeof this.start) {
-        throw TypeError('start must be a Number');
-      }
-      if (this.end === undefined) {
-        this.end = Infinity;
-      } else if ('number' !== typeof this.end) {
-        throw TypeError('end must be a Number');
-      }
-
-      if (this.start > this.end) {
-        throw new Error('start must be <= end');
-      }
-
-      this.pos = this.start;
-    }
-
-    if (this.fd !== null) {
-      process.nextTick(function() {
-        self._read();
-      });
-      return;
-    }
-
-    fs.open(this.path, this.flags, this.mode, function (err, fd) {
-      if (err) {
-        self.emit('error', err);
-        self.readable = false;
-        return;
-      }
-
-      self.fd = fd;
-      self.emit('open', fd);
-      self._read();
-    })
-  }
-
-  function WriteStream (path, options) {
-    if (!(this instanceof WriteStream)) return new WriteStream(path, options);
-
-    Stream.call(this);
-
-    this.path = path;
-    this.fd = null;
-    this.writable = true;
-
-    this.flags = 'w';
-    this.encoding = 'binary';
-    this.mode = 438; /*=0666*/
-    this.bytesWritten = 0;
-
-    options = options || {};
-
-    // Mixin options into this
-    var keys = Object.keys(options);
-    for (var index = 0, length = keys.length; index < length; index++) {
-      var key = keys[index];
-      this[key] = options[key];
-    }
-
-    if (this.start !== undefined) {
-      if ('number' !== typeof this.start) {
-        throw TypeError('start must be a Number');
-      }
-      if (this.start < 0) {
-        throw new Error('start must be >= zero');
-      }
-
-      this.pos = this.start;
-    }
-
-    this.busy = false;
-    this._queue = [];
-
-    if (this.fd === null) {
-      this._open = fs.open;
-      this._queue.push([this._open, this.path, this.flags, this.mode, undefined]);
-      this.flush();
-    }
-  }
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 48 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-module.exports = Stream;
-
-var EE = __webpack_require__(11).EventEmitter;
-var inherits = __webpack_require__(6);
-
-inherits(Stream, EE);
-Stream.Readable = __webpack_require__(16);
-Stream.Writable = __webpack_require__(56);
-Stream.Duplex = __webpack_require__(57);
-Stream.Transform = __webpack_require__(58);
-Stream.PassThrough = __webpack_require__(59);
-
-// Backwards-compat with node 0.4.x
-Stream.Stream = Stream;
-
-
-
-// old-style streams.  Note that the pipe method (the only relevant
-// part of this class) is overridden in the Readable class.
-
-function Stream() {
-  EE.call(this);
-}
-
-Stream.prototype.pipe = function(dest, options) {
-  var source = this;
-
-  function ondata(chunk) {
-    if (dest.writable) {
-      if (false === dest.write(chunk) && source.pause) {
-        source.pause();
-      }
-    }
-  }
-
-  source.on('data', ondata);
-
-  function ondrain() {
-    if (source.readable && source.resume) {
-      source.resume();
-    }
-  }
-
-  dest.on('drain', ondrain);
-
-  // If the 'end' option is not supplied, dest.end() will be called when
-  // source gets the 'end' or 'close' events.  Only dest.end() once.
-  if (!dest._isStdio && (!options || options.end !== false)) {
-    source.on('end', onend);
-    source.on('close', onclose);
-  }
-
-  var didOnEnd = false;
-  function onend() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    dest.end();
-  }
-
-
-  function onclose() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    if (typeof dest.destroy === 'function') dest.destroy();
-  }
-
-  // don't leave dangling pipes when there are errors.
-  function onerror(er) {
-    cleanup();
-    if (EE.listenerCount(this, 'error') === 0) {
-      throw er; // Unhandled stream error in pipe.
-    }
-  }
-
-  source.on('error', onerror);
-  dest.on('error', onerror);
-
-  // remove all the event listeners that were added.
-  function cleanup() {
-    source.removeListener('data', ondata);
-    dest.removeListener('drain', ondrain);
-
-    source.removeListener('end', onend);
-    source.removeListener('close', onclose);
-
-    source.removeListener('error', onerror);
-    dest.removeListener('error', onerror);
-
-    source.removeListener('end', cleanup);
-    source.removeListener('close', cleanup);
-
-    dest.removeListener('close', cleanup);
-  }
-
-  source.on('end', cleanup);
-  source.on('close', cleanup);
-
-  dest.on('close', cleanup);
-
-  dest.emit('pipe', source);
-
-  // Allow for unix-like usage: A.pipe(B).pipe(C)
-  return dest;
-};
-
-
-/***/ }),
-/* 49 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 50 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Buffer = __webpack_require__(13).Buffer;
-var util = __webpack_require__(51);
-
-function copyBuffer(src, target, offset) {
-  src.copy(target, offset);
-}
-
-module.exports = function () {
-  function BufferList() {
-    _classCallCheck(this, BufferList);
-
-    this.head = null;
-    this.tail = null;
-    this.length = 0;
-  }
-
-  BufferList.prototype.push = function push(v) {
-    var entry = { data: v, next: null };
-    if (this.length > 0) this.tail.next = entry;else this.head = entry;
-    this.tail = entry;
-    ++this.length;
-  };
-
-  BufferList.prototype.unshift = function unshift(v) {
-    var entry = { data: v, next: this.head };
-    if (this.length === 0) this.tail = entry;
-    this.head = entry;
-    ++this.length;
-  };
-
-  BufferList.prototype.shift = function shift() {
-    if (this.length === 0) return;
-    var ret = this.head.data;
-    if (this.length === 1) this.head = this.tail = null;else this.head = this.head.next;
-    --this.length;
-    return ret;
-  };
-
-  BufferList.prototype.clear = function clear() {
-    this.head = this.tail = null;
-    this.length = 0;
-  };
-
-  BufferList.prototype.join = function join(s) {
-    if (this.length === 0) return '';
-    var p = this.head;
-    var ret = '' + p.data;
-    while (p = p.next) {
-      ret += s + p.data;
-    }return ret;
-  };
-
-  BufferList.prototype.concat = function concat(n) {
-    if (this.length === 0) return Buffer.alloc(0);
-    if (this.length === 1) return this.head.data;
-    var ret = Buffer.allocUnsafe(n >>> 0);
-    var p = this.head;
-    var i = 0;
-    while (p) {
-      copyBuffer(p.data, ret, i);
-      i += p.data.length;
-      p = p.next;
-    }
-    return ret;
-  };
-
-  return BufferList;
-}();
-
-if (util && util.inspect && util.inspect.custom) {
-  module.exports.prototype[util.inspect.custom] = function () {
-    var obj = util.inspect({ length: this.length });
-    return this.constructor.name + ' ' + obj;
-  };
-}
-
-/***/ }),
-/* 51 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 52 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !== "undefined" && global) ||
-            (typeof self !== "undefined" && self) ||
-            window;
-var apply = Function.prototype.apply;
-
-// DOM APIs, for completeness
-
-exports.setTimeout = function() {
-  return new Timeout(apply.call(setTimeout, scope, arguments), clearTimeout);
-};
-exports.setInterval = function() {
-  return new Timeout(apply.call(setInterval, scope, arguments), clearInterval);
-};
-exports.clearTimeout =
-exports.clearInterval = function(timeout) {
-  if (timeout) {
-    timeout.close();
-  }
-};
-
-function Timeout(id, clearFn) {
-  this._id = id;
-  this._clearFn = clearFn;
-}
-Timeout.prototype.unref = Timeout.prototype.ref = function() {};
-Timeout.prototype.close = function() {
-  this._clearFn.call(scope, this._id);
-};
-
-// Does not start the time, just sets up the members needed.
-exports.enroll = function(item, msecs) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = msecs;
-};
-
-exports.unenroll = function(item) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = -1;
-};
-
-exports._unrefActive = exports.active = function(item) {
-  clearTimeout(item._idleTimeoutId);
-
-  var msecs = item._idleTimeout;
-  if (msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout() {
-      if (item._onTimeout)
-        item._onTimeout();
-    }, msecs);
-  }
-};
-
-// setimmediate attaches itself to the global object
-__webpack_require__(53);
-// On some exotic environments, it's not clear which object `setimmediate` was
-// able to install onto.  Search each possibility in the same order as the
-// `setimmediate` library.
-exports.setImmediate = (typeof self !== "undefined" && self.setImmediate) ||
-                       (typeof global !== "undefined" && global.setImmediate) ||
-                       (this && this.setImmediate);
-exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
-                         (typeof global !== "undefined" && global.clearImmediate) ||
-                         (this && this.clearImmediate);
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
-
-/***/ }),
-/* 53 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
-    "use strict";
-
-    if (global.setImmediate) {
-        return;
-    }
-
-    var nextHandle = 1; // Spec says greater than zero
-    var tasksByHandle = {};
-    var currentlyRunningATask = false;
-    var doc = global.document;
-    var registerImmediate;
-
-    function setImmediate(callback) {
-      // Callback can either be a function or a string
-      if (typeof callback !== "function") {
-        callback = new Function("" + callback);
-      }
-      // Copy function arguments
-      var args = new Array(arguments.length - 1);
-      for (var i = 0; i < args.length; i++) {
-          args[i] = arguments[i + 1];
-      }
-      // Store and register the task
-      var task = { callback: callback, args: args };
-      tasksByHandle[nextHandle] = task;
-      registerImmediate(nextHandle);
-      return nextHandle++;
-    }
-
-    function clearImmediate(handle) {
-        delete tasksByHandle[handle];
-    }
-
-    function run(task) {
-        var callback = task.callback;
-        var args = task.args;
-        switch (args.length) {
-        case 0:
-            callback();
-            break;
-        case 1:
-            callback(args[0]);
-            break;
-        case 2:
-            callback(args[0], args[1]);
-            break;
-        case 3:
-            callback(args[0], args[1], args[2]);
-            break;
-        default:
-            callback.apply(undefined, args);
-            break;
-        }
-    }
-
-    function runIfPresent(handle) {
-        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
-        // So if we're currently running a task, we'll need to delay this invocation.
-        if (currentlyRunningATask) {
-            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
-            // "too much recursion" error.
-            setTimeout(runIfPresent, 0, handle);
-        } else {
-            var task = tasksByHandle[handle];
-            if (task) {
-                currentlyRunningATask = true;
-                try {
-                    run(task);
-                } finally {
-                    clearImmediate(handle);
-                    currentlyRunningATask = false;
-                }
-            }
-        }
-    }
-
-    function installNextTickImplementation() {
-        registerImmediate = function(handle) {
-            process.nextTick(function () { runIfPresent(handle); });
-        };
-    }
-
-    function canUsePostMessage() {
-        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
-        // where `global.postMessage` means something completely different and can't be used for this purpose.
-        if (global.postMessage && !global.importScripts) {
-            var postMessageIsAsynchronous = true;
-            var oldOnMessage = global.onmessage;
-            global.onmessage = function() {
-                postMessageIsAsynchronous = false;
-            };
-            global.postMessage("", "*");
-            global.onmessage = oldOnMessage;
-            return postMessageIsAsynchronous;
-        }
-    }
-
-    function installPostMessageImplementation() {
-        // Installs an event handler on `global` for the `message` event: see
-        // * https://developer.mozilla.org/en/DOM/window.postMessage
-        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
-
-        var messagePrefix = "setImmediate$" + Math.random() + "$";
-        var onGlobalMessage = function(event) {
-            if (event.source === global &&
-                typeof event.data === "string" &&
-                event.data.indexOf(messagePrefix) === 0) {
-                runIfPresent(+event.data.slice(messagePrefix.length));
-            }
-        };
-
-        if (global.addEventListener) {
-            global.addEventListener("message", onGlobalMessage, false);
-        } else {
-            global.attachEvent("onmessage", onGlobalMessage);
-        }
-
-        registerImmediate = function(handle) {
-            global.postMessage(messagePrefix + handle, "*");
-        };
-    }
-
-    function installMessageChannelImplementation() {
-        var channel = new MessageChannel();
-        channel.port1.onmessage = function(event) {
-            var handle = event.data;
-            runIfPresent(handle);
-        };
-
-        registerImmediate = function(handle) {
-            channel.port2.postMessage(handle);
-        };
-    }
-
-    function installReadyStateChangeImplementation() {
-        var html = doc.documentElement;
-        registerImmediate = function(handle) {
-            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-            var script = doc.createElement("script");
-            script.onreadystatechange = function () {
-                runIfPresent(handle);
-                script.onreadystatechange = null;
-                html.removeChild(script);
-                script = null;
-            };
-            html.appendChild(script);
-        };
-    }
-
-    function installSetTimeoutImplementation() {
-        registerImmediate = function(handle) {
-            setTimeout(runIfPresent, 0, handle);
-        };
-    }
-
-    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
-    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
-
-    // Don't get fooled by e.g. browserify environments.
-    if ({}.toString.call(global.process) === "[object process]") {
-        // For Node.js before 0.9
-        installNextTickImplementation();
-
-    } else if (canUsePostMessage()) {
-        // For non-IE10 modern browsers
-        installPostMessageImplementation();
-
-    } else if (global.MessageChannel) {
-        // For web workers, where supported
-        installMessageChannelImplementation();
-
-    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
-        // For IE 6–8
-        installReadyStateChangeImplementation();
-
-    } else {
-        // For older browsers
-        installSetTimeoutImplementation();
-    }
-
-    attachTo.setImmediate = setImmediate;
-    attachTo.clearImmediate = clearImmediate;
-}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5), __webpack_require__(3)))
-
-/***/ }),
-/* 54 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {
-/**
- * Module exports.
- */
-
-module.exports = deprecate;
-
-/**
- * Mark that a method should not be used.
- * Returns a modified function which warns once by default.
- *
- * If `localStorage.noDeprecation = true` is set, then it is a no-op.
- *
- * If `localStorage.throwDeprecation = true` is set, then deprecated functions
- * will throw an Error when invoked.
- *
- * If `localStorage.traceDeprecation = true` is set, then deprecated functions
- * will invoke `console.trace()` instead of `console.error()`.
- *
- * @param {Function} fn - the function to deprecate
- * @param {String} msg - the string to print to the console when `fn` is invoked
- * @returns {Function} a new "deprecated" version of `fn`
- * @api public
- */
-
-function deprecate (fn, msg) {
-  if (config('noDeprecation')) {
-    return fn;
-  }
-
-  var warned = false;
-  function deprecated() {
-    if (!warned) {
-      if (config('throwDeprecation')) {
-        throw new Error(msg);
-      } else if (config('traceDeprecation')) {
-        console.trace(msg);
-      } else {
-        console.warn(msg);
-      }
-      warned = true;
-    }
-    return fn.apply(this, arguments);
-  }
-
-  return deprecated;
-}
-
-/**
- * Checks `localStorage` for boolean values for the given `name`.
- *
- * @param {String} name
- * @returns {Boolean}
- * @api private
- */
-
-function config (name) {
-  // accessing global.localStorage can trigger a DOMException in sandboxed iframes
-  try {
-    if (!global.localStorage) return false;
-  } catch (_) {
-    return false;
-  }
-  var val = global.localStorage[name];
-  if (null == val) return false;
-  return String(val).toLowerCase() === 'true';
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
-
-/***/ }),
-/* 55 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// a passthrough stream.
-// basically just the most minimal sort of Transform stream.
-// Every written chunk gets output as-is.
-
-
-
-module.exports = PassThrough;
-
-var Transform = __webpack_require__(26);
-
-/*<replacement>*/
-var util = __webpack_require__(10);
-util.inherits = __webpack_require__(6);
-/*</replacement>*/
-
-util.inherits(PassThrough, Transform);
-
-function PassThrough(options) {
-  if (!(this instanceof PassThrough)) return new PassThrough(options);
-
-  Transform.call(this, options);
-}
-
-PassThrough.prototype._transform = function (chunk, encoding, cb) {
-  cb(null, chunk);
-};
-
-/***/ }),
-/* 56 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(17);
-
-
-/***/ }),
-/* 57 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(7);
-
-
-/***/ }),
-/* 58 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(16).Transform
-
-
-/***/ }),
-/* 59 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(16).PassThrough
-
-
-/***/ }),
-/* 60 */
-/***/ (function(module, exports) {
-
-module.exports = function isBuffer(arg) {
-  return arg && typeof arg === 'object'
-    && typeof arg.copy === 'function'
-    && typeof arg.fill === 'function'
-    && typeof arg.readUInt8 === 'function';
-}
-
-/***/ }),
-/* 61 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(global) {
-
-// compare and isBuffer taken from https://github.com/feross/buffer/blob/680e9e5e488f22aac27599a57dc844a6315928dd/index.js
-// original notice:
-
-/*!
- * The buffer module from node.js, for the browser.
- *
- * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
- * @license  MIT
- */
-function compare(a, b) {
-  if (a === b) {
-    return 0;
-  }
-
-  var x = a.length;
-  var y = b.length;
-
-  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
-    if (a[i] !== b[i]) {
-      x = a[i];
-      y = b[i];
-      break;
-    }
-  }
-
-  if (x < y) {
-    return -1;
-  }
-  if (y < x) {
-    return 1;
-  }
-  return 0;
-}
-function isBuffer(b) {
-  if (global.Buffer && typeof global.Buffer.isBuffer === 'function') {
-    return global.Buffer.isBuffer(b);
-  }
-  return !!(b != null && b._isBuffer);
-}
-
-// based on node assert, original notice:
-
-// http://wiki.commonjs.org/wiki/Unit_Testing/1.0
-//
-// THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
-//
-// Originally from narwhal.js (http://narwhaljs.org)
-// Copyright (c) 2009 Thomas Robinson <280north.com>
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the 'Software'), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var util = __webpack_require__(18);
-var hasOwn = Object.prototype.hasOwnProperty;
-var pSlice = Array.prototype.slice;
-var functionsHaveNames = (function () {
-  return function foo() {}.name === 'foo';
-}());
-function pToString (obj) {
-  return Object.prototype.toString.call(obj);
-}
-function isView(arrbuf) {
-  if (isBuffer(arrbuf)) {
-    return false;
-  }
-  if (typeof global.ArrayBuffer !== 'function') {
-    return false;
-  }
-  if (typeof ArrayBuffer.isView === 'function') {
-    return ArrayBuffer.isView(arrbuf);
-  }
-  if (!arrbuf) {
-    return false;
-  }
-  if (arrbuf instanceof DataView) {
-    return true;
-  }
-  if (arrbuf.buffer && arrbuf.buffer instanceof ArrayBuffer) {
-    return true;
-  }
-  return false;
-}
-// 1. The assert module provides functions that throw
-// AssertionError's when particular conditions are not met. The
-// assert module must conform to the following interface.
-
-var assert = module.exports = ok;
-
-// 2. The AssertionError is defined in assert.
-// new assert.AssertionError({ message: message,
-//                             actual: actual,
-//                             expected: expected })
-
-var regex = /\s*function\s+([^\(\s]*)\s*/;
-// based on https://github.com/ljharb/function.prototype.name/blob/adeeeec8bfcc6068b187d7d9fb3d5bb1d3a30899/implementation.js
-function getName(func) {
-  if (!util.isFunction(func)) {
-    return;
-  }
-  if (functionsHaveNames) {
-    return func.name;
-  }
-  var str = func.toString();
-  var match = str.match(regex);
-  return match && match[1];
-}
-assert.AssertionError = function AssertionError(options) {
-  this.name = 'AssertionError';
-  this.actual = options.actual;
-  this.expected = options.expected;
-  this.operator = options.operator;
-  if (options.message) {
-    this.message = options.message;
-    this.generatedMessage = false;
-  } else {
-    this.message = getMessage(this);
-    this.generatedMessage = true;
-  }
-  var stackStartFunction = options.stackStartFunction || fail;
-  if (Error.captureStackTrace) {
-    Error.captureStackTrace(this, stackStartFunction);
-  } else {
-    // non v8 browsers so we can have a stacktrace
-    var err = new Error();
-    if (err.stack) {
-      var out = err.stack;
-
-      // try to strip useless frames
-      var fn_name = getName(stackStartFunction);
-      var idx = out.indexOf('\n' + fn_name);
-      if (idx >= 0) {
-        // once we have located the function frame
-        // we need to strip out everything before it (and its line)
-        var next_line = out.indexOf('\n', idx + 1);
-        out = out.substring(next_line + 1);
-      }
-
-      this.stack = out;
-    }
-  }
-};
-
-// assert.AssertionError instanceof Error
-util.inherits(assert.AssertionError, Error);
-
-function truncate(s, n) {
-  if (typeof s === 'string') {
-    return s.length < n ? s : s.slice(0, n);
-  } else {
-    return s;
-  }
-}
-function inspect(something) {
-  if (functionsHaveNames || !util.isFunction(something)) {
-    return util.inspect(something);
-  }
-  var rawname = getName(something);
-  var name = rawname ? ': ' + rawname : '';
-  return '[Function' +  name + ']';
-}
-function getMessage(self) {
-  return truncate(inspect(self.actual), 128) + ' ' +
-         self.operator + ' ' +
-         truncate(inspect(self.expected), 128);
-}
-
-// At present only the three keys mentioned above are used and
-// understood by the spec. Implementations or sub modules can pass
-// other keys to the AssertionError's constructor - they will be
-// ignored.
-
-// 3. All of the following functions must throw an AssertionError
-// when a corresponding condition is not met, with a message that
-// may be undefined if not provided.  All assertion methods provide
-// both the actual and expected values to the assertion error for
-// display purposes.
-
-function fail(actual, expected, message, operator, stackStartFunction) {
-  throw new assert.AssertionError({
-    message: message,
-    actual: actual,
-    expected: expected,
-    operator: operator,
-    stackStartFunction: stackStartFunction
-  });
-}
-
-// EXTENSION! allows for well behaved errors defined elsewhere.
-assert.fail = fail;
-
-// 4. Pure assertion tests whether a value is truthy, as determined
-// by !!guard.
-// assert.ok(guard, message_opt);
-// This statement is equivalent to assert.equal(true, !!guard,
-// message_opt);. To test strictly for the value true, use
-// assert.strictEqual(true, guard, message_opt);.
-
-function ok(value, message) {
-  if (!value) fail(value, true, message, '==', assert.ok);
-}
-assert.ok = ok;
-
-// 5. The equality assertion tests shallow, coercive equality with
-// ==.
-// assert.equal(actual, expected, message_opt);
-
-assert.equal = function equal(actual, expected, message) {
-  if (actual != expected) fail(actual, expected, message, '==', assert.equal);
-};
-
-// 6. The non-equality assertion tests for whether two objects are not equal
-// with != assert.notEqual(actual, expected, message_opt);
-
-assert.notEqual = function notEqual(actual, expected, message) {
-  if (actual == expected) {
-    fail(actual, expected, message, '!=', assert.notEqual);
-  }
-};
-
-// 7. The equivalence assertion tests a deep equality relation.
-// assert.deepEqual(actual, expected, message_opt);
-
-assert.deepEqual = function deepEqual(actual, expected, message) {
-  if (!_deepEqual(actual, expected, false)) {
-    fail(actual, expected, message, 'deepEqual', assert.deepEqual);
-  }
-};
-
-assert.deepStrictEqual = function deepStrictEqual(actual, expected, message) {
-  if (!_deepEqual(actual, expected, true)) {
-    fail(actual, expected, message, 'deepStrictEqual', assert.deepStrictEqual);
-  }
-};
-
-function _deepEqual(actual, expected, strict, memos) {
-  // 7.1. All identical values are equivalent, as determined by ===.
-  if (actual === expected) {
-    return true;
-  } else if (isBuffer(actual) && isBuffer(expected)) {
-    return compare(actual, expected) === 0;
-
-  // 7.2. If the expected value is a Date object, the actual value is
-  // equivalent if it is also a Date object that refers to the same time.
-  } else if (util.isDate(actual) && util.isDate(expected)) {
-    return actual.getTime() === expected.getTime();
-
-  // 7.3 If the expected value is a RegExp object, the actual value is
-  // equivalent if it is also a RegExp object with the same source and
-  // properties (`global`, `multiline`, `lastIndex`, `ignoreCase`).
-  } else if (util.isRegExp(actual) && util.isRegExp(expected)) {
-    return actual.source === expected.source &&
-           actual.global === expected.global &&
-           actual.multiline === expected.multiline &&
-           actual.lastIndex === expected.lastIndex &&
-           actual.ignoreCase === expected.ignoreCase;
-
-  // 7.4. Other pairs that do not both pass typeof value == 'object',
-  // equivalence is determined by ==.
-  } else if ((actual === null || typeof actual !== 'object') &&
-             (expected === null || typeof expected !== 'object')) {
-    return strict ? actual === expected : actual == expected;
-
-  // If both values are instances of typed arrays, wrap their underlying
-  // ArrayBuffers in a Buffer each to increase performance
-  // This optimization requires the arrays to have the same type as checked by
-  // Object.prototype.toString (aka pToString). Never perform binary
-  // comparisons for Float*Arrays, though, since e.g. +0 === -0 but their
-  // bit patterns are not identical.
-  } else if (isView(actual) && isView(expected) &&
-             pToString(actual) === pToString(expected) &&
-             !(actual instanceof Float32Array ||
-               actual instanceof Float64Array)) {
-    return compare(new Uint8Array(actual.buffer),
-                   new Uint8Array(expected.buffer)) === 0;
-
-  // 7.5 For all other Object pairs, including Array objects, equivalence is
-  // determined by having the same number of owned properties (as verified
-  // with Object.prototype.hasOwnProperty.call), the same set of keys
-  // (although not necessarily the same order), equivalent values for every
-  // corresponding key, and an identical 'prototype' property. Note: this
-  // accounts for both named and indexed properties on Arrays.
-  } else if (isBuffer(actual) !== isBuffer(expected)) {
-    return false;
-  } else {
-    memos = memos || {actual: [], expected: []};
-
-    var actualIndex = memos.actual.indexOf(actual);
-    if (actualIndex !== -1) {
-      if (actualIndex === memos.expected.indexOf(expected)) {
-        return true;
-      }
-    }
-
-    memos.actual.push(actual);
-    memos.expected.push(expected);
-
-    return objEquiv(actual, expected, strict, memos);
-  }
-}
-
-function isArguments(object) {
-  return Object.prototype.toString.call(object) == '[object Arguments]';
-}
-
-function objEquiv(a, b, strict, actualVisitedObjects) {
-  if (a === null || a === undefined || b === null || b === undefined)
-    return false;
-  // if one is a primitive, the other must be same
-  if (util.isPrimitive(a) || util.isPrimitive(b))
-    return a === b;
-  if (strict && Object.getPrototypeOf(a) !== Object.getPrototypeOf(b))
-    return false;
-  var aIsArgs = isArguments(a);
-  var bIsArgs = isArguments(b);
-  if ((aIsArgs && !bIsArgs) || (!aIsArgs && bIsArgs))
-    return false;
-  if (aIsArgs) {
-    a = pSlice.call(a);
-    b = pSlice.call(b);
-    return _deepEqual(a, b, strict);
-  }
-  var ka = objectKeys(a);
-  var kb = objectKeys(b);
-  var key, i;
-  // having the same number of owned properties (keys incorporates
-  // hasOwnProperty)
-  if (ka.length !== kb.length)
-    return false;
-  //the same set of keys (although not necessarily the same order),
-  ka.sort();
-  kb.sort();
-  //~~~cheap key test
-  for (i = ka.length - 1; i >= 0; i--) {
-    if (ka[i] !== kb[i])
-      return false;
-  }
-  //equivalent values for every corresponding key, and
-  //~~~possibly expensive deep test
-  for (i = ka.length - 1; i >= 0; i--) {
-    key = ka[i];
-    if (!_deepEqual(a[key], b[key], strict, actualVisitedObjects))
-      return false;
-  }
-  return true;
-}
-
-// 8. The non-equivalence assertion tests for any deep inequality.
-// assert.notDeepEqual(actual, expected, message_opt);
-
-assert.notDeepEqual = function notDeepEqual(actual, expected, message) {
-  if (_deepEqual(actual, expected, false)) {
-    fail(actual, expected, message, 'notDeepEqual', assert.notDeepEqual);
-  }
-};
-
-assert.notDeepStrictEqual = notDeepStrictEqual;
-function notDeepStrictEqual(actual, expected, message) {
-  if (_deepEqual(actual, expected, true)) {
-    fail(actual, expected, message, 'notDeepStrictEqual', notDeepStrictEqual);
-  }
-}
-
-
-// 9. The strict equality assertion tests strict equality, as determined by ===.
-// assert.strictEqual(actual, expected, message_opt);
-
-assert.strictEqual = function strictEqual(actual, expected, message) {
-  if (actual !== expected) {
-    fail(actual, expected, message, '===', assert.strictEqual);
-  }
-};
-
-// 10. The strict non-equality assertion tests for strict inequality, as
-// determined by !==.  assert.notStrictEqual(actual, expected, message_opt);
-
-assert.notStrictEqual = function notStrictEqual(actual, expected, message) {
-  if (actual === expected) {
-    fail(actual, expected, message, '!==', assert.notStrictEqual);
-  }
-};
-
-function expectedException(actual, expected) {
-  if (!actual || !expected) {
-    return false;
-  }
-
-  if (Object.prototype.toString.call(expected) == '[object RegExp]') {
-    return expected.test(actual);
-  }
-
-  try {
-    if (actual instanceof expected) {
-      return true;
-    }
-  } catch (e) {
-    // Ignore.  The instanceof check doesn't work for arrow functions.
-  }
-
-  if (Error.isPrototypeOf(expected)) {
-    return false;
-  }
-
-  return expected.call({}, actual) === true;
-}
-
-function _tryBlock(block) {
-  var error;
-  try {
-    block();
-  } catch (e) {
-    error = e;
-  }
-  return error;
-}
-
-function _throws(shouldThrow, block, expected, message) {
-  var actual;
-
-  if (typeof block !== 'function') {
-    throw new TypeError('"block" argument must be a function');
-  }
-
-  if (typeof expected === 'string') {
-    message = expected;
-    expected = null;
-  }
-
-  actual = _tryBlock(block);
-
-  message = (expected && expected.name ? ' (' + expected.name + ').' : '.') +
-            (message ? ' ' + message : '.');
-
-  if (shouldThrow && !actual) {
-    fail(actual, expected, 'Missing expected exception' + message);
-  }
-
-  var userProvidedMessage = typeof message === 'string';
-  var isUnwantedException = !shouldThrow && util.isError(actual);
-  var isUnexpectedException = !shouldThrow && actual && !expected;
-
-  if ((isUnwantedException &&
-      userProvidedMessage &&
-      expectedException(actual, expected)) ||
-      isUnexpectedException) {
-    fail(actual, expected, 'Got unwanted exception' + message);
-  }
-
-  if ((shouldThrow && actual && expected &&
-      !expectedException(actual, expected)) || (!shouldThrow && actual)) {
-    throw actual;
-  }
-}
-
-// 11. Expected to throw an error:
-// assert.throws(block, Error_opt, message_opt);
-
-assert.throws = function(block, /*optional*/error, /*optional*/message) {
-  _throws(true, block, error, message);
-};
-
-// EXTENSION! This is annoying to write outside this module.
-assert.doesNotThrow = function(block, /*optional*/error, /*optional*/message) {
-  _throws(false, block, error, message);
-};
-
-assert.ifError = function(err) { if (err) throw err; };
-
-var objectKeys = Object.keys || function (obj) {
-  var keys = [];
-  for (var key in obj) {
-    if (hasOwn.call(obj, key)) keys.push(key);
-  }
-  return keys;
-};
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
-
-/***/ }),
-/* 62 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports.asyncMap = __webpack_require__(63)
-exports.bindActor = __webpack_require__(27)
-exports.chain = __webpack_require__(64)
-
-
-/***/ }),
-/* 63 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {
-/*
-usage:
-
-// do something to a list of things
-asyncMap(myListOfStuff, function (thing, cb) { doSomething(thing.foo, cb) }, cb)
-// do more than one thing to each item
-asyncMap(list, fooFn, barFn, cb)
-
-*/
-
-module.exports = asyncMap
-
-function asyncMap () {
-  var steps = Array.prototype.slice.call(arguments)
-    , list = steps.shift() || []
-    , cb_ = steps.pop()
-  if (typeof cb_ !== "function") throw new Error(
-    "No callback provided to asyncMap")
-  if (!list) return cb_(null, [])
-  if (!Array.isArray(list)) list = [list]
-  var n = steps.length
-    , data = [] // 2d array
-    , errState = null
-    , l = list.length
-    , a = l * n
-  if (!a) return cb_(null, [])
-  function cb (er) {
-    if (er && !errState) errState = er
-
-    var argLen = arguments.length
-    for (var i = 1; i < argLen; i ++) if (arguments[i] !== undefined) {
-      data[i - 1] = (data[i - 1] || []).concat(arguments[i])
-    }
-    // see if any new things have been added.
-    if (list.length > l) {
-      var newList = list.slice(l)
-      a += (list.length - l) * n
-      l = list.length
-      process.nextTick(function () {
-        newList.forEach(function (ar) {
-          steps.forEach(function (fn) { fn(ar, cb) })
-        })
-      })
-    }
-
-    if (--a === 0) cb_.apply(null, [errState].concat(data))
-  }
-  // expect the supplied cb function to be called
-  // "n" times for each thing in the array.
-  list.forEach(function (ar) {
-    steps.forEach(function (fn) { fn(ar, cb) })
-  })
-}
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(3)))
-
-/***/ }),
-/* 64 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = chain
-var bindActor = __webpack_require__(27)
-chain.first = {} ; chain.last = {}
-function chain (things, cb) {
-  var res = []
-  ;(function LOOP (i, len) {
-    if (i >= len) return cb(null,res)
-    if (Array.isArray(things[i]))
-      things[i] = bindActor.apply(null,
-        things[i].map(function(i){
-          return (i===chain.first) ? res[0]
-           : (i===chain.last)
-             ? res[res.length - 1] : i }))
-    if (!things[i]) return LOOP(i + 1, len)
-    things[i](function (er, data) {
-      if (er) return cb(er, res)
-      if (data !== undefined) res = res.concat(data)
-      LOOP(i + 1, len)
-    })
-  })(0, things.length) }
-
-
-/***/ }),
-/* 65 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/**
- * @preserve
- * JS Implementation of incremental MurmurHash3 (r150) (as of May 10, 2013)
- *
- * @author <a href="mailto:jensyt@gmail.com">Jens Taylor</a>
- * @see http://github.com/homebrewing/brauhaus-diff
- * @author <a href="mailto:gary.court@gmail.com">Gary Court</a>
- * @see http://github.com/garycourt/murmurhash-js
- * @author <a href="mailto:aappleby@gmail.com">Austin Appleby</a>
- * @see http://sites.google.com/site/murmurhash/
- */
-(function(){
-    var cache;
-
-    // Call this function without `new` to use the cached object (good for
-    // single-threaded environments), or with `new` to create a new object.
-    //
-    // @param {string} key A UTF-16 or ASCII string
-    // @param {number} seed An optional positive integer
-    // @return {object} A MurmurHash3 object for incremental hashing
-    function MurmurHash3(key, seed) {
-        var m = this instanceof MurmurHash3 ? this : cache;
-        m.reset(seed)
-        if (typeof key === 'string' && key.length > 0) {
-            m.hash(key);
-        }
-
-        if (m !== this) {
-            return m;
-        }
-    };
-
-    // Incrementally add a string to this hash
-    //
-    // @param {string} key A UTF-16 or ASCII string
-    // @return {object} this
-    MurmurHash3.prototype.hash = function(key) {
-        var h1, k1, i, top, len;
-
-        len = key.length;
-        this.len += len;
-
-        k1 = this.k1;
-        i = 0;
-        switch (this.rem) {
-            case 0: k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) : 0;
-            case 1: k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) << 8 : 0;
-            case 2: k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) << 16 : 0;
-            case 3:
-                k1 ^= len > i ? (key.charCodeAt(i) & 0xff) << 24 : 0;
-                k1 ^= len > i ? (key.charCodeAt(i++) & 0xff00) >> 8 : 0;
-        }
-
-        this.rem = (len + this.rem) & 3; // & 3 is same as % 4
-        len -= this.rem;
-        if (len > 0) {
-            h1 = this.h1;
-            while (1) {
-                k1 = (k1 * 0x2d51 + (k1 & 0xffff) * 0xcc9e0000) & 0xffffffff;
-                k1 = (k1 << 15) | (k1 >>> 17);
-                k1 = (k1 * 0x3593 + (k1 & 0xffff) * 0x1b870000) & 0xffffffff;
-
-                h1 ^= k1;
-                h1 = (h1 << 13) | (h1 >>> 19);
-                h1 = (h1 * 5 + 0xe6546b64) & 0xffffffff;
-
-                if (i >= len) {
-                    break;
-                }
-
-                k1 = ((key.charCodeAt(i++) & 0xffff)) ^
-                     ((key.charCodeAt(i++) & 0xffff) << 8) ^
-                     ((key.charCodeAt(i++) & 0xffff) << 16);
-                top = key.charCodeAt(i++);
-                k1 ^= ((top & 0xff) << 24) ^
-                      ((top & 0xff00) >> 8);
-            }
-
-            k1 = 0;
-            switch (this.rem) {
-                case 3: k1 ^= (key.charCodeAt(i + 2) & 0xffff) << 16;
-                case 2: k1 ^= (key.charCodeAt(i + 1) & 0xffff) << 8;
-                case 1: k1 ^= (key.charCodeAt(i) & 0xffff);
-            }
-
-            this.h1 = h1;
-        }
-
-        this.k1 = k1;
-        return this;
-    };
-
-    // Get the result of this hash
-    //
-    // @return {number} The 32-bit hash
-    MurmurHash3.prototype.result = function() {
-        var k1, h1;
-        
-        k1 = this.k1;
-        h1 = this.h1;
-
-        if (k1 > 0) {
-            k1 = (k1 * 0x2d51 + (k1 & 0xffff) * 0xcc9e0000) & 0xffffffff;
-            k1 = (k1 << 15) | (k1 >>> 17);
-            k1 = (k1 * 0x3593 + (k1 & 0xffff) * 0x1b870000) & 0xffffffff;
-            h1 ^= k1;
-        }
-
-        h1 ^= this.len;
-
-        h1 ^= h1 >>> 16;
-        h1 = (h1 * 0xca6b + (h1 & 0xffff) * 0x85eb0000) & 0xffffffff;
-        h1 ^= h1 >>> 13;
-        h1 = (h1 * 0xae35 + (h1 & 0xffff) * 0xc2b20000) & 0xffffffff;
-        h1 ^= h1 >>> 16;
-
-        return h1 >>> 0;
-    };
-
-    // Reset the hash object for reuse
-    //
-    // @param {number} seed An optional positive integer
-    MurmurHash3.prototype.reset = function(seed) {
-        this.h1 = typeof seed === 'number' ? seed : 0;
-        this.rem = this.k1 = this.len = 0;
-        return this;
-    };
-
-    // A cached object to use. This can be safely used if you're in a single-
-    // threaded environment, otherwise you need to create new hashes to use.
-    cache = new MurmurHash3();
-
-    if (true) {
-        module.exports = MurmurHash3;
-    } else {}
-}());
-
-
-/***/ }),
-/* 66 */
+/* 24 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -11616,7 +5092,7 @@ var logger_Logger = function () {
     return Logger;
 }();
 // EXTERNAL MODULE: ./binary-protocol/src/utils.ts
-var utils = __webpack_require__(4);
+var utils = __webpack_require__(3);
 
 // EXTERNAL MODULE: ./node_modules/component-emitter2/index.js
 var component_emitter2 = __webpack_require__(1);
@@ -11801,10 +5277,10 @@ var timeout_registry_TimeoutRegistry = function (_EventEmitter) {
     return TimeoutRegistry;
 }(component_emitter2);
 // EXTERNAL MODULE: ./src/util/timer-registry.ts
-var timer_registry = __webpack_require__(28);
+var timer_registry = __webpack_require__(9);
 
 // EXTERNAL MODULE: ./binary-protocol/src/message-parser.ts
-var message_parser = __webpack_require__(14);
+var message_parser = __webpack_require__(5);
 
 // CONCATENATED MODULE: ./src/util/state-machine.ts
 var state_machine_createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -11856,7 +5332,7 @@ var StateMachine = function () {
     return StateMachine;
 }();
 // EXTERNAL MODULE: ./node_modules/url/url.js
-var url_url = __webpack_require__(19);
+var url_url = __webpack_require__(8);
 
 // CONCATENATED MODULE: ./src/util/utils.ts
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -12637,7 +6113,7 @@ var connection_Connection = function () {
     return Connection;
 }();
 // EXTERNAL MODULE: ./src/connection/socket-factory.ts
-var socket_factory = __webpack_require__(29);
+var socket_factory = __webpack_require__(10);
 
 // CONCATENATED MODULE: ./src/util/listener.ts
 var listener_createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -15633,12 +9109,9 @@ var Storage = function () {
     function Storage(options) {
         storage_service_classCallCheck(this, Storage);
 
-        if (typeof localStorage === 'undefined' || localStorage === null) {
-            var LocalStorage = __webpack_require__(41).LocalStorage;
-            this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024);
-        } else {
+        if (true) {
             this.storage = window.localStorage;
-        }
+        } else { var LocalStorage; }
     }
 
     storage_service_createClass(Storage, [{

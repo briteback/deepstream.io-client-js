@@ -12,13 +12,14 @@ export class WriteAcknowledgementService {
      * Send message with write ack callback.
      */
     send(message, callback) {
-        if (this.services.connection.isConnected === false) {
+        if (!this.services.connection.isConnected) {
             this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE));
             return;
         }
         const correlationId = this.count.toString();
         this.responses.set(correlationId, callback);
-        this.services.connection.sendMessage(Object.assign({}, message, { correlationId, action: ACTION_TO_WRITE_ACK[message.action] }));
+        const messageToSend = Object.assign({}, message, { correlationId, action: ACTION_TO_WRITE_ACK[message.action] });
+        this.services.connection.sendMessage(messageToSend);
         this.count++;
     }
     recieve(message) {

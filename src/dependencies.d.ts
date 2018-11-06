@@ -26,3 +26,5 @@ declare namespace NodeJS  {
         MozWebSocket: WebSocket
     }
   }
+
+declare var IN_BROWSER: boolean;

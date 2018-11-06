@@ -9,7 +9,6 @@ import { List } from './list';
 import { Listener } from '../util/listener';
 import { SingleNotifier } from './single-notifier';
 import { WriteAcknowledgementService } from './write-ack-service';
-import { DirtyService } from './dirty-service';
 import { MergeStrategyService } from './merge-strategy-service';
 export class RecordHandler {
     constructor(services, options, recordServices, listener) {
@@ -21,19 +20,10 @@ export class RecordHandler {
             writeAckService: new WriteAcknowledgementService(services),
             readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
             headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),
-            dirtyService: new DirtyService(services.storage, options.dirtyStorageName),
             mergeStrategy: new MergeStrategyService(services, options.mergeStrategy)
         };
-        this.dirtyService = this.recordServices.dirtyService;
-        this.sendUpdatedData = this.sendUpdatedData.bind(this);
-        this.onRecordUpdated = this.onRecordUpdated.bind(this);
-        this.onMergeCompleted = this.onMergeCompleted.bind(this);
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this));
-        this.services.connection.onReestablished(this.syncDirtyRecords.bind(this));
-        if (this.services.connection.isConnected) {
-            this.syncDirtyRecords();
-        }
     }
     setMergeStrategy(recordName, mergeStrategy) {
         if (typeof mergeStrategy === 'function') {
@@ -108,27 +98,26 @@ export class RecordHandler {
             throw new Error('invalid argument: callback');
         }
         const recordCore = this.recordCores.get(name);
-        if (recordCore) {
-            if (callback) {
-                recordCore.whenReady(null, () => {
-                    callback(null, recordCore.get());
-                });
-            }
-            else {
-                return new Promise((resolve, reject) => {
-                    recordCore.whenReady(null, () => {
-                        resolve(recordCore.get());
-                    });
-                });
-            }
-            return;
+        if (recordCore && callback) {
+            return recordCore.whenReady(null, () => {
+                callback(null, recordCore.get());
+            });
         }
-        if (callback) {
+        else if (recordCore && !callback) {
+            return new Promise((resolve, reject) => {
+                recordCore.whenReady(null, () => {
+                    resolve(recordCore.get());
+                });
+            });
+        }
+        else if (!recordCore && callback) {
             this.recordServices.readRegistry.request(name, callback);
+            return;
         }
         else {
             return new Promise((resolve, reject) => {
-                this.recordServices.readRegistry.request(name, (error, data) => error ? reject(error) : resolve(data));
+                const cb = (err, data) => err ? reject(err) : resolve(data);
+                this.recordServices.readRegistry.request(name, cb);
             });
         }
     }
@@ -146,7 +135,8 @@ export class RecordHandler {
                 this.head(name, cb);
             });
         }
-        cb = (error, version) => error ? callback(error, null) : callback(null, version !== -1);
+        cb = (error, version) => error ?
+            callback(error, null) : callback(null, version !== -1);
         this.head(name, cb);
     }
     head(name, callback) {
@@ -203,23 +193,22 @@ export class RecordHandler {
         if (!path && (data === null || typeof data !== 'object')) {
             throw new Error('invalid argument: data must be an object when no path is provided');
         }
-        const recordCores = this.recordCores.get(recordName);
-        if (recordCores) {
-            recordCores.set({ path, data, callback });
+        const recordCore = this.recordCores.get(recordName);
+        if (recordCore) {
+            recordCore.set({ path, data, callback });
             return;
         }
-        let action;
-        if (path) {
-            if (data === undefined) {
-                action = RECORD_ACTION.ERASE;
+        const action = (() => {
+            if (!path) {
+                return RECORD_ACTION.CREATEANDUPDATE;
+            }
+            else if (data === undefined) {
+                return RECORD_ACTION.ERASE;
             }
             else {
-                action = RECORD_ACTION.CREATEANDPATCH;
+                return RECORD_ACTION.CREATEANDPATCH;
             }
-        }
-        else {
-            action = RECORD_ACTION.CREATEANDUPDATE;
-        }
+        })();
         const message = {
             topic: TOPIC.RECORD,
             action,
@@ -306,47 +295,6 @@ export class RecordHandler {
             recordCore.usages++;
         }
         return recordCore;
-    }
-    syncDirtyRecords() {
-        this.dirtyService.whenLoaded(() => {
-            const dirtyRecords = this.dirtyService.getAll();
-            for (const recordName in dirtyRecords) {
-                const recordCore = this.recordCores.get(recordName);
-                if (recordCore && recordCore.usages > 0) {
-                    // if it isn't zero.. problem.
-                    continue;
-                }
-                this.services.storage.get(recordName, this.sendUpdatedData);
-            }
-        });
-    }
-    sendUpdatedData(recordName, version, data) {
-        this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated });
-    }
-    onRecordUpdated(error, recordName) {
-        if (!error) {
-            this.dirtyService.setDirty(recordName, false);
-        }
-    }
-    /**
-    * Callback once the record merge has completed. If successful it will set the
-    * record state, else emit and error and the record will remain in an
-    * inconsistent state until the next update.
-    */
-    // private onMergeConflict (message: RecordWriteMessage): void {
-    //   this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
-    //     this.recordServices.mergeStrategy.merge(
-    //       message.name,
-    //       version,
-    //       data,
-    //       message.version,
-    //       message.parsedData,
-    //       this.onMergeCompleted
-    //     )
-    //   })
-    // }
-    onMergeCompleted(error, recordName, mergeData, remoteVersion, remoteData) {
-        this.sendSetData(recordName, remoteVersion + 1, { data: mergeData });
     }
 }
 //# sourceMappingURL=record-handler.js.map

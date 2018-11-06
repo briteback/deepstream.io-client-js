@@ -1,11 +1,11 @@
 export class Storage {
     constructor(options) {
-        if (typeof localStorage === 'undefined' || localStorage === null) {
-            const LocalStorage = require('node-localstorage').LocalStorage;
-            this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024);
+        if (IN_BROWSER) {
+            this.storage = window.localStorage;
         }
         else {
-            this.storage = window.localStorage;
+            const LocalStorage = require('node-localstorage').LocalStorage;
+            this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024);
         }
     }
     get(recordName, callback) {

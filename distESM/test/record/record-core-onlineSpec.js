@@ -14,6 +14,13 @@ import { getServicesMock, getRecordServices } from '../mocks';
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants';
 import { DefaultOptions } from '../../src/client-options';
 import { RecordCore } from '../../src/record/record-core';
+const createMessage = (name, action) => ({
+    topic: TOPIC.RECORD,
+    name,
+    action,
+    parsedData: {},
+    version: 1
+});
 describe('record core online', () => {
     let whenCompleted;
     let recordCore;
@@ -168,7 +175,7 @@ describe('record core online', () => {
     it('queues discarding record when no longer needed', () => {
         recordServices.readRegistry.recieve(READ_RESPONSE);
         recordCore.discard();
-        expect(recordCore.recordState).to.equal(6 /* UNSUBSCRIBING */);
+        expect(recordCore.recordState).to.equal(3 /* UNSUBSCRIBING */);
         // tslint:disable-next-line:no-unused-expression
         expect(recordCore.isReady).to.be.true;
     });
@@ -177,7 +184,7 @@ describe('record core online', () => {
         recordCore.discard();
         recordCore.usages++;
         yield BBPromise.delay(30);
-        expect(recordCore.recordState).to.equal(4 /* READY */);
+        expect(recordCore.recordState).to.equal(2 /* READY */);
         // tslint:disable-next-line:no-unused-expression
         expect(recordCore.isReady).to.be.true;
     }));
@@ -193,7 +200,7 @@ describe('record core online', () => {
             name
         });
         yield BBPromise.delay(30);
-        expect(recordCore.recordState).to.equal(7 /* UNSUBSCRIBED */);
+        expect(recordCore.recordState).to.equal(4 /* UNSUBSCRIBED */);
         assert.calledOnce(whenCompleted);
         assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression
@@ -210,7 +217,7 @@ describe('record core online', () => {
             name
         });
         recordCore.delete();
-        expect(recordCore.recordState).to.equal(8 /* DELETING */);
+        expect(recordCore.recordState).to.equal(5 /* DELETING */);
         assert.notCalled(whenCompleted);
         // tslint:disable-next-line:no-unused-expression
         expect(recordCore.isReady).to.be.true;
@@ -226,7 +233,7 @@ describe('record core online', () => {
             action: RECORD_ACTION.DELETE_SUCCESS,
             name
         });
-        expect(recordCore.recordState).to.equal(9 /* DELETED */);
+        expect(recordCore.recordState).to.equal(6 /* DELETED */);
         assert.calledOnce(whenCompleted);
         assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression
@@ -239,10 +246,23 @@ describe('record core online', () => {
             action: RECORD_ACTION.DELETED,
             name
         });
-        expect(recordCore.recordState).to.equal(9 /* DELETED */);
+        expect(recordCore.recordState).to.equal(6 /* DELETED */);
         assert.calledOnce(whenCompleted);
         assert.calledWithExactly(whenCompleted, name);
         // tslint:disable-next-line:no-unused-expression
+        expect(recordCore.isReady).to.be.false;
+    }));
+    it('does not crash on a delete while unsubscribing', () => __awaiter(this, void 0, void 0, function* () {
+        services;
+        const recordCore = new RecordCore('recordB', services, options, recordServices, whenCompleted);
+        const READ = createMessage('recordB', RECORD_ACTION.READ_RESPONSE);
+        const DELETED = createMessage('recordB', RECORD_ACTION.DELETED);
+        recordServices.readRegistry.recieve(READ);
+        expect(recordCore.recordState).to.equal(2 /* READY */);
+        recordCore.discard();
+        expect(recordCore.recordState).to.equal(3 /* UNSUBSCRIBING */);
+        expect(() => recordCore.handle(DELETED)).not.to.throw();
+        yield BBPromise.delay(30);
         expect(recordCore.isReady).to.be.false;
     }));
 });
