@@ -28,6 +28,7 @@ export declare class RecordCore extends Emitter {
     private options;
     private recordServices;
     private emitter;
+    private parentEmitter;
     private data;
     private stateMachine;
     private responseTimeout;

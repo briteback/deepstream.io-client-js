@@ -23,6 +23,7 @@ class Client extends EventEmitter {
         services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
         services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
         services.connection = new connection_1.Connection(services, this.options, url, this);
+        services.emitter = this;
         this.services = services;
         this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));
         this.event = new event_handler_1.EventHandler(this.services, this.options);

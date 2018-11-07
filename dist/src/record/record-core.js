@@ -20,6 +20,7 @@ class RecordCore extends Emitter {
         this.hasProvider = false;
         this.pendingWrites = [];
         this.isReady = false;
+        this.parentEmitter = services.emitter;
         this.version = null;
         this.responseTimeout = -1;
         this.discardTimeout = -1;
@@ -290,6 +291,15 @@ class RecordCore extends Emitter {
      */
     onSubscribing() {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+        this.parentEmitter.on(constants_1.EVENT.CONNECTION_STATE_CHANGED, (newState) => {
+            if (newState === constants_1.CONNECTION_STATE.OPEN) {
+                this.services.connection.sendMessage({
+                    topic: message_constants_1.TOPIC.RECORD,
+                    action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
+                    name: this.name
+                });
+            }
+        });
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,
@@ -304,11 +314,13 @@ class RecordCore extends Emitter {
                 name: this.name
             }
         });
-        this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RECORD,
-            action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
-            name: this.name
-        });
+        if (this.services.connection.isConnected) {
+            this.services.connection.sendMessage({
+                topic: message_constants_1.TOPIC.RECORD,
+                action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
+                name: this.name
+            });
+        }
     }
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);

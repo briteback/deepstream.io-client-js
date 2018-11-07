@@ -1,4 +1,4 @@
-import { EVENT } from '../constants';
+import { EVENT, CONNECTION_STATE } from '../constants';
 import { TOPIC, RECORD_ACTIONS as RA } from '../../binary-protocol/src/message-constants';
 import { get as getPath, setValue as setPath } from './json-path';
 import * as Emitter from 'component-emitter2';
@@ -18,6 +18,7 @@ export class RecordCore extends Emitter {
         this.hasProvider = false;
         this.pendingWrites = [];
         this.isReady = false;
+        this.parentEmitter = services.emitter;
         this.version = null;
         this.responseTimeout = -1;
         this.discardTimeout = -1;
@@ -288,6 +289,15 @@ export class RecordCore extends Emitter {
      */
     onSubscribing() {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+        this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState) => {
+            if (newState === CONNECTION_STATE.OPEN) {
+                this.services.connection.sendMessage({
+                    topic: TOPIC.RECORD,
+                    action: RA.SUBSCRIBECREATEANDREAD,
+                    name: this.name
+                });
+            }
+        });
         this.services.timeoutRegistry.add({
             message: {
                 topic: TOPIC.RECORD,
@@ -302,11 +312,13 @@ export class RecordCore extends Emitter {
                 name: this.name
             }
         });
-        this.services.connection.sendMessage({
-            topic: TOPIC.RECORD,
-            action: RA.SUBSCRIBECREATEANDREAD,
-            name: this.name
-        });
+        if (this.services.connection.isConnected) {
+            this.services.connection.sendMessage({
+                topic: TOPIC.RECORD,
+                action: RA.SUBSCRIBECREATEANDREAD,
+                name: this.name
+            });
+        }
     }
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);

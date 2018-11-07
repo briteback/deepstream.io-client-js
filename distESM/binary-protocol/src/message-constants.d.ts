@@ -15,7 +15,6 @@ export declare enum META_KEYS {
     protocolVersion = "x",
     requestorName = "rn",
     requestorData = "rd",
-    trustedSender = "ts",
     registryTopic = "rt"
 }
 export declare enum PAYLOAD_ENCODING {

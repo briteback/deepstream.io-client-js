@@ -22,6 +22,7 @@ export interface Services {
     timerRegistry: TimerRegistry;
     socketFactory: SocketFactory;
     storage: RecordOfflineStore;
+    emitter: Emitter;
 }
 export declare class Client extends EventEmitter {
     event: EventHandler;
