@@ -9,7 +9,7 @@ class TimerRegistry {
         return true;
     }
     requestIdleCallback(callback) {
-        process.nextTick(callback);
+        Promise.resolve().then(() => callback());
     }
 }
 exports.TimerRegistry = TimerRegistry;

@@ -20,7 +20,7 @@ export class TimerRegistry {
     }
 
     public requestIdleCallback (callback: Function): void {
-        Promise.resolve().then(callback)
+        Promise.resolve().then(() => callback())
     }
 
 }

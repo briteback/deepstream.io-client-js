@@ -7,7 +7,7 @@ export class TimerRegistry {
         return true;
     }
     requestIdleCallback(callback) {
-        process.nextTick(callback);
+        Promise.resolve().then(() => callback());
     }
 }
 //# sourceMappingURL=timer-registry.js.map
