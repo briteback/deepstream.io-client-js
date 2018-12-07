@@ -62,6 +62,7 @@ class RPCResponse {
         if (this.isComplete === true) {
             throw new Error(`Rpc ${this.name} already completed`);
         }
+        error = error || 'Error';
         this.autoAccept = false;
         this.isComplete = true;
         this.isAccepted = true;
