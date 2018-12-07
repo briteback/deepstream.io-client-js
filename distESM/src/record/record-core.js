@@ -353,15 +353,6 @@ export class RecordCore extends Emitter {
     }
     /// Handlers for received record messages ///
     onUnsubscribed() {
-        if (this.services.connection.isConnected) {
-            const message = {
-                topic: TOPIC.RECORD,
-                action: RA.UNSUBSCRIBE,
-                name: this.name
-            };
-            this.discardTimeout = this.services.timeoutRegistry.add({ message });
-            this.services.connection.sendMessage(message);
-        }
         this.emit(EVENT.RECORD_DISCARDED);
         this.destroy();
     }
@@ -370,6 +361,9 @@ export class RecordCore extends Emitter {
         this.destroy();
     }
     handleAckMessage(message) {
+        if (message.isAck && message.topic === TOPIC.RECORD && message.action === RA.UNSUBSCRIBE) {
+            this.stateMachine.transition(RA.UNSUBSCRIBE_ACK);
+        }
         this.services.timeoutRegistry.remove(message);
     }
     handleUpdateMessage(message) {
