@@ -235,12 +235,15 @@ export class RecordCore extends Emitter {
         this.whenReady(null, () => {
             this.references--;
             if (this.references <= 0) {
-                this.discardTimeout = this.services.timerRegistry.add({
-                    duration: this.options.discardTimeout,
-                    callback: this.stateMachine.transition,
-                    context: this.stateMachine,
-                    data: RA.UNSUBSCRIBE_ACK
-                });
+                const message = {
+                    topic: TOPIC.RECORD,
+                    action: RA.UNSUBSCRIBE,
+                    name: this.name
+                };
+                if (this.services.connection.isConnected) {
+                    this.services.connection.sendMessage(message);
+                }
+                this.onUnsubscribed();
             }
         });
         this.stateMachine.transition(RA.UNSUBSCRIBE);
@@ -361,9 +364,6 @@ export class RecordCore extends Emitter {
         this.destroy();
     }
     handleAckMessage(message) {
-        if (message.isAck && message.topic === TOPIC.RECORD && message.action === RA.UNSUBSCRIBE) {
-            this.stateMachine.transition(RA.UNSUBSCRIBE_ACK);
-        }
         this.services.timeoutRegistry.remove(message);
     }
     handleUpdateMessage(message) {
