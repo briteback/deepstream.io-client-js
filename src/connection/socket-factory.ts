@@ -13,9 +13,11 @@ const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
 import * as NodeWebSocket from 'ws'
 
 export const socketFactory = (url: string, options: any): Socket => {
-  const useBrowserSocket = !options.SocketImplementation && BrowserWebsocket;
+  const useBrowserSocket = options.WebSocketImplementation ?
+    options.WebSocketImplementation === BrowserWebsocket :
+    BrowserWebsocket;
   const socket =
-    options.SocketImplementation ? options.SocketImplementation :
+    options.WebSocketImplementation ? options.WebSocketImplementation :
     BrowserWebsocket ? new BrowserWebsocket(url, [], options) :
     new NodeWebSocket(url, options) as any
 

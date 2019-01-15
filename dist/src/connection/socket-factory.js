@@ -6,8 +6,10 @@ const message_constants_1 = require("../../binary-protocol/src/message-constants
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
 const NodeWebSocket = require("ws");
 exports.socketFactory = (url, options) => {
-    const useBrowserSocket = !options.SocketImplementation && BrowserWebsocket;
-    const socket = options.SocketImplementation ? options.SocketImplementation :
+    const useBrowserSocket = options.WebSocketImplementation ?
+        options.WebSocketImplementation === BrowserWebsocket :
+        BrowserWebsocket;
+    const socket = options.WebSocketImplementation ? options.WebSocketImplementation :
         BrowserWebsocket ? new BrowserWebsocket(url, [], options) :
             new NodeWebSocket(url, options);
     if (useBrowserSocket) {
