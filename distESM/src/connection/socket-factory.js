@@ -4,10 +4,11 @@ import { TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-con
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
 import * as NodeWebSocket from 'ws';
 export const socketFactory = (url, options) => {
-    const socket = BrowserWebsocket
-        ? new BrowserWebsocket(url, [], options)
-        : new NodeWebSocket(url, options);
-    if (BrowserWebsocket) {
+    const useBrowserSocket = !options.SocketImplementation && BrowserWebsocket;
+    const socket = options.SocketImplementation ? options.SocketImplementation :
+        BrowserWebsocket ? new BrowserWebsocket(url, [], options) :
+            new NodeWebSocket(url, options);
+    if (useBrowserSocket) {
         socket.binaryType = 'arraybuffer';
     }
     // tslint:disable-next-line:no-empty
@@ -18,7 +19,7 @@ export const socketFactory = (url, options) => {
             // sometimes get string. How does this happen?
             raw.data = Buffer.from(raw.data);
         }
-        const parseResults = parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) : raw.data);
+        const parseResults = parse(useBrowserSocket ? new Buffer(new Uint8Array(raw.data)) : raw.data);
         socket.onparsedmessages(parseResults);
     };
     socket.sendParsedMessage = (message) => {

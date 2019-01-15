@@ -13,11 +13,13 @@ const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
 import * as NodeWebSocket from 'ws'
 
 export const socketFactory = (url: string, options: any): Socket => {
-  const socket = BrowserWebsocket
-    ? new BrowserWebsocket(url, [], options)
-    : new NodeWebSocket(url, options) as any
+  const useBrowserSocket = !options.SocketImplementation && BrowserWebsocket;
+  const socket =
+    options.SocketImplementation ? options.SocketImplementation :
+    BrowserWebsocket ? new BrowserWebsocket(url, [], options) :
+    new NodeWebSocket(url, options) as any
 
-  if (BrowserWebsocket) {
+  if (useBrowserSocket) {
     socket.binaryType = 'arraybuffer'
   }
 
@@ -29,7 +31,7 @@ export const socketFactory = (url: string, options: any): Socket => {
       // sometimes get string. How does this happen?
       raw.data = Buffer.from(raw.data)
     }
-    const parseResults = parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) : raw.data)
+    const parseResults = parse(useBrowserSocket ? new Buffer(new Uint8Array(raw.data)) : raw.data)
     socket.onparsedmessages(parseResults)
   }
   socket.sendParsedMessage = (message: Message): void => {
