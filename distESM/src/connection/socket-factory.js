@@ -4,10 +4,10 @@ import { TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-con
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
 import * as NodeWebSocket from 'ws';
 export const socketFactory = (url, options) => {
-    const useBrowserSocket = options.WebSocketImplementation ?
+    const useBrowserSocket = (options && options.WebSocketImplementation) ?
         options.WebSocketImplementation === BrowserWebsocket :
         BrowserWebsocket;
-    const socket = options.WebSocketImplementation ? options.WebSocketImplementation :
+    const socket = (options && options.WebSocketImplementation) ? new options.WebSocketImplementation(url, [], options) :
         BrowserWebsocket ? new BrowserWebsocket(url, [], options) :
             new NodeWebSocket(url, options);
     if (useBrowserSocket) {
