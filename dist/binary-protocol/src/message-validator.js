@@ -42,7 +42,7 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.RECORD_ACTIONS.SUBSCRIBE_ACK]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE_ACK]: [[message_constants_1.META_KEYS.name], []],
-        [message_constants_1.RECORD_ACTIONS.MULTIPLE_SUBSCRIPTIONS]: [[message_constants_1.META_KEYS.name], []],
+        [message_constants_1.RECORD_ACTIONS.MULTIPLE_SUBSCRIPTIONS]: [[message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.originalAction]],
         [message_constants_1.RECORD_ACTIONS.NOT_SUBSCRIBED]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.HEAD]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDHEAD]: [[message_constants_1.META_KEYS.name], []],
@@ -229,7 +229,7 @@ function mapOfArraysHas(map, topic, action) {
     return actions.indexOf(action) !== -1;
 }
 exports.hasPayload = (topic, action) => mapOfArraysHas(payloadMap, topic, action);
-function validateMeta(topic, action, meta) {
+function validateUnkownMeta(topic, action, meta) {
     const spec = exports.META_PARAMS_SPEC[topic][action];
     if (!spec) {
         return 'no meta spec';
@@ -242,6 +242,15 @@ function validateMeta(topic, action, meta) {
             return `meta object has unknown key ${key}`;
         }
     }
+    return;
+}
+exports.validateUnkownMeta = validateUnkownMeta;
+function validateMeta(topic, action, meta) {
+    const spec = exports.META_PARAMS_SPEC[topic][action];
+    if (!spec) {
+        return 'no meta spec';
+    }
+    const [required,] = spec;
     for (const req of required) {
         if (meta[req] === undefined) {
             return `meta object does not have required key ${req}`;

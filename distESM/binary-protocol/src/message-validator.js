@@ -40,7 +40,7 @@ export const META_PARAMS_SPEC = {
         [RA.SUBSCRIBE_ACK]: [[M.name], []],
         [RA.UNSUBSCRIBE]: [[M.name], []],
         [RA.UNSUBSCRIBE_ACK]: [[M.name], []],
-        [RA.MULTIPLE_SUBSCRIPTIONS]: [[M.name], []],
+        [RA.MULTIPLE_SUBSCRIPTIONS]: [[M.name], [M.originalAction]],
         [RA.NOT_SUBSCRIBED]: [[M.name], []],
         [RA.HEAD]: [[M.name], []],
         [RA.SUBSCRIBEANDHEAD]: [[M.name], []],
@@ -227,7 +227,7 @@ function mapOfArraysHas(map, topic, action) {
     return actions.indexOf(action) !== -1;
 }
 export const hasPayload = (topic, action) => mapOfArraysHas(payloadMap, topic, action);
-export function validateMeta(topic, action, meta) {
+export function validateUnkownMeta(topic, action, meta) {
     const spec = META_PARAMS_SPEC[topic][action];
     if (!spec) {
         return 'no meta spec';
@@ -240,6 +240,14 @@ export function validateMeta(topic, action, meta) {
             return `meta object has unknown key ${key}`;
         }
     }
+    return;
+}
+export function validateMeta(topic, action, meta) {
+    const spec = META_PARAMS_SPEC[topic][action];
+    if (!spec) {
+        return 'no meta spec';
+    }
+    const [required,] = spec;
     for (const req of required) {
         if (meta[req] === undefined) {
             return `meta object does not have required key ${req}`;
