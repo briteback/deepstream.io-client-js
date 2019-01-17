@@ -289,20 +289,8 @@ class RecordCore extends Emitter {
     saveRecordLocally() {
         this.services.storage.set(this.name, this.version, this.data, () => { });
     }
-    /**
-     * Transition States
-     */
-    onSubscribing() {
+    sendSUBCRToServer(checkConnection) {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
-        this.parentEmitter.on(constants_1.EVENT.CONNECTION_STATE_CHANGED, (newState) => {
-            if (newState === constants_1.CONNECTION_STATE.OPEN) {
-                this.services.connection.sendMessage({
-                    topic: message_constants_1.TOPIC.RECORD,
-                    action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
-                    name: this.name
-                });
-            }
-        });
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,
@@ -317,13 +305,25 @@ class RecordCore extends Emitter {
                 name: this.name
             }
         });
-        if (this.services.connection.isConnected) {
+        if (checkConnection ? this.services.connection.isConnected : true) {
             this.services.connection.sendMessage({
                 topic: message_constants_1.TOPIC.RECORD,
                 action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
                 name: this.name
             });
         }
+    }
+    /**
+     * Transition States
+     */
+    onSubscribing() {
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+        this.parentEmitter.on(constants_1.EVENT.CONNECTION_STATE_CHANGED, (newState) => {
+            if (newState === constants_1.CONNECTION_STATE.OPEN) {
+                this.sendSUBCRToServer(false);
+            }
+        });
+        this.sendSUBCRToServer(true);
     }
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);

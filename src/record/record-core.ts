@@ -365,20 +365,8 @@ export class RecordCore extends Emitter {
     this.services.storage.set(this.name, this.version as number, this.data, () => { })
   }
 
-  /**
-   * Transition States
-   */
-  private onSubscribing(): void {
-    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
-    this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState: CONNECTION_STATE) => {
-      if (newState === CONNECTION_STATE.OPEN) {
-        this.services.connection.sendMessage({
-          topic: TOPIC.RECORD,
-          action: RA.SUBSCRIBECREATEANDREAD,
-          name: this.name
-        })
-      }
-    })
+  private sendSUBCRToServer(checkConnection: boolean): void {
+    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
 
     this.services.timeoutRegistry.add({
       message: {
@@ -387,6 +375,7 @@ export class RecordCore extends Emitter {
         name: this.name,
       }
     })
+
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -395,13 +384,27 @@ export class RecordCore extends Emitter {
       }
     })
 
-    if (this.services.connection.isConnected) {
+    if (checkConnection ? this.services.connection.isConnected : true) {
       this.services.connection.sendMessage({
         topic: TOPIC.RECORD,
         action: RA.SUBSCRIBECREATEANDREAD,
         name: this.name
       })
     }
+  }
+
+  /**
+   * Transition States
+   */
+  private onSubscribing(): void {
+    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+    this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState: CONNECTION_STATE) => {
+      if (newState === CONNECTION_STATE.OPEN) {
+        this.sendSUBCRToServer(false);
+      }
+    })
+
+    this.sendSUBCRToServer(true);
   }
 
   private onReady(): void {

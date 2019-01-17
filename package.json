@@ -18,7 +18,7 @@
     "tsc": "rm -rf dist && tsc",
     "tscESM": "rm -rf distESM && tsc -p tsconfigESM.json",
     "precommit": "npm run tsc && npm run build && git add dist/",
-    "build": "webpack --config webpack.dev.js",
+    "build": "npm run tsc && npm run tscESM",
     "rebuild": "rimraf dist && webpack",
     "clean": "rimraf dist",
     "lint": "tslint test/*.ts test/**/*.ts src/*.ts src/**/*.ts -t verbose",

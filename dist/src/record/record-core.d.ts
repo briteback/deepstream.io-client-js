@@ -121,6 +121,7 @@ export declare class RecordCore extends Emitter {
      */
     setMergeStrategy(mergeStrategy: MergeStrategy): void;
     saveRecordLocally(): void;
+    private sendSUBCRToServer;
     /**
      * Transition States
      */
