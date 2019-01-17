@@ -4,6 +4,7 @@ import { get as getPath, setValue as setPath } from './json-path';
 import * as Emitter from 'component-emitter2';
 import * as utils from '../util/utils';
 import { StateMachine } from '../util/state-machine';
+const isEqual = require('fast-deep-equal');
 export class RecordCore extends Emitter {
     constructor(name, services, options, recordServices, whenComplete) {
         super();
@@ -488,7 +489,7 @@ export class RecordCore extends Emitter {
         for (let i = 0; i < paths.length; i++) {
             const newValue = getPath(newData, paths[i], false);
             const oldValue = getPath(oldData, paths[i], false);
-            if (newValue !== oldValue) {
+            if (isEqual(newValue) !== isEqual(oldValue)) {
                 this.emitter.emit(paths[i], this.get(paths[i]));
             }
         }

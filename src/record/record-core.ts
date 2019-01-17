@@ -11,6 +11,7 @@ import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { MergeStrategy } from './merge-strategy'
+const isEqual: any = require('fast-deep-equal');
 
 export type WriteAckCallback = (error: string | null, recordName: string) => void
 
@@ -602,7 +603,7 @@ export class RecordCore extends Emitter {
       const newValue = getPath(newData, paths[i], false)
       const oldValue = getPath(oldData, paths[i], false)
 
-      if (newValue !== oldValue) {
+      if (isEqual(newValue) !== isEqual(oldValue)) {
         this.emitter.emit(paths[i], this.get(paths[i]))
       }
     }

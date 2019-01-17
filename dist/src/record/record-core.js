@@ -6,6 +6,7 @@ const json_path_1 = require("./json-path");
 const Emitter = require("component-emitter2");
 const utils = require("../util/utils");
 const state_machine_1 = require("../util/state-machine");
+const isEqual = require('fast-deep-equal');
 class RecordCore extends Emitter {
     constructor(name, services, options, recordServices, whenComplete) {
         super();
@@ -490,7 +491,7 @@ class RecordCore extends Emitter {
         for (let i = 0; i < paths.length; i++) {
             const newValue = json_path_1.get(newData, paths[i], false);
             const oldValue = json_path_1.get(oldData, paths[i], false);
-            if (newValue !== oldValue) {
+            if (isEqual(newValue) !== isEqual(oldValue)) {
                 this.emitter.emit(paths[i], this.get(paths[i]));
             }
         }
