@@ -20,6 +20,7 @@
     "build": "npm run tsc && npm run tscESM",
     "rebuild": "rimraf dist && webpack",
     "prepublishOnly": "npm run build",
+    "preversion": "npm run build && git add distESM dist",
     "clean": "rimraf dist",
     "lint": "tslint test/*.ts test/**/*.ts src/*.ts src/**/*.ts -t verbose",
     "lint:fix": "npm run lint -- --fix",
