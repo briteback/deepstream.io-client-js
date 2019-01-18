@@ -11,7 +11,7 @@ import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { MergeStrategy } from './merge-strategy'
-const isEqual: any = require('fast-deep-equal');
+import * as isEqual from 'fast-deep-equal';
 
 export type WriteAckCallback = (error: string | null, recordName: string) => void
 
@@ -366,7 +366,7 @@ export class RecordCore extends Emitter {
     this.services.storage.set(this.name, this.version as number, this.data, () => { })
   }
 
-  private sendSUBCRToServer(checkConnection: boolean): void {
+  private sendSUBCRToServer(): void {
     this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
 
     this.services.timeoutRegistry.add({
@@ -385,13 +385,11 @@ export class RecordCore extends Emitter {
       }
     })
 
-    if (checkConnection ? this.services.connection.isConnected : true) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.RECORD,
-        action: RA.SUBSCRIBECREATEANDREAD,
-        name: this.name
-      })
-    }
+    this.services.connection.sendMessage({
+      topic: TOPIC.RECORD,
+      action: RA.SUBSCRIBECREATEANDREAD,
+      name: this.name
+    })
   }
 
   /**
@@ -401,11 +399,14 @@ export class RecordCore extends Emitter {
     this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
     this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState: CONNECTION_STATE) => {
       if (newState === CONNECTION_STATE.OPEN) {
-        this.sendSUBCRToServer(false);
+        // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
+        this.sendSUBCRToServer();
       }
     })
 
-    this.sendSUBCRToServer(true);
+    if (this.services.connection.isConnected) {
+      this.sendSUBCRToServer();
+    }
   }
 
   private onReady(): void {
@@ -603,7 +604,7 @@ export class RecordCore extends Emitter {
       const newValue = getPath(newData, paths[i], false)
       const oldValue = getPath(oldData, paths[i], false)
 
-      if (isEqual(newValue) !== isEqual(oldValue)) {
+      if (!isEqual(newValue, oldValue)) {
         this.emitter.emit(paths[i], this.get(paths[i]))
       }
     }

@@ -6,7 +6,7 @@ const json_path_1 = require("./json-path");
 const Emitter = require("component-emitter2");
 const utils = require("../util/utils");
 const state_machine_1 = require("../util/state-machine");
-const isEqual = require('fast-deep-equal');
+const isEqual = require("fast-deep-equal");
 class RecordCore extends Emitter {
     constructor(name, services, options, recordServices, whenComplete) {
         super();
@@ -290,7 +290,7 @@ class RecordCore extends Emitter {
     saveRecordLocally() {
         this.services.storage.set(this.name, this.version, this.data, () => { });
     }
-    sendSUBCRToServer(checkConnection) {
+    sendSUBCRToServer() {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         this.services.timeoutRegistry.add({
             message: {
@@ -306,13 +306,11 @@ class RecordCore extends Emitter {
                 name: this.name
             }
         });
-        if (checkConnection ? this.services.connection.isConnected : true) {
-            this.services.connection.sendMessage({
-                topic: message_constants_1.TOPIC.RECORD,
-                action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
-                name: this.name
-            });
-        }
+        this.services.connection.sendMessage({
+            topic: message_constants_1.TOPIC.RECORD,
+            action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
+            name: this.name
+        });
     }
     /**
      * Transition States
@@ -321,10 +319,13 @@ class RecordCore extends Emitter {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         this.parentEmitter.on(constants_1.EVENT.CONNECTION_STATE_CHANGED, (newState) => {
             if (newState === constants_1.CONNECTION_STATE.OPEN) {
-                this.sendSUBCRToServer(false);
+                // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
+                this.sendSUBCRToServer();
             }
         });
-        this.sendSUBCRToServer(true);
+        if (this.services.connection.isConnected) {
+            this.sendSUBCRToServer();
+        }
     }
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);
@@ -491,7 +492,7 @@ class RecordCore extends Emitter {
         for (let i = 0; i < paths.length; i++) {
             const newValue = json_path_1.get(newData, paths[i], false);
             const oldValue = json_path_1.get(oldData, paths[i], false);
-            if (isEqual(newValue) !== isEqual(oldValue)) {
+            if (!isEqual(newValue, oldValue)) {
                 this.emitter.emit(paths[i], this.get(paths[i]));
             }
         }

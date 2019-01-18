@@ -8,14 +8,15 @@
     "strictNullChecks": true,
     "strict": true,
     "declaration": true,
-    //"noUnusedParameters": true,    
+    //"noUnusedParameters": true,
     "noUnusedLocals": true,
-    "forceConsistentCasingInFileNames": true    
+    "forceConsistentCasingInFileNames": true
   },
   "files": [
     "./node_modules/@types/node/index.d.ts",
     "./node_modules/@types/bluebird/index.d.ts",
     "./node_modules/@types/ws/index.d.ts",
+    "./node_modules/fast-deep-equal/index.d.ts",
     "./src/dependencies.d.ts"
   ],
   "include": [

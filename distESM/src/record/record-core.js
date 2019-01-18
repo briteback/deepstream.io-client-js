@@ -4,7 +4,7 @@ import { get as getPath, setValue as setPath } from './json-path';
 import * as Emitter from 'component-emitter2';
 import * as utils from '../util/utils';
 import { StateMachine } from '../util/state-machine';
-const isEqual = require('fast-deep-equal');
+import * as isEqual from 'fast-deep-equal';
 export class RecordCore extends Emitter {
     constructor(name, services, options, recordServices, whenComplete) {
         super();
@@ -288,7 +288,7 @@ export class RecordCore extends Emitter {
     saveRecordLocally() {
         this.services.storage.set(this.name, this.version, this.data, () => { });
     }
-    sendSUBCRToServer(checkConnection) {
+    sendSUBCRToServer() {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         this.services.timeoutRegistry.add({
             message: {
@@ -304,13 +304,11 @@ export class RecordCore extends Emitter {
                 name: this.name
             }
         });
-        if (checkConnection ? this.services.connection.isConnected : true) {
-            this.services.connection.sendMessage({
-                topic: TOPIC.RECORD,
-                action: RA.SUBSCRIBECREATEANDREAD,
-                name: this.name
-            });
-        }
+        this.services.connection.sendMessage({
+            topic: TOPIC.RECORD,
+            action: RA.SUBSCRIBECREATEANDREAD,
+            name: this.name
+        });
     }
     /**
      * Transition States
@@ -319,10 +317,13 @@ export class RecordCore extends Emitter {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState) => {
             if (newState === CONNECTION_STATE.OPEN) {
-                this.sendSUBCRToServer(false);
+                // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
+                this.sendSUBCRToServer();
             }
         });
-        this.sendSUBCRToServer(true);
+        if (this.services.connection.isConnected) {
+            this.sendSUBCRToServer();
+        }
     }
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);
@@ -489,7 +490,7 @@ export class RecordCore extends Emitter {
         for (let i = 0; i < paths.length; i++) {
             const newValue = getPath(newData, paths[i], false);
             const oldValue = getPath(oldData, paths[i], false);
-            if (isEqual(newValue) !== isEqual(oldValue)) {
+            if (!isEqual(newValue, oldValue)) {
                 this.emitter.emit(paths[i], this.get(paths[i]));
             }
         }
