@@ -103,6 +103,11 @@ export class RecordCore extends Emitter {
         from: RECORD_STATE.READY, to: RECORD_STATE.DELETED,
         handler: onDeleted
       },
+      // Ignore extra read responses while in the ready state.
+      {
+        name: RA.READ_RESPONSE,
+        from: RECORD_STATE.READY, to: RECORD_STATE.READY
+      }
       {
         name: RA.DELETE_SUCCESS,
         from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED,
