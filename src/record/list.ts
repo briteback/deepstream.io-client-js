@@ -19,6 +19,8 @@ export class List extends Emitter {
     this.record = record
     this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
     this.record.applyUpdate = this.applyUpdate.bind(this)
+    this.originalApplyChange = this.record.applyChange.bind(this.record)
+    this.record.applyChange = this.applyChange.bind(this)
     this.wrappedFunctions = new Map()
 
     this.record.on('delete', this.emit.bind(this, 'delete'))
@@ -225,13 +227,27 @@ export class List extends Emitter {
    * Proxies the underlying Record's _update method. Set's
    * data to an empty array if no data is provided.
    */
-  private applyUpdate  (message: RecordMessage) {
+  private applyUpdate (message: RecordMessage) {
     if (!(message.parsedData instanceof Array)) {
       message.parsedData = []
     }
 
     this.beforeChange()
     this.originalApplyUpdate(message)
+    this.afterChange()
+  }
+
+  /**
+   * Proxies the underlying Record's _update method. Set's
+   * data to an empty array if no data is provided.
+   */
+  private applyChange (message: RecordMessage) {
+    if (!(message.parsedData instanceof Array)) {
+      message.parsedData = []
+    }
+
+    this.beforeChange()
+    this.originalApplyChange(message)
     this.afterChange()
   }
 
