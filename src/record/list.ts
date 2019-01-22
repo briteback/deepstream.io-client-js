@@ -8,6 +8,7 @@ export class List extends Emitter {
   private record: RecordCore
   private wrappedFunctions: Map<Function, Function>
   private originalApplyUpdate: Function
+  private originalApplyChange: Function
   private beforeStructure: any
 
   private hasAddListener: boolean

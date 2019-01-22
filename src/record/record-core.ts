@@ -107,7 +107,7 @@ export class RecordCore extends Emitter {
       {
         name: RA.READ_RESPONSE,
         from: RECORD_STATE.READY, to: RECORD_STATE.READY
-      }
+      },
       {
         name: RA.DELETE_SUCCESS,
         from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED,
@@ -600,7 +600,7 @@ export class RecordCore extends Emitter {
    * Compares the new values for every path with the previously stored ones and
    * updates the subscribers if the value has changed
    */
-  private applyChange(newData: any) {
+  public applyChange(newData: any) {
     const oldData = this.data
     this.data = newData
 
