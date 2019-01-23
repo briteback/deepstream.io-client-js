@@ -18,12 +18,8 @@
     "tsc": "rm -rf dist && tsc",
     "tscESM": "rm -rf distESM && tsc -p tsconfigESM.json",
     "build": "npm run tsc && npm run tscESM",
-    "rebuild": "rimraf dist && webpack",
     "prepublishOnly": "npm run build",
     "preversion": "npm run build && git add distESM dist",
-    "clean": "rimraf dist",
-    "lint": "tslint test/*.ts test/**/*.ts src/*.ts src/**/*.ts -t verbose",
-    "lint:fix": "npm run lint -- --fix",
     "test": "npm run tsc && mocha dist/test --recursive --reporter dot --require source-map-support/register",
     "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register"
   },
@@ -32,15 +28,14 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "optionalDependencies": {
-    "utf-8-validate": "^3.0.4",
-    "bufferutil": "^3.0.3"
+    "utf-8-validate": "^5.0.2",
+    "bufferutil": "^4.0.1"
   },
   "dependencies": {
-    "component-emitter2": "^1.3.5",
+    "component-emitter2": "1.3.5",
     "fast-deep-equal": "^2.0.1",
-    "node-localstorage": "^1.3.1",
-    "source-map-support": "^0.5.9",
-    "ws": "^3.3.2"
+    "node-localstorage": "1.3.1",
+    "ws": "^6.1.2"
   },
   "browser": {
     "net": false,
@@ -54,24 +49,15 @@
     "@types/node": "^8.0.53",
     "@types/sinon": "^4.0.0",
     "@types/ws": "^3.2.1",
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.6.1",
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "coveralls": "^3.0.0",
-    "husky": "^0.14.3",
     "istanbul": "^0.4.5",
     "mocha": "^4.0.1",
-    "rimraf": "^2.6.2",
     "sinon": "^4.1.2",
-    "ts-loader": "^5.2.0",
+    "source-map-support": "^0.5.10",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.2",
-    "uglifyjs-webpack-plugin": "^1.1.2",
-    "webpack": "^4.19.1",
-    "webpack-cli": "^3.1.1"
+    "typescript": "^2.6.2"
   },
   "author": "deepstreamHub GmbH",
   "license": "Apache-2.0",
