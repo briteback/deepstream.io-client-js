@@ -17,8 +17,25 @@
     "build": "npm run tsc && npm run tscESM",
     "prepublishOnly": "npm run build",
     "preversion": "npm run build && git add distESM dist",
-    "test": "npm run tsc && mocha dist/test --recursive --reporter dot --require source-map-support/register",
-    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register"
+    "test": "mocha -r ts-node/register ./test/**/*Spec.ts --recursive --reporter dot --require source-map-support/register",
+    "test:coverage": "nyc mocha"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "reporter": [
+      "text-summary",
+      "html"
+    ],
+    "sourceMap": true,
+    "instrument": true
   },
   "repository": {
     "type": "git",
@@ -49,10 +66,11 @@
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "coveralls": "^3.0.0",
-    "istanbul": "^0.4.5",
     "mocha": "^4.0.1",
+    "nyc": "^13.1.0",
     "sinon": "^4.1.2",
     "source-map-support": "^0.5.10",
+    "ts-node": "^8.0.1",
     "tslint": "^5.8.0",
     "typescript": "^2.6.2"
   },

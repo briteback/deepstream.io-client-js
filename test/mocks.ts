@@ -6,6 +6,7 @@ import { Message, RECORD_ACTIONS } from '../binary-protocol/src/message-constant
 import { SingleNotifier } from '../src/record/single-notifier'
 import { WriteAcknowledgementService } from '../src/record/write-ack-service'
 import { Listener } from '../src/util/listener'
+import { EventEmitter } from 'events';
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -95,6 +96,7 @@ export const getServicesMock = () => {
     delete: () => {}
   }
   const storageMock = mock(storage)
+  const emitter = new EventEmitter();
 
   return {
     socketFactory,
@@ -118,7 +120,8 @@ export const getServicesMock = () => {
       timeoutRegistryMock.verify()
       loggerMock.verify()
       storageMock.verify()
-    }
+    },
+    emitter
   }
 }
 
