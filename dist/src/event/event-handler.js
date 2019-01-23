@@ -15,9 +15,9 @@ class EventHandler {
         this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
     }
     /**
-    * Subscribe to an event. This will receive both locally emitted events
-    * as well as events emitted by other connected clients.
-    */
+     * Subscribe to an event. This will receive both locally emitted events
+     * as well as events emitted by other connected clients.
+     */
     subscribe(name, callback) {
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
@@ -60,7 +60,12 @@ class EventHandler {
                 name
             };
             this.services.timeoutRegistry.add({ message });
-            this.services.connection.sendMessage(message);
+            if (this.services.connection.isConnected) {
+                this.services.connection.sendMessage(message);
+            }
+            else if (this.services.connection.isInLimbo) {
+                this.limboQueue.push(message);
+            }
         }
     }
     /**
@@ -86,10 +91,10 @@ class EventHandler {
         this.emitter.emit(name, data);
     }
     /**
-   * Allows to listen for event subscriptions made by this or other clients. This
-   * is useful to create "active" data providers, e.g. providers that only provide
-   * data for a particular event if a user is actually interested in it
-   */
+     * Allows to listen for event subscriptions made by this or other clients. This
+     * is useful to create "active" data providers, e.g. providers that only provide
+     * data for a particular event if a user is actually interested in it
+     */
     listen(pattern, callback) {
         this.listeners.listen(pattern, callback);
     }
@@ -100,8 +105,8 @@ class EventHandler {
         this.listeners.unlisten(pattern);
     }
     /**
-   * Handles incoming messages from the server
-   */
+     * Handles incoming messages from the server
+     */
     handle(message) {
         if (message.isAck) {
             this.services.timeoutRegistry.remove(message);

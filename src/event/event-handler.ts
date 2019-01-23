@@ -23,12 +23,12 @@ export class EventHandler {
   }
 
   /**
-  * Subscribe to an event. This will receive both locally emitted events
-  * as well as events emitted by other connected clients.
-  */
+   * Subscribe to an event. This will receive both locally emitted events
+   * as well as events emitted by other connected clients.
+   */
   public subscribe (name: string, callback: (data: any) => void) {
     if (typeof name !== 'string' || name.length === 0) {
-        throw new Error('invalid argument name')
+      throw new Error('invalid argument name')
     }
     if (typeof callback !== 'function') {
       throw new Error('invalid argument callback')
@@ -42,12 +42,12 @@ export class EventHandler {
     this.emitter.on(name, callback)
   }
 
-/**
- * Removes a callback for a specified event. If all callbacks
- * for an event have been removed, the server will be notified
- * that the client is unsubscribed as a listener
- */
-public unsubscribe (name: string, callback: (data: any) => void): void {
+  /**
+   * Removes a callback for a specified event. If all callbacks
+   * for an event have been removed, the server will be notified
+   * that the client is unsubscribed as a listener
+   */
+  public unsubscribe (name: string, callback: (data: any) => void): void {
     if (!name || typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -73,7 +73,11 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
         name
       }
       this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+      if (this.services.connection.isConnected) {
+        this.services.connection.sendMessage(message)
+      } else if (this.services.connection.isInLimbo) {
+        this.limboQueue.push(message);
+      }
     }
   }
 
@@ -103,25 +107,25 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
   }
 
   /**
- * Allows to listen for event subscriptions made by this or other clients. This
- * is useful to create "active" data providers, e.g. providers that only provide
- * data for a particular event if a user is actually interested in it
- */
-public listen (pattern: string, callback: ListenCallback) {
-  this.listeners.listen(pattern, callback)
-}
-
-/**
- * Removes a listener that was previously registered
- */
-public unlisten (pattern: string) {
-  this.listeners.unlisten(pattern)
-}
+   * Allows to listen for event subscriptions made by this or other clients. This
+   * is useful to create "active" data providers, e.g. providers that only provide
+   * data for a particular event if a user is actually interested in it
+   */
+  public listen (pattern: string, callback: ListenCallback) {
+    this.listeners.listen(pattern, callback)
+  }
 
   /**
- * Handles incoming messages from the server
- */
-private handle (message: EventMessage): void {
+   * Removes a listener that was previously registered
+   */
+  public unlisten (pattern: string) {
+    this.listeners.unlisten(pattern)
+  }
+
+  /**
+   * Handles incoming messages from the server
+   */
+  private handle (message: EventMessage): void {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
       return
@@ -167,7 +171,7 @@ private handle (message: EventMessage): void {
 
     if (
       message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
-      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
+        message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
     ) {
       this.listeners.handle(message)
       return

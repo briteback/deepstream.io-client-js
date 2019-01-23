@@ -8,9 +8,9 @@ export declare class EventHandler {
     private limboQueue;
     constructor(services: Services, options: Options, listeners?: Listener);
     /**
-    * Subscribe to an event. This will receive both locally emitted events
-    * as well as events emitted by other connected clients.
-    */
+     * Subscribe to an event. This will receive both locally emitted events
+     * as well as events emitted by other connected clients.
+     */
     subscribe(name: string, callback: (data: any) => void): void;
     /**
      * Removes a callback for a specified event. If all callbacks
@@ -24,18 +24,18 @@ export declare class EventHandler {
      */
     emit(name: string, data: any): void;
     /**
-   * Allows to listen for event subscriptions made by this or other clients. This
-   * is useful to create "active" data providers, e.g. providers that only provide
-   * data for a particular event if a user is actually interested in it
-   */
+     * Allows to listen for event subscriptions made by this or other clients. This
+     * is useful to create "active" data providers, e.g. providers that only provide
+     * data for a particular event if a user is actually interested in it
+     */
     listen(pattern: string, callback: ListenCallback): void;
     /**
      * Removes a listener that was previously registered
      */
     unlisten(pattern: string): void;
     /**
-   * Handles incoming messages from the server
-   */
+     * Handles incoming messages from the server
+     */
     private handle;
     /**
      * Resubscribes to events when connection is lost
