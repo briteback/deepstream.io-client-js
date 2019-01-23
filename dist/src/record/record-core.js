@@ -53,6 +53,11 @@ class RecordCore extends Emitter {
                 from: 2 /* READY */, to: 6 /* DELETED */,
                 handler: onDeleted
             },
+            // Ignore extra read responses while in the ready state.
+            {
+                name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE,
+                from: 2 /* READY */, to: 2 /* READY */
+            },
             {
                 name: message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS,
                 from: 5 /* DELETING */, to: 6 /* DELETED */,

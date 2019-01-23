@@ -147,7 +147,7 @@ export declare class RecordCore extends Emitter {
      * Compares the new values for every path with the previously stored ones and
      * updates the subscribers if the value has changed
      */
-    private applyChange;
+    applyChange(newData: any): void;
     /**
      * If connected sends the delete message to server, otherwise
      * we delete in local storage and transition to delete success.

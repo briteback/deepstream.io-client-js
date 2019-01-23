@@ -4,6 +4,7 @@ export declare class List extends Emitter {
     private record;
     private wrappedFunctions;
     private originalApplyUpdate;
+    private originalApplyChange;
     private beforeStructure;
     private hasAddListener;
     private hasRemoveListener;
@@ -61,6 +62,11 @@ export declare class List extends Emitter {
      * data to an empty array if no data is provided.
      */
     private applyUpdate;
+    /**
+     * Proxies the underlying Record's _update method. Set's
+     * data to an empty array if no data is provided.
+     */
+    private applyChange;
     /**
      * Validates that the index provided is within the current set of entries.
      */
