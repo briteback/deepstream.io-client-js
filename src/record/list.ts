@@ -233,9 +233,7 @@ export class List extends Emitter {
       message.parsedData = []
     }
 
-    this.beforeChange()
     this.originalApplyUpdate(message)
-    this.afterChange()
   }
 
   /**

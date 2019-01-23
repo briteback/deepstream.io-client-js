@@ -191,9 +191,7 @@ export class List extends Emitter {
         if (!(message.parsedData instanceof Array)) {
             message.parsedData = [];
         }
-        this.beforeChange();
         this.originalApplyUpdate(message);
-        this.afterChange();
     }
     /**
      * Proxies the underlying Record's _update method. Set's
