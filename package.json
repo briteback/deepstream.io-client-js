@@ -11,9 +11,6 @@
   "main": "dist/src/deepstream.js",
   "module": "dist/srcESM/deepstream.js",
   "types": "dist/src/deepstream.d.ts",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
     "tsc": "rm -rf dist && tsc",
     "tscESM": "rm -rf distESM && tsc -p tsconfigESM.json",
