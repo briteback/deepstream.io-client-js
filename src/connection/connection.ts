@@ -507,6 +507,7 @@ export class Connection {
     this.stateMachine.resetToInitialState();
     this.stateMachine.transition(TRANSITIONS.INITIALISED);
     this.isInLimbo = true;
+    this.firstOpen = true;
     this.isReconnecting = false;
 
     if (this.endpoint) {

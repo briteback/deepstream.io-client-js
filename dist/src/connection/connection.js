@@ -388,6 +388,7 @@ class Connection {
         this.stateMachine.resetToInitialState();
         this.stateMachine.transition("initialised" /* INITIALISED */);
         this.isInLimbo = true;
+        this.firstOpen = true;
         this.isReconnecting = false;
         if (this.endpoint) {
             this.endpoint.onopen = null;
