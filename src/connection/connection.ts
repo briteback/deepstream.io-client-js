@@ -501,8 +501,8 @@ export class Connection {
   }
 
   public forceReconnect (): void {
-    utils.tryWrap(this.clearReconnect, this.services.logger.E);
-    utils.tryWrap(this.close, this.services.logger.E);
+    utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
+    utils.tryWrap(() => this.close(), this.services.logger.E);
 
     this.stateMachine.resetToInitialState();
     this.stateMachine.transition(TRANSITIONS.INITIALISED);
@@ -517,6 +517,7 @@ export class Connection {
     }
 
     this.createEndpoint();
+    this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED);
   }
 
   /**

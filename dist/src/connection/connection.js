@@ -383,8 +383,8 @@ class Connection {
         this.close();
     }
     forceReconnect() {
-        utils.tryWrap(this.clearReconnect, this.services.logger.E);
-        utils.tryWrap(this.close, this.services.logger.E);
+        utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
+        utils.tryWrap(() => this.close(), this.services.logger.E);
         this.stateMachine.resetToInitialState();
         this.stateMachine.transition("initialised" /* INITIALISED */);
         this.isInLimbo = true;
@@ -396,6 +396,7 @@ class Connection {
             this.endpoint.onparsedmessages = (messages) => { };
         }
         this.createEndpoint();
+        this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
     }
     /**
      * Attempts to open a errourosly closed connection
