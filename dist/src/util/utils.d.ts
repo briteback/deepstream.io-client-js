@@ -69,3 +69,4 @@ export declare const normalizeSetArguments: (args: IArguments, startIndex?: numb
  * Creates a map based on the types of the provided arguments
  */
 export declare const normalizeArguments: (args: IArguments) => RecordSubscribeArguments;
+export declare const tryWrap: (func: () => void, logger: (log: any) => void) => void;

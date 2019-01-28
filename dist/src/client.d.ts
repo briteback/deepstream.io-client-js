@@ -39,6 +39,7 @@ export declare class Client extends EventEmitter {
     getConnectionState(): CONNECTION_STATE;
     close(): void;
     pause(): void;
+    reconnect(): void;
     resume(callback?: ResumeCallback): void | Promise<object>;
     /**
     * Returns a random string. The first block of characters

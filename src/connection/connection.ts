@@ -65,6 +65,8 @@ export class Connection {
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
   private limboTimeout: number | null
+  private isReconnecting: boolean
+  private firstOpen: boolean
 
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
     this.options = options
@@ -84,9 +86,9 @@ export class Connection {
     this.reconnectTimeout = null
     this.reconnectionAttempt = 0
     this.limboTimeout = null
+    this.isReconnecting = false
+    this.firstOpen = true
 
-    let isReconnecting = false
-    let firstOpen = true
     this.stateMachine = new StateMachine(
       this.services.logger,
       {
@@ -99,7 +101,7 @@ export class Connection {
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
             this.isInLimbo = true
-            isReconnecting = true
+            this.isReconnecting = true
             if (oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
               this.limboTimeout = this.services.timerRegistry.add({
@@ -111,8 +113,8 @@ export class Connection {
                 }
               })
             }
-          } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
-            firstOpen = false
+          } else if (newState === CONNECTION_STATE.OPEN && (this.isReconnecting || this.firstOpen)) {
+            this.firstOpen = false
             this.isInLimbo = false
             this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
             this.services.timerRegistry.remove(this.limboTimeout as number)
@@ -496,6 +498,25 @@ export class Connection {
     this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
     this.clearReconnect()
     this.close()
+  }
+
+  public forceReconnect (): void {
+    utils.tryWrap(this.clearReconnect, this.services.logger.E);
+    utils.tryWrap(this.close, this.services.logger.E);
+
+    this.stateMachine.resetToInitialState();
+    this.stateMachine.transition(TRANSITIONS.INITIALISED);
+    this.isInLimbo = true;
+    this.isReconnecting = false;
+
+    if (this.endpoint) {
+      this.endpoint.onopen = null;
+      this.endpoint.onerror = null;
+      this.endpoint.onclose = null;
+      this.endpoint.onparsedmessages = (messages: Message[]) => {};
+    }
+
+    this.createEndpoint();
   }
 
   /**

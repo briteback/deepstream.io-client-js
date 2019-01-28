@@ -102,6 +102,10 @@ export class Client extends EventEmitter {
     this.services.connection.pause()
   }
 
+  public reconnect (): void {
+    this.services.connection.forceReconnect();
+  }
+
   public resume (callback?: ResumeCallback): void | Promise<object> {
     if (callback) {
       this.services.connection.resume(callback)

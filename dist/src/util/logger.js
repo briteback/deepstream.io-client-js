@@ -39,6 +39,9 @@ class Logger {
             this.emitter.emit('error', meta, message_constants_1.ACTIONS[message.topic][action], message_constants_1.TOPIC[message.topic]);
         }
     }
+    E(message) {
+        console.error(message);
+    }
 }
 exports.Logger = Logger;
 //# sourceMappingURL=logger.js.map

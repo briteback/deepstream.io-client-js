@@ -66,6 +66,9 @@ class Client extends EventEmitter {
     pause() {
         this.services.connection.pause();
     }
+    reconnect() {
+        this.services.connection.forceReconnect();
+    }
     resume(callback) {
         if (callback) {
             this.services.connection.resume(callback);

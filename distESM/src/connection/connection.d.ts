@@ -24,6 +24,8 @@ export declare class Connection {
     private reconnectTimeout;
     private reconnectionAttempt;
     private limboTimeout;
+    private isReconnecting;
+    private firstOpen;
     constructor(services: Services, options: Options, url: string, emitter: Emitter);
     readonly isConnected: boolean;
     onLost(callback: Function): void;
@@ -105,6 +107,7 @@ export declare class Connection {
     * options.maxReconnectAttempts the connection is closed
     */
     private tryReconnect;
+    forceReconnect(): void;
     /**
      * Attempts to open a errourosly closed connection
      */
