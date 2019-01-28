@@ -518,7 +518,6 @@ export class Connection {
     }
 
     this.createEndpoint();
-    this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED);
   }
 
   /**

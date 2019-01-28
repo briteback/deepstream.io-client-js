@@ -397,7 +397,6 @@ class Connection {
             this.endpoint.onparsedmessages = (messages) => { };
         }
         this.createEndpoint();
-        this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
     }
     /**
      * Attempts to open a errourosly closed connection
