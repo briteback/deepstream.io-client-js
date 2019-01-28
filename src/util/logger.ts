@@ -53,4 +53,8 @@ export class Logger {
       )
     }
   }
+
+  public E(message: string) {
+    console.error(message);
+  }
 }

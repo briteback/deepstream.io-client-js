@@ -39,4 +39,8 @@ export class StateMachine {
     return this._state
   }
 
+  public resetToInitialState() {
+    this._state = this._stateMachine.init;
+  }
+
 }

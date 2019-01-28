@@ -37,5 +37,8 @@ export class Logger {
             this.emitter.emit('error', meta, ACTIONS[message.topic][action], TOPIC[message.topic]);
         }
     }
+    E(message) {
+        console.error(message);
+    }
 }
 //# sourceMappingURL=logger.js.map

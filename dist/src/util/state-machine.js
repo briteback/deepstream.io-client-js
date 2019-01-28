@@ -32,6 +32,9 @@ class StateMachine {
     get state() {
         return this._state;
     }
+    resetToInitialState() {
+        this._state = this._stateMachine.init;
+    }
 }
 exports.StateMachine = StateMachine;
 //# sourceMappingURL=state-machine.js.map

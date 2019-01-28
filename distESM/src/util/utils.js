@@ -197,4 +197,12 @@ export const normalizeArguments = (args) => {
     }
     return result;
 };
+export const tryWrap = (func, logger) => {
+    try {
+        func();
+    }
+    catch (err) {
+        logger(err);
+    }
+};
 //# sourceMappingURL=utils.js.map

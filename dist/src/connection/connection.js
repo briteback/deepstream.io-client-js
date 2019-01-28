@@ -25,8 +25,8 @@ class Connection {
         this.reconnectTimeout = null;
         this.reconnectionAttempt = 0;
         this.limboTimeout = null;
-        let isReconnecting = false;
-        let firstOpen = true;
+        this.isReconnecting = false;
+        this.firstOpen = true;
         this.stateMachine = new state_machine_1.StateMachine(this.services.logger, {
             init: constants_1.CONNECTION_STATE.CLOSED,
             onStateChanged: (newState, oldState) => {
@@ -36,7 +36,7 @@ class Connection {
                 emitter.emit(constants_1.EVENT.CONNECTION_STATE_CHANGED, newState);
                 if (newState === constants_1.CONNECTION_STATE.RECONNECTING) {
                     this.isInLimbo = true;
-                    isReconnecting = true;
+                    this.isReconnecting = true;
                     if (oldState !== constants_1.CONNECTION_STATE.CLOSED) {
                         this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST);
                         this.limboTimeout = this.services.timerRegistry.add({
@@ -49,8 +49,8 @@ class Connection {
                         });
                     }
                 }
-                else if (newState === constants_1.CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
-                    firstOpen = false;
+                else if (newState === constants_1.CONNECTION_STATE.OPEN && (this.isReconnecting || this.firstOpen)) {
+                    this.firstOpen = false;
                     this.isInLimbo = false;
                     this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
                     this.services.timerRegistry.remove(this.limboTimeout);
@@ -381,6 +381,22 @@ class Connection {
         this.emitter.emit(constants_1.EVENT[constants_1.EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt);
         this.clearReconnect();
         this.close();
+    }
+    forceReconnect() {
+        utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
+        utils.tryWrap(() => this.close(), this.services.logger.E);
+        this.stateMachine.resetToInitialState();
+        this.stateMachine.transition("initialised" /* INITIALISED */);
+        this.isInLimbo = true;
+        this.firstOpen = true;
+        this.isReconnecting = false;
+        if (this.endpoint) {
+            this.endpoint.onopen = null;
+            this.endpoint.onerror = null;
+            this.endpoint.onclose = null;
+            this.endpoint.onparsedmessages = (messages) => { };
+        }
+        this.createEndpoint();
     }
     /**
      * Attempts to open a errourosly closed connection

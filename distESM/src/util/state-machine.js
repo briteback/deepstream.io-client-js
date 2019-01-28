@@ -30,5 +30,8 @@ export class StateMachine {
     get state() {
         return this._state;
     }
+    resetToInitialState() {
+        this._state = this._stateMachine.init;
+    }
 }
 //# sourceMappingURL=state-machine.js.map

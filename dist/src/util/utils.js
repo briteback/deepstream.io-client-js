@@ -199,4 +199,12 @@ exports.normalizeArguments = (args) => {
     }
     return result;
 };
+exports.tryWrap = (func, logger) => {
+    try {
+        func();
+    }
+    catch (err) {
+        logger(err);
+    }
+};
 //# sourceMappingURL=utils.js.map

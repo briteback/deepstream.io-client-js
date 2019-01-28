@@ -9,4 +9,5 @@ export declare class StateMachine {
      */
     transition(transitionName: any): void;
     readonly state: any;
+    resetToInitialState(): void;
 }

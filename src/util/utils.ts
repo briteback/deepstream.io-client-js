@@ -219,3 +219,12 @@ export const normalizeArguments = (args: IArguments): RecordSubscribeArguments =
   }
   return result
 }
+
+
+export const tryWrap = (func: () => void, logger: (log: any) => void) => {
+  try {
+    func();
+  } catch (err) {
+    logger(err);
+  }
+}
