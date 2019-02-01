@@ -2,17 +2,19 @@ import { parse } from '../../binary-protocol/src/message-parser'
 import { getMessage } from '../../binary-protocol/src/message-builder'
 import { Message, TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants'
 
-export type SocketFactory = (url: string, options: object) => Socket
+export type SocketFactory = (url: string, options: object, internalEmitter: any) => Socket
 export interface Socket extends WebSocket {
   onparsedmessages: (messages: Array<Message>) => void
   sendParsedMessage: (message: Message) => void
 }
 
+export const SOCKET_UNOPENED_ON_SEND = 'CLOSED_SOCKET';
+
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
 
 import * as NodeWebSocket from 'ws'
 
-export const socketFactory = (url: string, options: any): Socket => {
+export const socketFactory = (url: string, options: any, internalEmitter: any): Socket => {
   const socket = BrowserWebsocket
     ? new BrowserWebsocket(url, [], options)
     : new NodeWebSocket(url, options) as any
@@ -39,6 +41,10 @@ export const socketFactory = (url: string, options: any): Socket => {
       return
     }
     message.data = JSON.stringify(message.parsedData)
+    if (socket.readyState !== socket.OPEN) {
+      internalEmitter.emit(SOCKET_UNOPENED_ON_SEND);
+      throw Error(`Trying to send messages while socket isn't OPEN`);
+    }
     socket.send(getMessage(message, false))
   }
   return socket
