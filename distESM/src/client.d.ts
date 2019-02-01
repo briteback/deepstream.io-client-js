@@ -3,7 +3,6 @@ import { Logger } from './util/logger';
 import { TimeoutRegistry } from './util/timeout-registry';
 import { TimerRegistry } from './util/timer-registry';
 import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection';
-import { SocketFactory } from './connection/socket-factory';
 import { EventHandler } from './event/event-handler';
 import { RPCHandler } from './rpc/rpc-handler';
 import { RecordHandler } from './record/record-handler';
@@ -20,7 +19,6 @@ export interface Services {
     connection: Connection;
     timeoutRegistry: TimeoutRegistry;
     timerRegistry: TimerRegistry;
-    socketFactory: SocketFactory;
     storage: RecordOfflineStore;
     emitter: Emitter;
 }

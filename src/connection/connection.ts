@@ -14,7 +14,7 @@ import {
 import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { Socket } from './socket-factory'
+import { Socket, socketFactory, SOCKET_UNOPENED_ON_SEND } from './socket-factory'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object | null) => void
@@ -155,6 +155,16 @@ export class Connection {
     if (!options.lazyConnect) {
       this.createEndpoint()
     }
+
+    this.internalEmitter.on(SOCKET_UNOPENED_ON_SEND, () => {
+      if (this.endpoint &&
+          (this.endpoint.readyState === this.endpoint.CLOSING ||
+           this.endpoint.readyState === this.endpoint.CLOSED)) {
+        this.forceReconnect();
+      } else {
+        this.services.logger.E('Trying to send messages before socket is opened?');
+      }
+    });
   }
 
   public get isConnected (): boolean {
@@ -297,7 +307,7 @@ export class Connection {
    * was initialised with.
    */
   private createEndpoint (): void {
-    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions)
+    this.endpoint = socketFactory(this.url, this.options.socketOptions, this.internalEmitter)
 
     this.endpoint.onopen = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)

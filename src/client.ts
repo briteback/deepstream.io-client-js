@@ -4,7 +4,6 @@ import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
 import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection'
-import { socketFactory, SocketFactory } from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler } from './record/record-handler'
@@ -25,7 +24,6 @@ export interface Services {
   connection: Connection
   timeoutRegistry: TimeoutRegistry
   timerRegistry: TimerRegistry
-  socketFactory: SocketFactory
   storage: RecordOfflineStore
   emitter: Emitter
 }
@@ -47,7 +45,6 @@ export class Client extends EventEmitter {
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
-    services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
     services.emitter = (this as Emitter)
     this.services = services as Services

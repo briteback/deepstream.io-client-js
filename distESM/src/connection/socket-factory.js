@@ -1,9 +1,10 @@
 import { parse } from '../../binary-protocol/src/message-parser';
 import { getMessage } from '../../binary-protocol/src/message-builder';
 import { TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants';
+export const SOCKET_UNOPENED_ON_SEND = 'CLOSED_SOCKET';
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
 import * as NodeWebSocket from 'ws';
-export const socketFactory = (url, options) => {
+export const socketFactory = (url, options, internalEmitter) => {
     const socket = BrowserWebsocket
         ? new BrowserWebsocket(url, [], options)
         : new NodeWebSocket(url, options);
@@ -28,6 +29,10 @@ export const socketFactory = (url, options) => {
             return;
         }
         message.data = JSON.stringify(message.parsedData);
+        if (socket.readyState !== socket.OPEN) {
+            internalEmitter.emit(SOCKET_UNOPENED_ON_SEND);
+            throw Error(`Trying to send messages while socket isn't OPEN`);
+        }
         socket.send(getMessage(message, false));
     };
     return socket;
