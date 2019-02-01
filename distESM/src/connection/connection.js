@@ -2,6 +2,7 @@ import { CONNECTION_STATE, EVENT } from '../constants';
 import { TOPIC, CONNECTION_ACTIONS as CONNECTION_ACTION, AUTH_ACTIONS as AUTH_ACTION, PARSER_ACTIONS as PARSER_ACTION } from '../../binary-protocol/src/message-constants';
 import { parseData } from '../../binary-protocol/src/message-parser';
 import { StateMachine } from '../util/state-machine';
+import { socketFactory, SOCKET_UNOPENED_ON_SEND } from './socket-factory';
 import * as utils from '../util/utils';
 import * as Emitter from 'component-emitter2';
 export class Connection {
@@ -87,6 +88,16 @@ export class Connection {
         if (!options.lazyConnect) {
             this.createEndpoint();
         }
+        this.internalEmitter.on(SOCKET_UNOPENED_ON_SEND, () => {
+            if (this.endpoint &&
+                (this.endpoint.readyState === this.endpoint.CLOSING ||
+                    this.endpoint.readyState === this.endpoint.CLOSED)) {
+                this.forceReconnect();
+            }
+            else {
+                this.services.logger.E('Trying to send messages before socket is opened?');
+            }
+        });
     }
     get isConnected() {
         return this.stateMachine.state === CONNECTION_STATE.OPEN;
@@ -206,7 +217,7 @@ export class Connection {
      * was initialised with.
      */
     createEndpoint() {
-        this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions);
+        this.endpoint = socketFactory(this.url, this.options.socketOptions, this.internalEmitter);
         this.endpoint.onopen = this.onOpen.bind(this);
         this.endpoint.onerror = this.onError.bind(this);
         this.endpoint.onclose = this.onClose.bind(this);

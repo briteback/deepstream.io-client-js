@@ -4,6 +4,7 @@ const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const message_parser_1 = require("../../binary-protocol/src/message-parser");
 const state_machine_1 = require("../util/state-machine");
+const socket_factory_1 = require("./socket-factory");
 const utils = require("../util/utils");
 const Emitter = require("component-emitter2");
 class Connection {
@@ -89,6 +90,16 @@ class Connection {
         if (!options.lazyConnect) {
             this.createEndpoint();
         }
+        this.internalEmitter.on(socket_factory_1.SOCKET_UNOPENED_ON_SEND, () => {
+            if (this.endpoint &&
+                (this.endpoint.readyState === this.endpoint.CLOSING ||
+                    this.endpoint.readyState === this.endpoint.CLOSED)) {
+                this.forceReconnect();
+            }
+            else {
+                this.services.logger.E('Trying to send messages before socket is opened?');
+            }
+        });
     }
     get isConnected() {
         return this.stateMachine.state === constants_1.CONNECTION_STATE.OPEN;
@@ -208,7 +219,7 @@ class Connection {
      * was initialised with.
      */
     createEndpoint() {
-        this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions);
+        this.endpoint = socket_factory_1.socketFactory(this.url, this.options.socketOptions, this.internalEmitter);
         this.endpoint.onopen = this.onOpen.bind(this);
         this.endpoint.onerror = this.onError.bind(this);
         this.endpoint.onclose = this.onClose.bind(this);

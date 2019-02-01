@@ -5,7 +5,6 @@ const logger_1 = require("./util/logger");
 const timeout_registry_1 = require("./util/timeout-registry");
 const timer_registry_1 = require("./util/timer-registry");
 const connection_1 = require("./connection/connection");
-const socket_factory_1 = require("./connection/socket-factory");
 const event_handler_1 = require("./event/event-handler");
 const rpc_handler_1 = require("./rpc/rpc-handler");
 const record_handler_1 = require("./record/record-handler");
@@ -21,7 +20,6 @@ class Client extends EventEmitter {
         services.logger = new logger_1.Logger(this);
         services.timerRegistry = new timer_registry_1.TimerRegistry();
         services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
-        services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
         services.connection = new connection_1.Connection(services, this.options, url, this);
         services.emitter = this;
         this.services = services;
