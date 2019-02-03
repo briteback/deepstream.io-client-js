@@ -107,6 +107,12 @@ export declare class Connection {
     * options.maxReconnectAttempts the connection is closed
     */
     private tryReconnect;
+    /**
+       * Forces a new connection and does not wait for the current socket to close.
+       * On OSX and iOS it happens that the current socket is dead but looks alive.
+       * Calling forceReconnect will regardles of current state reset and set up a
+       * new connection
+       */
     forceReconnect(): void;
     /**
      * Attempts to open a errourosly closed connection

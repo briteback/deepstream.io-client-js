@@ -393,7 +393,19 @@ class Connection {
         this.clearReconnect();
         this.close();
     }
+    /**
+       * Forces a new connection and does not wait for the current socket to close.
+       * On OSX and iOS it happens that the current socket is dead but looks alive.
+       * Calling forceReconnect will regardles of current state reset and set up a
+       * new connection
+       */
     forceReconnect() {
+        if (this.endpoint) {
+            this.endpoint.onopen = null;
+            this.endpoint.onerror = null;
+            this.endpoint.onclose = null;
+            this.endpoint.onparsedmessages = (messages) => { };
+        }
         utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
         utils.tryWrap(() => this.close(), this.services.logger.E);
         this.stateMachine.resetToInitialState();
@@ -401,12 +413,6 @@ class Connection {
         this.isInLimbo = true;
         this.firstOpen = true;
         this.isReconnecting = false;
-        if (this.endpoint) {
-            this.endpoint.onopen = null;
-            this.endpoint.onerror = null;
-            this.endpoint.onclose = null;
-            this.endpoint.onparsedmessages = (messages) => { };
-        }
         this.createEndpoint();
     }
     /**
