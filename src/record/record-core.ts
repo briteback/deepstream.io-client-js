@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
-import { TOPIC, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage, Message } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
 import * as Emitter from 'component-emitter2'
@@ -537,7 +537,7 @@ export class RecordCore extends Emitter {
     return handleAction()
   }
 
-  private handleReadResponse(message: RecordMessage): void {
+  private handleReadResponse(message: Message): void {
     this.version = message.version as number
     this.applyChange(setPath(this.data, null, message.parsedData))
     this.stateMachine.transition(RA.READ_RESPONSE)

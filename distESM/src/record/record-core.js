@@ -291,7 +291,7 @@ export class RecordCore extends Emitter {
         this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy);
     }
     sendSUBCRToServer() {
-        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
         this.services.timeoutRegistry.add({
             message: {
                 topic: TOPIC.RECORD,
@@ -316,7 +316,7 @@ export class RecordCore extends Emitter {
      * Transition States
      */
     onSubscribing() {
-        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
         this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState) => {
             if (newState === CONNECTION_STATE.OPEN) {
                 // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
