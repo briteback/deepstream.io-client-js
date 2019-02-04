@@ -10,7 +10,7 @@ export const DefaultOptions = {
     recordReadAckTimeout: 15000,
     recordReadTimeout: 15000,
     recordDeleteTimeout: 15000,
-    offlineBufferTimeout: 2000,
+    offlineBufferTimeout: 10000,
     discardTimeout: 5000,
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,

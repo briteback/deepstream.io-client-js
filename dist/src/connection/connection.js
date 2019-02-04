@@ -40,6 +40,9 @@ class Connection {
                     this.isReconnecting = true;
                     if (oldState !== constants_1.CONNECTION_STATE.CLOSED) {
                         this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST);
+                        if (this.limboTimeout) {
+                            this.services.timerRegistry.remove(this.limboTimeout);
+                        }
                         this.limboTimeout = this.services.timerRegistry.add({
                             duration: this.options.offlineBufferTimeout,
                             context: this,
@@ -55,6 +58,7 @@ class Connection {
                     this.isInLimbo = false;
                     this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
                     this.services.timerRegistry.remove(this.limboTimeout);
+                    this.limboTimeout = null;
                 }
             },
             transitions: [

@@ -6,7 +6,6 @@ import { Connection } from './connection/connection';
 import { EventHandler } from './event/event-handler';
 import { RPCHandler } from './rpc/rpc-handler';
 import { RecordHandler } from './record/record-handler';
-import { Storage } from './record/storage-service';
 import { PresenceHandler } from './presence/presence-handler';
 import * as EventEmitter from 'component-emitter2';
 export class Client extends EventEmitter {
@@ -14,7 +13,6 @@ export class Client extends EventEmitter {
         super();
         this.options = Object.assign({}, DefaultOptions, options);
         const services = {};
-        services.storage = options.storage || new Storage(this.options);
         services.logger = new Logger(this);
         services.timerRegistry = new TimerRegistry();
         services.timeoutRegistry = new TimeoutRegistry(services, this.options);

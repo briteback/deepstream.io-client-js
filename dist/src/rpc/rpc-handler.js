@@ -215,10 +215,6 @@ class RPCHandler {
         this.limboQueue = [];
     }
     onConnectionLost() {
-        this.rpcs.forEach(rpc => {
-            rpc.error(constants_1.EVENT.CLIENT_OFFLINE);
-        });
-        this.rpcs.clear();
     }
 }
 exports.RPCHandler = RPCHandler;

@@ -213,10 +213,6 @@ export class RPCHandler {
         this.limboQueue = [];
     }
     onConnectionLost() {
-        this.rpcs.forEach(rpc => {
-            rpc.error(EVENT.CLIENT_OFFLINE);
-        });
-        this.rpcs.clear();
     }
 }
 //# sourceMappingURL=rpc-handler.js.map
