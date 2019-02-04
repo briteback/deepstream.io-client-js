@@ -8,7 +8,6 @@ const connection_1 = require("./connection/connection");
 const event_handler_1 = require("./event/event-handler");
 const rpc_handler_1 = require("./rpc/rpc-handler");
 const record_handler_1 = require("./record/record-handler");
-const storage_service_1 = require("./record/storage-service");
 const presence_handler_1 = require("./presence/presence-handler");
 const EventEmitter = require("component-emitter2");
 class Client extends EventEmitter {
@@ -16,7 +15,6 @@ class Client extends EventEmitter {
         super();
         this.options = Object.assign({}, client_options_1.DefaultOptions, options);
         const services = {};
-        services.storage = options.storage || new storage_service_1.Storage(this.options);
         services.logger = new logger_1.Logger(this);
         services.timerRegistry = new timer_registry_1.TimerRegistry();
         services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);

@@ -259,10 +259,6 @@ export class RPCHandler {
   }
 
   private onConnectionLost (): void {
-    this.rpcs.forEach(rpc => {
-      rpc.error(EVENT.CLIENT_OFFLINE)
-    })
-    this.rpcs.clear()
+    
   }
-
 }

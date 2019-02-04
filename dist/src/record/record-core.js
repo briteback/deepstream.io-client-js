@@ -292,9 +292,6 @@ class RecordCore extends Emitter {
     setMergeStrategy(mergeStrategy) {
         this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy);
     }
-    saveRecordLocally() {
-        this.services.storage.set(this.name, this.version, this.data, () => { });
-    }
     sendSUBCRToServer() {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         this.services.timeoutRegistry.add({
@@ -504,7 +501,7 @@ class RecordCore extends Emitter {
     }
     /**
      * If connected sends the delete message to server, otherwise
-     * we delete in local storage and transition to delete success.
+     * we transition to delete success.
      */
     sendDelete() {
         this.whenReady(null, () => {
@@ -522,10 +519,8 @@ class RecordCore extends Emitter {
                 this.services.connection.sendMessage(message);
             }
             else {
-                this.services.storage.delete(this.name, () => {
-                    this.services.timerRegistry.requestIdleCallback(() => {
-                        this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS);
-                    });
+                this.services.timerRegistry.requestIdleCallback(() => {
+                    this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS);
                 });
             }
         });
@@ -544,7 +539,6 @@ class RecordCore extends Emitter {
         this.whenComplete(this.name);
     }
     onConnectionLost() {
-        this.saveRecordLocally();
     }
 }
 exports.RecordCore = RecordCore;

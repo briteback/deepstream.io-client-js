@@ -19,7 +19,6 @@ export interface Services {
     connection: Connection;
     timeoutRegistry: TimeoutRegistry;
     timerRegistry: TimerRegistry;
-    storage: RecordOfflineStore;
     emitter: Emitter;
 }
 export declare class Client extends EventEmitter {
