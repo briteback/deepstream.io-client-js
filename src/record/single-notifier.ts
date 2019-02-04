@@ -108,10 +108,6 @@ export class SingleNotifier {
   }
 
   private onConnectionLost (): void {
-    this.requests.forEach(responses => {
-      responses.forEach(response => response(EVENT.CLIENT_OFFLINE))
-    })
-    this.requests.clear()
   }
 
   private onExitLimbo (): void {

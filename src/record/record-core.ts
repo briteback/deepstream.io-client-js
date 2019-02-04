@@ -368,7 +368,7 @@ export class RecordCore extends Emitter {
   }
 
   private sendSUBCRToServer(): void {
-    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+    this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
 
     this.services.timeoutRegistry.add({
       message: {
@@ -397,7 +397,7 @@ export class RecordCore extends Emitter {
    * Transition States
    */
   private onSubscribing(): void {
-    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+    this.recordServices.readRegistry.register(this.name, this.handleReadResponse)
     this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState: CONNECTION_STATE) => {
       if (newState === CONNECTION_STATE.OPEN) {
         // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
