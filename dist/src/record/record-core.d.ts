@@ -126,6 +126,10 @@ export declare class RecordCore extends Emitter {
      */
     private onSubscribing;
     private onReady;
+    /**
+     * This happens when reading record data again after a reconenction
+     */
+    private onRefreshed;
     private applyPendingWrites;
     private onUnsubscribed;
     private onDeleted;

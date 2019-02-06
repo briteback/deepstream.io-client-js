@@ -78,9 +78,9 @@ export class RecordCore extends Emitter {
     }
 
     const [
-      onSubscribing, onReady, onDeleted, onUnsubscribed
+      onSubscribing, onReady, onDeleted, onUnsubscribed, onRefreshed
     ] = [
-      this.onSubscribing, this.onReady, this.onDeleted, this.onUnsubscribed
+      this.onSubscribing, this.onReady, this.onDeleted, this.onUnsubscribed, this.onRefreshed
     ].map(f => f.bind(this))
 
     const transitions = [
@@ -106,7 +106,8 @@ export class RecordCore extends Emitter {
       // Ignore extra read responses while in the ready state.
       {
         name: RA.READ_RESPONSE,
-        from: RECORD_STATE.READY, to: RECORD_STATE.READY
+        from: RECORD_STATE.READY, to: RECORD_STATE.READY,
+        handler: onRefreshed
       },
       {
         name: RA.DELETE_SUCCESS,
@@ -397,7 +398,6 @@ export class RecordCore extends Emitter {
    * Transition States
    */
   private onSubscribing(): void {
-    this.recordServices.readRegistry.register(this.name, this.handleReadResponse)
     this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState: CONNECTION_STATE) => {
       if (newState === CONNECTION_STATE.OPEN) {
         // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
@@ -415,6 +415,13 @@ export class RecordCore extends Emitter {
     this.applyPendingWrites()
     this.isReady = true
     this.emit(EVENT.RECORD_READY)
+  }
+  
+  /**
+   * This happens when reading record data again after a reconenction
+   */
+  private onRefreshed(): void {
+    this.services.timeoutRegistry.clear(this.responseTimeout);
   }
 
   private applyPendingWrites(): void {
