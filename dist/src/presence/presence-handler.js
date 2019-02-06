@@ -36,7 +36,6 @@ class PresenceHandler {
         this.queryAllEmitter = new Emitter();
         this.services.connection.registerHandler(message_constants_1.TOPIC.PRESENCE, this.handle.bind(this));
         this.services.connection.onExitLimbo(this.onExitLimbo.bind(this));
-        this.services.connection.onLost(this.onExitLimbo.bind(this));
         this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
         this.counter = 0;
         this.pendingSubscribes = new Set();
