@@ -64,6 +64,7 @@ export class RecordCore extends Emitter {
     this.references = 1
     this.hasProvider = false
     this.pendingWrites = []
+    this.pengingUpdates = []
     this.isReady = false
     this.parentEmitter = services.emitter
 
@@ -369,6 +370,7 @@ export class RecordCore extends Emitter {
   }
 
   private sendSUBCRToServer(): void {
+    this.pengingUpdates = [];
     this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
 
     this.services.timeoutRegistry.add({
@@ -413,6 +415,7 @@ export class RecordCore extends Emitter {
   private onReady(): void {
     this.services.timeoutRegistry.clear(this.responseTimeout)
     this.applyPendingWrites()
+    this.applyPendingUpdates()
     this.isReady = true
     this.emit(EVENT.RECORD_READY)
   }
@@ -422,6 +425,9 @@ export class RecordCore extends Emitter {
    */
   private onRefreshed(): void {
     this.services.timeoutRegistry.clear(this.responseTimeout);
+    this.services.timerRegistry.requestIdleCallback(() => {
+      this.applyPendingUpdates();
+    });
   }
 
   private applyPendingWrites(): void {
@@ -470,7 +476,18 @@ export class RecordCore extends Emitter {
   }
 
   private handleUpdateMessage(message: RecordMessage): void {
+    if (!this.isReady) {
+      this.pengingUpdates.push(message as RecordWriteMessage);
+      return;
+  }
     this.applyUpdate(message as RecordWriteMessage)
+  }
+
+  private applyPendingUpdates(): void {
+    this.pengingUpdates.forEach(message => {
+        this.applyUpdate(message);
+    });
+    this.pengingUpdates = [];
   }
 
   private handleDeleteSuccess(): void {
