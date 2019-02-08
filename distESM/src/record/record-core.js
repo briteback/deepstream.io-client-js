@@ -471,8 +471,8 @@ export class RecordCore extends Emitter {
     applyUpdate(message) {
         const version = message.version;
         const data = message.parsedData;
-        if (this.version === null) {
-            this.version = version;
+        if (this.version && this.version >= version) {
+            return;
         }
         this.version = version;
         let newData;
