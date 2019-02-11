@@ -29,6 +29,7 @@ export declare class RecordCore extends Emitter {
     private recordServices;
     private emitter;
     private parentEmitter;
+    private pendingUpdates;
     private data;
     private stateMachine;
     private responseTimeout;
@@ -135,6 +136,7 @@ export declare class RecordCore extends Emitter {
     private onDeleted;
     private handleAckMessage;
     private handleUpdateMessage;
+    private applyPendingUpdates;
     private handleDeleteSuccess;
     private handleDeleted;
     private handleMessageDenied;

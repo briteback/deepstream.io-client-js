@@ -37,6 +37,7 @@ export class RecordCore extends Emitter {
   private recordServices: RecordServices
   private emitter: Emitter
   private parentEmitter: Emitter
+  private pendingUpdates: Array<any>
   private data: object
   private stateMachine: StateMachine
   private responseTimeout: number
@@ -64,7 +65,7 @@ export class RecordCore extends Emitter {
     this.references = 1
     this.hasProvider = false
     this.pendingWrites = []
-    this.pengingUpdates = []
+    this.pendingUpdates = []
     this.isReady = false
     this.parentEmitter = services.emitter
 
@@ -370,7 +371,7 @@ export class RecordCore extends Emitter {
   }
 
   private sendSUBCRToServer(): void {
-    this.pengingUpdates = [];
+    this.pendingUpdates = [];
     this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
 
     this.services.timeoutRegistry.add({
@@ -477,17 +478,17 @@ export class RecordCore extends Emitter {
 
   private handleUpdateMessage(message: RecordMessage): void {
     if (!this.isReady) {
-      this.pengingUpdates.push(message as RecordWriteMessage);
+      this.pendingUpdates.push(message as RecordWriteMessage);
       return;
   }
     this.applyUpdate(message as RecordWriteMessage)
   }
 
   private applyPendingUpdates(): void {
-    this.pengingUpdates.forEach(message => {
+    this.pendingUpdates.forEach((message: any) => {
         this.applyUpdate(message);
     });
-    this.pengingUpdates = [];
+    this.pendingUpdates = [];
   }
 
   private handleDeleteSuccess(): void {

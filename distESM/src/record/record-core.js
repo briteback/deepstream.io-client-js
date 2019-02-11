@@ -18,6 +18,7 @@ export class RecordCore extends Emitter {
         this.references = 1;
         this.hasProvider = false;
         this.pendingWrites = [];
+        this.pendingUpdates = [];
         this.isReady = false;
         this.parentEmitter = services.emitter;
         this.version = null;
@@ -292,6 +293,7 @@ export class RecordCore extends Emitter {
         this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy);
     }
     sendSUBCRToServer() {
+        this.pendingUpdates = [];
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
         this.services.timeoutRegistry.add({
             message: {
@@ -330,6 +332,7 @@ export class RecordCore extends Emitter {
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);
         this.applyPendingWrites();
+        this.applyPendingUpdates();
         this.isReady = true;
         this.emit(EVENT.RECORD_READY);
     }
@@ -338,6 +341,9 @@ export class RecordCore extends Emitter {
      */
     onRefreshed() {
         this.services.timeoutRegistry.clear(this.responseTimeout);
+        this.services.timerRegistry.requestIdleCallback(() => {
+            this.applyPendingUpdates();
+        });
     }
     applyPendingWrites() {
         const writeCallbacks = [];
@@ -377,7 +383,17 @@ export class RecordCore extends Emitter {
         this.services.timeoutRegistry.remove(message);
     }
     handleUpdateMessage(message) {
+        if (!this.isReady) {
+            this.pendingUpdates.push(message);
+            return;
+        }
         this.applyUpdate(message);
+    }
+    applyPendingUpdates() {
+        this.pendingUpdates.forEach((message) => {
+            this.applyUpdate(message);
+        });
+        this.pendingUpdates = [];
     }
     handleDeleteSuccess() {
         this.services.timeoutRegistry.clear(this.deletedTimeout);
