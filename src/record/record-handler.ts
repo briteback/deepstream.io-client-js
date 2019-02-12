@@ -1,64 +1,64 @@
-import * as utils from '../util/utils'
-import { EVENT } from '../constants'
-import { Services } from '../client'
-import { Options } from '../client-options'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
-import { isWriteAck } from '../../binary-protocol/src/utils'
-import { RecordCore, WriteAckCallback } from './record-core'
-import { Record } from './record'
-import { AnonymousRecord } from './anonymous-record'
-import { List } from './list'
-import { Listener, ListenCallback } from '../util/listener'
-import { SingleNotifier } from './single-notifier'
-import { WriteAcknowledgementService } from './write-ack-service'
-import { MergeStrategyService } from './merge-strategy-service'
-import { MergeStrategy } from './merge-strategy'
+import { RECORD_ACTIONS as RECORD_ACTION, RecordMessage, TOPIC } from "../../binary-protocol/src/message-constants";
+import { isWriteAck } from "../../binary-protocol/src/utils";
+import { Services } from "../client";
+import { Options } from "../client-options";
+import { EVENT } from "../constants";
+import { ListenCallback, Listener } from "../util/listener";
+import * as utils from "../util/utils";
+import { AnonymousRecord } from "./anonymous-record";
+import { List } from "./list";
+import { MergeStrategy } from "./merge-strategy";
+import { MergeStrategyService } from "./merge-strategy-service";
+import { Record } from "./record";
+import { RecordCore, WriteAckCallback } from "./record-core";
+import { SingleNotifier } from "./single-notifier";
+import { WriteAcknowledgementService } from "./write-ack-service";
 
 export interface RecordServices {
-  writeAckService: WriteAcknowledgementService
-  readRegistry: SingleNotifier,
-  headRegistry: SingleNotifier,
-  mergeStrategy: MergeStrategyService
+  writeAckService: WriteAcknowledgementService;
+  readRegistry: SingleNotifier;
+  headRegistry: SingleNotifier;
+  mergeStrategy: MergeStrategyService;
 }
 
 export class RecordHandler {
-  private services: Services
-  private options: Options
-  private listener: Listener
-  private recordCores: Map<string, RecordCore>
-  private recordServices: RecordServices
+  private services: Services;
+  private options: Options;
+  private listener: Listener;
+  private recordCores: Map<string, RecordCore>;
+  private recordServices: RecordServices;
 
   constructor(services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
-    this.services = services
-    this.options = options
-    this.listener = listener || new Listener(TOPIC.RECORD, this.services)
+    this.services = services;
+    this.options = options;
+    this.listener = listener || new Listener(TOPIC.RECORD, this.services);
 
-    this.recordCores = new Map()
+    this.recordCores = new Map();
 
     this.recordServices = recordServices || {
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
       headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),
-      mergeStrategy: new MergeStrategyService(services, options.mergeStrategy)
-    } as RecordServices
+      mergeStrategy: new MergeStrategyService(services, options.mergeStrategy),
+    } as RecordServices;
 
-    this.getRecordCore = this.getRecordCore.bind(this)
-    this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
+    this.getRecordCore = this.getRecordCore.bind(this);
+    this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this));
   }
 
   public setMergeStrategy(recordName: string, mergeStrategy: MergeStrategy): void {
-    if (typeof mergeStrategy === 'function') {
-      this.recordServices.mergeStrategy.setMergeStrategyByName(recordName, mergeStrategy)
+    if (typeof mergeStrategy === "function") {
+      this.recordServices.mergeStrategy.setMergeStrategyByName(recordName, mergeStrategy);
     } else {
-      throw new Error('Invalid merge strategy: Must be a Function')
+      throw new Error("Invalid merge strategy: Must be a Function");
     }
   }
 
   public setMergeStrategyRegExp(regexp: RegExp, mergeStrategy: MergeStrategy): void {
-    if (typeof mergeStrategy === 'function') {
-      this.recordServices.mergeStrategy.setMergeStrategyByPattern(regexp, mergeStrategy)
+    if (typeof mergeStrategy === "function") {
+      this.recordServices.mergeStrategy.setMergeStrategyByPattern(regexp, mergeStrategy);
     } else {
-      throw new Error('Invalid merge strategy: Must be a Function')
+      throw new Error("Invalid merge strategy: Must be a Function");
     }
   }
 
@@ -68,7 +68,7 @@ export class RecordHandler {
  * @param   {String} name              the unique name of the record
  */
   public getRecord(name: string): Record {
-    return new Record(this.getRecordCore(name))
+    return new Record(this.getRecordCore(name));
   }
 
   /**
@@ -78,7 +78,7 @@ export class RecordHandler {
    * @param   {String} name       the unique name of the list
    */
   public getList(name: string): List {
-    return new List(this.getRecordCore(name))
+    return new List(this.getRecordCore(name));
   }
 
   /**
@@ -92,7 +92,7 @@ export class RecordHandler {
    * The only API difference to a normal record is an additional setName( name ) method.
    */
   public getAnonymousRecord(): AnonymousRecord {
-    return new AnonymousRecord(this.getRecordCore)
+    return new AnonymousRecord(this.getRecordCore);
   }
 
   /**
@@ -104,7 +104,7 @@ export class RecordHandler {
    * @param   {Function} callback
    */
   public listen(pattern: string, callback: ListenCallback): void {
-    this.listener.listen(pattern, callback)
+    this.listener.listen(pattern, callback);
   }
 
   /**
@@ -113,7 +113,7 @@ export class RecordHandler {
    * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
    */
   public unlisten(pattern: string): void {
-    this.listener.unlisten(pattern)
+    this.listener.unlisten(pattern);
   }
 
   /**
@@ -122,38 +122,38 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot(name: string): Promise<any>
-  public snapshot(name: string, callback: (error: string | null, data: any) => void): void
+  public snapshot(name: string): Promise<any>;
+  public snapshot(name: string, callback: (error: string | null, data: any) => void): void;
   public snapshot(name: string, callback?: (error: string | null, data: any) => void): void | Promise<any> {
-    if (typeof name !== 'string' || name.length === 0) {
-      throw new Error('invalid argument: name')
+    if (typeof name !== "string" || name.length === 0) {
+      throw new Error("invalid argument: name");
     }
-    if (callback !== undefined && typeof callback !== 'function') {
-      throw new Error('invalid argument: callback')
+    if (callback !== undefined && typeof callback !== "function") {
+      throw new Error("invalid argument: callback");
     }
 
-    const recordCore = this.recordCores.get(name)
+    const recordCore = this.recordCores.get(name);
     if (recordCore && callback) {
       return recordCore.whenReady(null, () => {
-        callback(null, recordCore.get())
-      })
+        callback(null, recordCore.get());
+      });
 
     } else if (recordCore && !callback) {
       return new Promise((resolve, reject) => {
         recordCore.whenReady(null, () => {
-          resolve(recordCore.get())
-        })
-      })
+          resolve(recordCore.get());
+        });
+      });
 
     } else if (!recordCore && callback) {
-      this.recordServices.readRegistry.request(name, callback)
-      return
+      this.recordServices.readRegistry.request(name, callback);
+      return;
 
     } else {
       return new Promise((resolve, reject) => {
-        const cb = (err: any, data: any) => err ? reject(err) : resolve(data)
-        this.recordServices.readRegistry.request(name, cb)
-      })
+        const cb = (err: any, data: any) => err ? reject(err) : resolve(data);
+        this.recordServices.readRegistry.request(name, cb);
+      });
     }
   }
 
@@ -163,26 +163,26 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public has(name: string): Promise<boolean>
-  public has(name: string, callback: (error: string | null, has: boolean | null) => void): void
+  public has(name: string): Promise<boolean>;
+  public has(name: string, callback: (error: string | null, has: boolean | null) => void): void;
   public has(name: string, callback?: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
-    if (typeof name !== 'string' || name.length === 0) {
-      throw new Error('invalid argument: name')
+    if (typeof name !== "string" || name.length === 0) {
+      throw new Error("invalid argument: name");
     }
-    if (callback !== undefined && typeof callback !== 'function') {
-      throw new Error('invalid argument: callback')
+    if (callback !== undefined && typeof callback !== "function") {
+      throw new Error("invalid argument: callback");
     }
 
-    let cb
+    let cb;
     if (!callback) {
       return new Promise((resolve, reject) => {
-        cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1)
-        this.head(name, cb)
-      })
+        cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1);
+        this.head(name, cb);
+      });
     }
     cb = (error: string | null, version: number) => error ?
-      callback(error, null) : callback(null, version !== -1)
-    this.head(name, cb)
+      callback(error, null) : callback(null, version !== -1);
+    this.head(name, cb);
   }
 
   /**
@@ -191,38 +191,38 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public head(name: string): Promise<number>
-  public head(name: string, callback: (error: string | null, version: number) => void): void
+  public head(name: string): Promise<number>;
+  public head(name: string, callback: (error: string | null, version: number) => void): void;
   public head(name: string, callback?: (error: string | null, version: number) => void): void | Promise<number> {
-    if (typeof name !== 'string' || name.length === 0) {
-      throw new Error('invalid argument: name')
+    if (typeof name !== "string" || name.length === 0) {
+      throw new Error("invalid argument: name");
     }
-    if (callback !== undefined && typeof callback !== 'function') {
-      throw new Error('invalid argument: callback')
+    if (callback !== undefined && typeof callback !== "function") {
+      throw new Error("invalid argument: callback");
     }
 
-    const recordCore = this.recordCores.get(name)
+    const recordCore = this.recordCores.get(name);
     if (recordCore) {
       if (callback) {
         recordCore.whenReady(null, () => {
-          callback(null, recordCore.version as number)
-        })
+          callback(null, recordCore.version as number);
+        });
       } else {
         return new Promise((resolve, reject) => {
           recordCore.whenReady(null, () => {
-            resolve(recordCore.version as number)
-          })
-        })
+            resolve(recordCore.version as number);
+          });
+        });
       }
-      return
+      return;
     }
 
     if (callback) {
-      this.recordServices.headRegistry.request(name, callback)
+      this.recordServices.headRegistry.request(name, callback);
     } else {
       return new Promise((resolve, reject) => {
-        this.recordServices.headRegistry.request(name, (error, data) => error ? reject(error) : resolve(data))
-      })
+        this.recordServices.headRegistry.request(name, (error, data) => error ? reject(error) : resolve(data));
+      });
     }
   }
 
@@ -240,17 +240,17 @@ export class RecordHandler {
    * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
    *                    with the result of the write
    */
-  public setDataWithAck(recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void
-  public setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void
-  public setDataWithAck(recordName: string, ...rest: Array<any>): Promise<string> | void {
-    const args = utils.normalizeSetArguments(arguments, 1)
+  public setDataWithAck(recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
+  public setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
+  public setDataWithAck(recordName: string, ...rest: any[]): Promise<string> | void {
+    const args = utils.normalizeSetArguments(arguments, 1);
     if (!args.callback) {
       return new Promise((resolve, reject) => {
-        args.callback = error => error === null ? resolve() : reject(error)
-        this.sendSetData(recordName, -1, args)
-      })
+        args.callback = (error) => error === null ? resolve() : reject(error);
+        this.sendSetData(recordName, -1, args);
+      });
     }
-    this.sendSetData(recordName, -1, args)
+    this.sendSetData(recordName, -1, args);
   }
 
   /**
@@ -268,38 +268,38 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
-  public setData(recordName: string, data: any): void
-  public setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void
-  public setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
+  public setData(recordName: string, data: any): void;
+  public setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
+  public setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
   public setData(recordName: string): void {
-    const args = utils.normalizeSetArguments(arguments, 1)
-    this.sendSetData(recordName, -1, args)
+    const args = utils.normalizeSetArguments(arguments, 1);
+    this.sendSetData(recordName, -1, args);
   }
 
   private sendSetData(recordName: string, version: number, args: utils.RecordSetArguments): void {
-    const { path, data, callback } = args
-    if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
-      throw new Error('invalid argument: recordName must be an non empty string')
+    const { path, data, callback } = args;
+    if (!recordName || typeof recordName !== "string" || recordName.length === 0) {
+      throw new Error("invalid argument: recordName must be an non empty string");
     }
-    if (!path && (data === null || typeof data !== 'object')) {
-      throw new Error('invalid argument: data must be an object when no path is provided')
+    if (!path && (data === null || typeof data !== "object")) {
+      throw new Error("invalid argument: data must be an object when no path is provided");
     }
 
-    const recordCore = this.recordCores.get(recordName)
+    const recordCore = this.recordCores.get(recordName);
     if (recordCore) {
-      recordCore.set({ path, data, callback })
-      return
+      recordCore.set({ path, data, callback });
+      return;
     }
 
     const action = (() => {
       if (!path) {
-        return RECORD_ACTION.CREATEANDUPDATE
+        return RECORD_ACTION.CREATEANDUPDATE;
       } else if (data === undefined) {
-        return RECORD_ACTION.ERASE
+        return RECORD_ACTION.ERASE;
       } else {
-        return RECORD_ACTION.CREATEANDPATCH
+        return RECORD_ACTION.CREATEANDPATCH;
       }
-    })()
+    })();
 
     const message = {
       topic: TOPIC.RECORD,
@@ -307,13 +307,13 @@ export class RecordHandler {
       name: recordName,
       path,
       version,
-      parsedData: data
-    }
+      parsedData: data,
+    };
 
     if (callback) {
-      this.recordServices.writeAckService.send(message, callback)
+      this.recordServices.writeAckService.send(message, callback);
     } else {
-      this.services.connection.sendMessage(message)
+      this.services.connection.sendMessage(message);
     }
   }
 
@@ -329,22 +329,22 @@ export class RecordHandler {
       message.action === RECORD_ACTION.LISTEN ||
       message.action === RECORD_ACTION.UNLISTEN
     ) {
-      this.listener.handle(message)
-      return
+      this.listener.handle(message);
+      return;
     }
 
     if (isWriteAck(message.action) || isWriteAck(message.originalAction as RECORD_ACTION)) {
-      this.recordServices.writeAckService.recieve(message)
-      return
+      this.recordServices.writeAckService.recieve(message);
+      return;
     }
 
     if (message.action === RECORD_ACTION.READ_RESPONSE || message.originalAction === RECORD_ACTION.READ) {
       if (message.isError) {
-        this.recordServices.readRegistry.recieve(message, RECORD_ACTION[message.action])
+        this.recordServices.readRegistry.recieve(message, RECORD_ACTION[message.action]);
       } else {
-        this.recordServices.readRegistry.recieve(message, null, message.parsedData)
+        this.recordServices.readRegistry.recieve(message, null, message.parsedData);
       }
-      return
+      return;
     }
 
     if (
@@ -352,22 +352,22 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.HEAD
     ) {
       if (message.isError) {
-        this.recordServices.headRegistry.recieve(message, RECORD_ACTION[message.action])
+        this.recordServices.headRegistry.recieve(message, RECORD_ACTION[message.action]);
       } else {
-        this.recordServices.headRegistry.recieve(message, null, message.version)
+        this.recordServices.headRegistry.recieve(message, null, message.version);
       }
     }
 
-    const recordCore = this.recordCores.get(message.name)
+    const recordCore = this.recordCores.get(message.name);
     if (recordCore) {
-      recordCore.handle(message)
-      return
+      recordCore.handle(message);
+      return;
     }
 
     if (
       message.action === RECORD_ACTION.VERSION_EXISTS
     ) {
-      return
+      return;
     }
 
     if (
@@ -375,15 +375,15 @@ export class RecordHandler {
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
       // record can receive a HAS_PROVIDER after discarding the record
-      return
+      return;
     }
 
     if (message.isError) {
-      this.services.logger.error(message)
-      return
+      this.services.logger.error(message);
+      return;
     }
 
-    this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
+    this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE);
   }
 
   /**
@@ -391,18 +391,18 @@ export class RecordHandler {
    * the registry
    */
   private removeRecord(recordName: string) {
-    this.recordCores.delete(recordName)
+    this.recordCores.delete(recordName);
   }
 
   private getRecordCore(recordName: string): RecordCore {
-    let recordCore = this.recordCores.get(recordName)
+    let recordCore = this.recordCores.get(recordName);
     if (!recordCore) {
-      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
-      this.recordCores.set(recordName, recordCore)
+      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this));
+      this.recordCores.set(recordName, recordCore);
     } else {
-      recordCore.usages++
+      recordCore.usages++;
     }
-    return recordCore
+    return recordCore;
   }
 
 }

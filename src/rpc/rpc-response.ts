@@ -1,6 +1,6 @@
-import { Services } from '../client'
-import { Options } from '../client-options'
-import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { RPC_ACTIONS as RPC_ACTION, RPCMessage, TOPIC } from "../../binary-protocol/src/message-constants";
+import { Services } from "../client";
+import { Options } from "../client-options";
 
 /**
  * This class represents a single remote procedure
@@ -9,22 +9,22 @@ import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-proto
  * incoming response data
  */
 export class RPCResponse {
-    private services: Services
-    private name: string
-    private correlationId: string
-    private isAccepted: boolean
-    private isComplete: boolean
 
-    public autoAccept: boolean
+    public autoAccept: boolean;
+    private services: Services;
+    private name: string;
+    private correlationId: string;
+    private isAccepted: boolean;
+    private isComplete: boolean;
 
-    constructor (message: RPCMessage, options: Options, services: Services) {
-        this.name = message.name as string
-        this.correlationId = message.correlationId as string
-        this.services = services
-        this.isAccepted = false
-        this.isComplete = false
-        this.autoAccept = true
-        this.services.timerRegistry.requestIdleCallback(this.performAutoAck.bind(this))
+    constructor(message: RPCMessage, options: Options, services: Services) {
+        this.name = message.name as string;
+        this.correlationId = message.correlationId as string;
+        this.services = services;
+        this.isAccepted = false;
+        this.isComplete = false;
+        this.autoAccept = true;
+        this.services.timerRegistry.requestIdleCallback(this.performAutoAck.bind(this));
     }
 
     /**
@@ -32,15 +32,15 @@ export class RPCResponse {
      * will happen implicitly unless the request callback
      * explicitly sets autoAck to false
      */
-    public accept () {
+    public accept() {
       if (this.isAccepted === false) {
         this.services.connection.sendMessage({
           topic: TOPIC.RPC,
           action: RPC_ACTION.ACCEPT,
           name: this.name,
-          correlationId: this.correlationId
-        })
-        this.isAccepted = true
+          correlationId: this.correlationId,
+        });
+        this.isAccepted = true;
       }
     }
 
@@ -51,40 +51,40 @@ export class RPCResponse {
      * another provider - or return a NO_RPC_PROVIDER error if there are no
      * providers left
      */
-    public reject (): void {
+    public reject(): void {
       if (this.isComplete === true) {
-        throw new Error(`Rpc ${this.name} already completed`)
+        throw new Error(`Rpc ${this.name} already completed`);
       }
-      this.autoAccept = false
-      this.isComplete = true
-      this.isAccepted = true
+      this.autoAccept = false;
+      this.isComplete = true;
+      this.isAccepted = true;
       this.services.connection.sendMessage({
         topic: TOPIC.RPC,
         action: RPC_ACTION.REJECT,
         name: this.name,
-        correlationId: this.correlationId
-      })
+        correlationId: this.correlationId,
+      });
     }
 
     /**
      * Notifies the server that an error has occured while trying to process the request.
      * This will complete the rpc.
      */
-    public error (error: any): void {
+    public error(error: any): void {
       if (this.isComplete === true) {
-        throw new Error(`Rpc ${this.name} already completed`)
+        throw new Error(`Rpc ${this.name} already completed`);
       }
-      error = error || 'Error';
-      this.autoAccept = false
-      this.isComplete = true
-      this.isAccepted = true
+      error = error || "Error";
+      this.autoAccept = false;
+      this.isComplete = true;
+      this.isAccepted = true;
       this.services.connection.sendMessage({
         topic: TOPIC.RPC,
         action: RPC_ACTION.REQUEST_ERROR,
         name: this.name,
         correlationId: this.correlationId,
-        parsedData: error
-      })
+        parsedData: error,
+      });
     }
 
     /**
@@ -95,29 +95,29 @@ export class RPCResponse {
      * the ack message the request will still be completed and the
      * ack message ignored
      */
-    public send (data: any): void {
+    public send(data: any): void {
       if (this.isComplete === true) {
-        throw new Error(`Rpc ${this.name} already completed`)
+        throw new Error(`Rpc ${this.name} already completed`);
       }
-      this.accept()
+      this.accept();
 
       this.services.connection.sendMessage({
         topic: TOPIC.RPC,
         action: RPC_ACTION.RESPONSE,
         name: this.name,
         correlationId: this.correlationId,
-        parsedData: data
-      })
-      this.isComplete = true
+        parsedData: data,
+      });
+      this.isComplete = true;
     }
 
     /**
      * Callback for the autoAck timeout. Executes ack
      * if autoAck is not disabled
      */
-    private performAutoAck (): void {
+    private performAutoAck(): void {
       if (this.autoAccept === true) {
-        this.accept()
+        this.accept();
       }
     }
 }

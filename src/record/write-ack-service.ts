@@ -1,60 +1,60 @@
-import { RECORD_ACTIONS, Message } from '../../binary-protocol/src/message-constants'
-import { ACTION_TO_WRITE_ACK } from '../../binary-protocol/src/utils'
+import { Message, RECORD_ACTIONS } from "../../binary-protocol/src/message-constants";
+import { ACTION_TO_WRITE_ACK } from "../../binary-protocol/src/utils";
 
-import { EVENT } from '../constants'
-import { Services } from '../client'
-import { WriteAckCallback } from './record-core'
+import { Services } from "../client";
+import { EVENT } from "../constants";
+import { WriteAckCallback } from "./record-core";
 
 export class WriteAcknowledgementService {
 
-  private services: Services
-  private responses: Map<string, Function>
-  private count: number
+  private services: Services;
+  private responses: Map<string, Function>;
+  private count: number;
 
-  constructor (services: Services) {
-    this.services = services
-    this.responses = new Map<string, WriteAckCallback>()
-    this.count = 1
+  constructor(services: Services) {
+    this.services = services;
+    this.responses = new Map<string, WriteAckCallback>();
+    this.count = 1;
 
-    this.services.connection.onLost(this.onConnectionLost.bind(this))
+    this.services.connection.onLost(this.onConnectionLost.bind(this));
   }
 
   /**
    * Send message with write ack callback.
    */
-  public send (message: Message, callback: WriteAckCallback): void {
+  public send(message: Message, callback: WriteAckCallback): void {
     if (!this.services.connection.isConnected) {
-      this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
-      return
+      this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE));
+      return;
     }
-    const correlationId = this.count.toString()
-    this.responses.set(correlationId, callback)
+    const correlationId = this.count.toString();
+    this.responses.set(correlationId, callback);
     const messageToSend = Object.assign(
-      {}, message, { correlationId, action: ACTION_TO_WRITE_ACK[message.action] }
-    )
-    this.services.connection.sendMessage(messageToSend)
-    this.count++
+      {}, message, { correlationId, action: ACTION_TO_WRITE_ACK[message.action] },
+    );
+    this.services.connection.sendMessage(messageToSend);
+    this.count++;
   }
 
-  public recieve (message: Message): void {
-    const id = message.correlationId as string
-    const response = this.responses.get(id)
+  public recieve(message: Message): void {
+    const id = message.correlationId as string;
+    const response = this.responses.get(id);
     if (
       !response ||
       (message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)
     ) {
-      return
+      return;
     }
 
     message.isError
       ? response(RECORD_ACTIONS[message.action as RECORD_ACTIONS])
-      : response(null)
+      : response(null);
 
-    this.responses.delete(id)
+    this.responses.delete(id);
   }
 
-  private onConnectionLost (): void {
-    this.responses.forEach(response => response(EVENT.CLIENT_OFFLINE))
-    this.responses.clear()
+  private onConnectionLost(): void {
+    this.responses.forEach((response) => response(EVENT.CLIENT_OFFLINE));
+    this.responses.clear();
   }
 }

@@ -1,26 +1,26 @@
-import { Services } from '../client'
-import { Options } from '../client-options'
-import { EVENT } from '../constants'
 import {
+  Message,
   RECORD_ACTIONS as RECORD_ACTION,
   RPC_ACTIONS as RPC_ACTION,
-  Message
-} from '../../binary-protocol/src/message-constants'
-import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
+} from "../../binary-protocol/src/message-constants";
+import { RESPONSE_TO_REQUEST } from "../../binary-protocol/src/utils";
+import { Services } from "../client";
+import { Options } from "../client-options";
+import { EVENT } from "../constants";
 
-import * as EventEmitter from 'component-emitter2'
+import * as EventEmitter from "component-emitter2";
 
 export interface Timeout {
-    event?: EVENT | RPC_ACTION | RECORD_ACTION
-    message: Message,
-    callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void,
-    duration?: number
+    event?: EVENT | RPC_ACTION | RECORD_ACTION;
+    message: Message;
+    callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void;
+    duration?: number;
 }
 
 interface InternalTimeout {
-  timerId: number,
-  uniqueName: string,
-  timeout: Timeout
+  timerId: number;
+  uniqueName: string;
+  timeout: Timeout;
 }
 
 /**
@@ -30,28 +30,28 @@ interface InternalTimeout {
  * their respective timeouts.
  */
 export class TimeoutRegistry extends EventEmitter {
-  private options: Options
-  private services: Services
-  private register: Map<number, InternalTimeout>
-  private ackRegister: Map<string, InternalTimeout>
+  private options: Options;
+  private services: Services;
+  private register: Map<number, InternalTimeout>;
+  private ackRegister: Map<string, InternalTimeout>;
 
-  constructor (services: Services, options: Options) {
-    super()
-    this.options = options
-    this.services = services
-    this.register = new Map()
-    this.ackRegister = new Map()
+  constructor(services: Services, options: Options) {
+    super();
+    this.options = options;
+    this.services = services;
+    this.register = new Map();
+    this.ackRegister = new Map();
   }
 
   /**
    * Add an entry
    */
-  public add (timeout: Timeout): number {
+  public add(timeout: Timeout): number {
     if (timeout.duration === undefined) {
-      timeout.duration = this.options.subscriptionTimeout
+      timeout.duration = this.options.subscriptionTimeout;
     }
     if (timeout.event === undefined) {
-      timeout.event = EVENT.ACK_TIMEOUT
+      timeout.event = EVENT.ACK_TIMEOUT;
     }
 
     /*
@@ -62,93 +62,93 @@ export class TimeoutRegistry extends EventEmitter {
     */
 
     if (!this.services.connection.isConnected) {
-      return -1
+      return -1;
     }
 
-    this.remove(timeout.message)
+    this.remove(timeout.message);
 
     const internalTimeout: InternalTimeout = Object.assign({}, {
       timerId: -1,
       uniqueName: this.getUniqueName(timeout.message),
-      event: timeout.event
-    }, { timeout })
+      event: timeout.event,
+    }, { timeout });
 
     internalTimeout.timerId = this.services.timerRegistry.add({
       context: this,
       callback: this.onTimeout,
       duration: timeout.duration,
-      data: internalTimeout
-    })
-    this.register.set(internalTimeout.timerId, internalTimeout)
-    this.ackRegister.set(internalTimeout.uniqueName, internalTimeout)
-    return internalTimeout.timerId
+      data: internalTimeout,
+    });
+    this.register.set(internalTimeout.timerId, internalTimeout);
+    this.ackRegister.set(internalTimeout.uniqueName, internalTimeout);
+    return internalTimeout.timerId;
   }
 
   /**
    * Remove an entry
    */
-  public remove (message: Message): void {
-    let requestMsg
-    const action = RESPONSE_TO_REQUEST[message.topic][message.action]
+  public remove(message: Message): void {
+    let requestMsg;
+    const action = RESPONSE_TO_REQUEST[message.topic][message.action];
     if (!action) {
-      requestMsg = message
+      requestMsg = message;
     } else {
-      requestMsg = Object.assign({}, message, { action })
+      requestMsg = Object.assign({}, message, { action });
     }
 
-    const uniqueName = this.getUniqueName(requestMsg)
-    const entry = this.ackRegister.get(uniqueName)
+    const uniqueName = this.getUniqueName(requestMsg);
+    const entry = this.ackRegister.get(uniqueName);
     if (entry) {
-      this.clear(entry.timerId)
+      this.clear(entry.timerId);
     }
   }
 
   /**
    * Processes an incoming ACK-message and removes the corresponding subscription
    */
-  public clear (timerId: number): void {
-    this.services.timerRegistry.remove(timerId)
-    const entry = this.register.get(timerId)
+  public clear(timerId: number): void {
+    this.services.timerRegistry.remove(timerId);
+    const entry = this.register.get(timerId);
     if (entry) {
-      this.register.delete(timerId)
-      this.ackRegister.delete(entry.uniqueName)
+      this.register.delete(timerId);
+      this.ackRegister.delete(entry.uniqueName);
+    }
+  }
+
+  /**
+   * Remote all timeouts when connection disconnects
+   */
+  public onConnectionLost(): void {
+    for (const [ timerId ] of this.register) {
+      clearTimeout(timerId);
+      this.register.delete(timerId);
     }
   }
 
   /**
    * Will be invoked if the timeout has occured before the ack message was received
    */
-  private onTimeout (internalTimeout: InternalTimeout): void {
-    this.register.delete(internalTimeout.timerId)
-    const timeout = internalTimeout.timeout
+  private onTimeout(internalTimeout: InternalTimeout): void {
+    this.register.delete(internalTimeout.timerId);
+    const timeout = internalTimeout.timeout;
     if (timeout.callback) {
-      timeout.callback(timeout.event as EVENT, timeout.message)
+      timeout.callback(timeout.event as EVENT, timeout.message);
     } else {
-      this.services.logger.warn(timeout.message, timeout.event)
+      this.services.logger.warn(timeout.message, timeout.event);
     }
   }
 
   /**
    * Returns a unique name from the timeout
    */
-  private getUniqueName (message: Message): string {
-    const action = message.originalAction || message.action
-    let name = `${message.topic}${action}_`
+  private getUniqueName(message: Message): string {
+    const action = message.originalAction || message.action;
+    let name = `${message.topic}${action}_`;
     if (message.correlationId) {
-      name += message.correlationId
+      name += message.correlationId;
     } else if (message.name) {
-      name += message.name
+      name += message.name;
     }
-    return name
-  }
-
-  /**
-   * Remote all timeouts when connection disconnects
-   */
-  public onConnectionLost (): void {
-    for (const [ timerId ] of this.register) {
-      clearTimeout(timerId)
-      this.register.delete(timerId)
-    }
+    return name;
   }
 }

@@ -1,8 +1,8 @@
-import { Services } from '../client'
-import { Options } from '../client-options'
-import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { RPC_ACTIONS as RPC_ACTION, RPCMessage, TOPIC } from "../../binary-protocol/src/message-constants";
+import { Services } from "../client";
+import { Options } from "../client-options";
 
-export type RPCMakeCallback = (error: string | null, result?: any) => void
+export type RPCMakeCallback = (error: string | null, result?: any) => void;
 
 /**
  * This class represents a single remote procedure
@@ -11,76 +11,76 @@ export type RPCMakeCallback = (error: string | null, result?: any) => void
  * incoming response data
  */
 export class RPC {
-    private services: Services
-    private options: Options
-    private name: string
-    private correlationId: string
-    private response: RPCMakeCallback
-    private acceptTimeout: number
-    private responseTimeout: number
+    private services: Services;
+    private options: Options;
+    private name: string;
+    private correlationId: string;
+    private response: RPCMakeCallback;
+    private acceptTimeout: number;
+    private responseTimeout: number;
 
-    constructor (name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services) {
-      this.options = options
-      this.services = services
-      this.name = name
-      this.correlationId = correlationId
-      this.response = response
+    constructor(name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services) {
+      this.options = options;
+      this.services = services;
+      this.name = name;
+      this.correlationId = correlationId;
+      this.response = response;
 
       const message = {
         topic: TOPIC.RPC,
         action: RPC_ACTION.REQUEST,
         correlationId,
         name,
-        parsedData: data
-      }
+        parsedData: data,
+      };
 
       this.acceptTimeout = this.services.timeoutRegistry.add({
         message: {
           topic: TOPIC.RPC,
           action: RPC_ACTION.ACCEPT,
           name: this.name,
-          correlationId: this.correlationId
+          correlationId: this.correlationId,
         },
         event: RPC_ACTION.ACCEPT_TIMEOUT,
         duration: this.options.rpcAcceptTimeout,
-        callback: this.onTimeout.bind(this)
-      })
+        callback: this.onTimeout.bind(this),
+      });
 
       this.responseTimeout = this.services.timeoutRegistry.add({
         message: {
           topic: TOPIC.RPC,
           action: RPC_ACTION.REQUEST,
           name: this.name,
-          correlationId: this.correlationId
+          correlationId: this.correlationId,
         },
         event: RPC_ACTION.RESPONSE_TIMEOUT,
         duration: this.options.rpcResponseTimeout,
-        callback: this.onTimeout.bind(this)
-      })
-      this.services.connection.sendMessage(message)
+        callback: this.onTimeout.bind(this),
+      });
+      this.services.connection.sendMessage(message);
     }
 
     /**
      * Called once an ack message is received from the server
      */
-    public accept (): void {
-      this.services.timeoutRegistry.clear(this.acceptTimeout)
+    public accept(): void {
+      this.services.timeoutRegistry.clear(this.acceptTimeout);
     }
 
     /**
      * Called once a response message is received from the server.
      */
-    public respond (data: any) {
-      this.response(null, data)
-      this.complete()
+    public respond(data: any) {
+      this.response(null, data);
+      this.complete();
     }
 
     /**
      * Called once an error is received from the server.
      */
-    public error (data: any) {
-      this.response(data)
-      this.complete()
+    public error(data: any) {
+      this.response(data);
+      this.complete();
     }
 
     /**
@@ -89,17 +89,17 @@ export class RPC {
      * if a response arrives later on it will be ignored / cause an
      * UNSOLICITED_MESSAGE error
      */
-    private onTimeout (event: RPC_ACTION, message: RPCMessage) {
-      this.response(RPC_ACTION[event])
-      this.complete()
+    private onTimeout(event: RPC_ACTION, message: RPCMessage) {
+      this.response(RPC_ACTION[event]);
+      this.complete();
     }
 
     /**
      * Called after either an error or a response
      * was received
     */
-    private complete () {
-      this.services.timeoutRegistry.clear(this.acceptTimeout)
-      this.services.timeoutRegistry.clear(this.responseTimeout)
+    private complete() {
+      this.services.timeoutRegistry.clear(this.acceptTimeout);
+      this.services.timeoutRegistry.clear(this.responseTimeout);
   }
 }

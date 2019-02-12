@@ -1,93 +1,97 @@
-import { CONNECTION_STATE, EVENT } from '../constants'
 import {
-  TOPIC,
-  CONNECTION_ACTIONS as CONNECTION_ACTION,
   AUTH_ACTIONS as AUTH_ACTION,
-  PARSER_ACTIONS as PARSER_ACTION,
+  CONNECTION_ACTIONS as CONNECTION_ACTION,
   Message,
-  ParseResult
-} from '../../binary-protocol/src/message-constants'
+  PARSER_ACTIONS as PARSER_ACTION,
+  ParseResult,
+  TOPIC,
+} from "../../binary-protocol/src/message-constants";
 import {
-  parseData
-} from '../../binary-protocol/src/message-parser'
+  parseData,
+} from "../../binary-protocol/src/message-parser";
+import { CONNECTION_STATE, EVENT } from "../constants";
 
-import { StateMachine } from '../util/state-machine'
-import { Services } from '../client'
-import { Options } from '../client-options'
-import { Socket, socketFactory, SOCKET_UNOPENED_ON_SEND } from './socket-factory'
-import * as utils from '../util/utils'
-import * as Emitter from 'component-emitter2'
-export type AuthenticationCallback = (success: boolean, clientData: object | null) => void
-export type ResumeCallback = (error?: object) => void
+import * as Emitter from "component-emitter2";
+import { Services } from "../client";
+import { Options } from "../client-options";
+import { StateMachine } from "../util/state-machine";
+import * as utils from "../util/utils";
+import { Socket, SOCKET_UNOPENED_ON_SEND, socketFactory } from "./socket-factory";
+export type AuthenticationCallback = (success: boolean, clientData: object | null) => void;
+export type ResumeCallback = (error?: object) => void;
 
 const enum TRANSITIONS {
-  INITIALISED = 'initialised',
-  CONNECTED = 'connected',
-  CHALLENGE = 'challenge',
-  AUTHENTICATE = 'authenticate',
-  RECONNECT = 'reconnect',
-  CHALLENGE_ACCEPTED = 'accepted',
-  CHALLENGE_DENIED = 'challenge-denied',
-  CONNECTION_REDIRECTED = 'redirected',
-  TOO_MANY_AUTH_ATTEMPTS = 'too-many-auth-attempts',
-  CLOSE = 'close',
-  CLOSED = 'closed',
-  UNSUCCESFUL_LOGIN = 'unsuccesful-login',
-  SUCCESFUL_LOGIN = 'succesful-login',
-  ERROR = 'error',
-  LOST = 'connection-lost',
-  PAUSE = 'pause',
-  OFFLINE = 'offline',
-  RESUME = 'resume',
-  EXIT_LIMBO = 'exit-limbo',
-  AUTHENTICATION_TIMEOUT = 'authentication-timeout'
+  INITIALISED = "initialised",
+  CONNECTED = "connected",
+  CHALLENGE = "challenge",
+  AUTHENTICATE = "authenticate",
+  RECONNECT = "reconnect",
+  CHALLENGE_ACCEPTED = "accepted",
+  CHALLENGE_DENIED = "challenge-denied",
+  CONNECTION_REDIRECTED = "redirected",
+  TOO_MANY_AUTH_ATTEMPTS = "too-many-auth-attempts",
+  CLOSE = "close",
+  CLOSED = "closed",
+  UNSUCCESFUL_LOGIN = "unsuccesful-login",
+  SUCCESFUL_LOGIN = "succesful-login",
+  ERROR = "error",
+  LOST = "connection-lost",
+  PAUSE = "pause",
+  OFFLINE = "offline",
+  RESUME = "resume",
+  EXIT_LIMBO = "exit-limbo",
+  AUTHENTICATION_TIMEOUT = "authentication-timeout",
 }
 
 export class Connection {
-  public emitter: Emitter
-  public isInLimbo: boolean
 
-  private internalEmitter: Emitter
-  private services: Services
-  private options: Options
-  private stateMachine: StateMachine
-  private authParams: object | null
-  private clientData: object | null
-  private authCallback: AuthenticationCallback | null
-  private resumeCallback: ResumeCallback | null
-  private originalUrl: string
-  private url: string
-  private heartbeatInterval: number | null
-  private lastHeartBeat: number | null
-  private endpoint: Socket | null
-  private handlers: Map<TOPIC, Function>
+  public get isConnected(): boolean {
+    return this.stateMachine.state === CONNECTION_STATE.OPEN;
+  }
+  public emitter: Emitter;
+  public isInLimbo: boolean;
 
-  private reconnectTimeout: number | null
-  private reconnectionAttempt: number
-  private limboTimeout: number | null
-  private isReconnecting: boolean
-  private firstOpen: boolean
+  private internalEmitter: Emitter;
+  private services: Services;
+  private options: Options;
+  private stateMachine: StateMachine;
+  private authParams: object | null;
+  private clientData: object | null;
+  private authCallback: AuthenticationCallback | null;
+  private resumeCallback: ResumeCallback | null;
+  private originalUrl: string;
+  private url: string;
+  private heartbeatInterval: number | null;
+  private lastHeartBeat: number | null;
+  private endpoint: Socket | null;
+  private handlers: Map<TOPIC, Function>;
 
-  constructor (services: Services, options: Options, url: string, emitter: Emitter) {
-    this.options = options
-    this.services = services
-    this.authParams = null
-    this.handlers = new Map()
+  private reconnectTimeout: number | null;
+  private reconnectionAttempt: number;
+  private limboTimeout: number | null;
+  private isReconnecting: boolean;
+  private firstOpen: boolean;
+
+  constructor(services: Services, options: Options, url: string, emitter: Emitter) {
+    this.options = options;
+    this.services = services;
+    this.authParams = null;
+    this.handlers = new Map();
     // tslint:disable-next-line:no-empty
-    this.authCallback = null
-    this.resumeCallback = null
-    this.emitter = emitter
-    this.internalEmitter = new Emitter()
-    this.isInLimbo = true
-    this.clientData = null
-    this.heartbeatInterval = null
-    this.lastHeartBeat = null
-    this.endpoint = null
-    this.reconnectTimeout = null
-    this.reconnectionAttempt = 0
-    this.limboTimeout = null
-    this.isReconnecting = false
-    this.firstOpen = true
+    this.authCallback = null;
+    this.resumeCallback = null;
+    this.emitter = emitter;
+    this.internalEmitter = new Emitter();
+    this.isInLimbo = true;
+    this.clientData = null;
+    this.heartbeatInterval = null;
+    this.lastHeartBeat = null;
+    this.endpoint = null;
+    this.reconnectTimeout = null;
+    this.reconnectionAttempt = 0;
+    this.limboTimeout = null;
+    this.isReconnecting = false;
+    this.firstOpen = true;
 
     this.stateMachine = new StateMachine(
       this.services.logger,
@@ -95,32 +99,32 @@ export class Connection {
         init: CONNECTION_STATE.CLOSED,
         onStateChanged: (newState: string, oldState: string) => {
           if (newState === oldState) {
-            return
+            return;
           }
-          emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
+          emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState);
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
-            this.isInLimbo = true
-            this.isReconnecting = true
+            this.isInLimbo = true;
+            this.isReconnecting = true;
             if (oldState !== CONNECTION_STATE.CLOSED) {
-              this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+              this.internalEmitter.emit(EVENT.CONNECTION_LOST);
               if (this.limboTimeout) {
-                this.services.timerRegistry.remove(this.limboTimeout as number)
+                this.services.timerRegistry.remove(this.limboTimeout as number);
               }
               this.limboTimeout = this.services.timerRegistry.add({
                 duration: this.options.offlineBufferTimeout,
                 context: this,
                 callback: () => {
-                  this.isInLimbo = false
-                  this.internalEmitter.emit(EVENT.EXIT_LIMBO)
-                }
-              })
+                  this.isInLimbo = false;
+                  this.internalEmitter.emit(EVENT.EXIT_LIMBO);
+                },
+              });
             }
           } else if (newState === CONNECTION_STATE.OPEN && (this.isReconnecting || this.firstOpen)) {
-            this.firstOpen = false
-            this.isInLimbo = false
-            this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
-            this.services.timerRegistry.remove(this.limboTimeout as number)
+            this.firstOpen = false;
+            this.isInLimbo = false;
+            this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED);
+            this.services.timerRegistry.remove(this.limboTimeout as number);
             this.limboTimeout = null;
           }
         },
@@ -149,15 +153,15 @@ export class Connection {
           { name: TRANSITIONS.RESUME, to: CONNECTION_STATE.RECONNECTING },
           { name: TRANSITIONS.PAUSE, to: CONNECTION_STATE.PAUSING },
           { name: TRANSITIONS.CLOSE, to: CONNECTION_STATE.CLOSING },
-        ]
-      }
-    )
-    this.stateMachine.transition(TRANSITIONS.INITIALISED)
-    this.originalUrl = utils.parseUrl(url, this.options.path)
-    this.url = this.originalUrl
+        ],
+      },
+    );
+    this.stateMachine.transition(TRANSITIONS.INITIALISED);
+    this.originalUrl = utils.parseUrl(url, this.options.path);
+    this.url = this.originalUrl;
 
     if (!options.lazyConnect) {
-      this.createEndpoint()
+      this.createEndpoint();
     }
 
     this.internalEmitter.on(SOCKET_UNOPENED_ON_SEND, () => {
@@ -166,46 +170,42 @@ export class Connection {
            this.endpoint.readyState === this.endpoint.CLOSED)) {
         this.forceReconnect();
       } else {
-        this.services.logger.E('Trying to send messages before socket is opened?');
+        this.services.logger.E("Trying to send messages before socket is opened?");
       }
     });
   }
 
-  public get isConnected (): boolean {
-    return this.stateMachine.state === CONNECTION_STATE.OPEN
+  public onLost(callback: Function): void {
+    this.internalEmitter.on(EVENT.CONNECTION_LOST, callback);
   }
 
-  public onLost (callback: Function): void {
-    this.internalEmitter.on(EVENT.CONNECTION_LOST, callback)
+  public removeOnLost(callback: Function): void {
+    this.internalEmitter.off(EVENT.CONNECTION_LOST, callback);
   }
 
-  public removeOnLost (callback: Function): void {
-    this.internalEmitter.off(EVENT.CONNECTION_LOST, callback)
+  public onReestablished(callback: Function): void {
+    this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback);
   }
 
-  public onReestablished (callback: Function): void {
-    this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
+  public removeOnReestablished(callback: Function): void {
+    this.internalEmitter.off(EVENT.CONNECTION_REESTABLISHED, callback);
   }
 
-  public removeOnReestablished (callback: Function): void {
-    this.internalEmitter.off(EVENT.CONNECTION_REESTABLISHED, callback)
+  public onExitLimbo(callback: Function): void {
+    this.internalEmitter.on(EVENT.EXIT_LIMBO, callback);
   }
 
-  public onExitLimbo (callback: Function): void {
-    this.internalEmitter.on(EVENT.EXIT_LIMBO, callback)
+  public registerHandler(topic: TOPIC, callback: Function): void {
+    this.handlers.set(topic, callback);
   }
 
-  public registerHandler (topic: TOPIC, callback: Function): void {
-    this.handlers.set(topic, callback)
-  }
-
-  public sendMessage (message: Message): void {
+  public sendMessage(message: Message): void {
     if (!this.isOpen()) {
-      this.services.logger.error(message, EVENT.IS_CLOSED)
-      return
+      this.services.logger.error(message, EVENT.IS_CLOSED);
+      return;
     }
     if (this.endpoint) {
-      this.endpoint.sendParsedMessage(message)
+      this.endpoint.sendParsedMessage(message);
     }
   }
 
@@ -218,16 +218,16 @@ export class Connection {
    *                E.g. { username:<String>, password:<String> }
    * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
-  public authenticate (authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void {
+  public authenticate(authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void {
     if (
       authParamsOrCallback &&
-      typeof authParamsOrCallback !== 'object' &&
-      typeof authParamsOrCallback !== 'function'
+      typeof authParamsOrCallback !== "object" &&
+      typeof authParamsOrCallback !== "function"
     ) {
-      throw new Error('invalid argument authParamsOrCallback')
+      throw new Error("invalid argument authParamsOrCallback");
     }
-    if (callback && typeof callback !== 'function') {
-      throw new Error('invalid argument callback')
+    if (callback && typeof callback !== "function") {
+      throw new Error("invalid argument callback");
     }
 
     if (
@@ -235,20 +235,20 @@ export class Connection {
       this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
       this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
-      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
-      return
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED);
+      return;
     }
 
     if (authParamsOrCallback) {
-      this.authParams = typeof authParamsOrCallback === 'object' ? authParamsOrCallback : {}
+      this.authParams = typeof authParamsOrCallback === "object" ? authParamsOrCallback : {};
     }
 
-    if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {
-      this.authCallback = authParamsOrCallback as AuthenticationCallback
+    if (authParamsOrCallback && typeof authParamsOrCallback === "function") {
+      this.authCallback = authParamsOrCallback as AuthenticationCallback;
     } else if (callback) {
-      this.authCallback = callback
+      this.authCallback = callback;
     } else {
-      this.authCallback = () => {}
+      this.authCallback = () => {};
     }
 
     // if (this.stateMachine.state === CONNECTION_STATE.CLOSED && !this.endpoint) {
@@ -257,276 +257,61 @@ export class Connection {
     // }
 
     if (this.stateMachine.state === CONNECTION_STATE.AWAITING_AUTHENTICATION && this.authParams) {
-      this.sendAuthParams()
+      this.sendAuthParams();
     }
 
     if (!this.endpoint) {
-      this.createEndpoint()
+      this.createEndpoint();
     }
   }
 
   /*
   * Returns the current connection state.
   */
-  public getConnectionState (): CONNECTION_STATE {
-    return this.stateMachine.state
-  }
-
-  private isOpen (): boolean {
-    const connState = this.getConnectionState()
-    return connState !== CONNECTION_STATE.CLOSED
-      && connState !== CONNECTION_STATE.ERROR
-      && connState !== CONNECTION_STATE.CLOSING
+  public getConnectionState(): CONNECTION_STATE {
+    return this.stateMachine.state;
   }
 
   /**
    * Closes the connection. Using this method
    * will prevent the client from reconnecting.
    */
-  public close (): void {
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+  public close(): void {
+    this.services.timerRegistry.remove(this.heartbeatInterval as number);
     this.sendMessage({
       topic: TOPIC.CONNECTION,
-      action: CONNECTION_ACTION.CLOSING
-    })
-    this.stateMachine.transition(TRANSITIONS.CLOSE)
+      action: CONNECTION_ACTION.CLOSING,
+    });
+    this.stateMachine.transition(TRANSITIONS.CLOSE);
   }
 
-  public pause (): void {
-    this.stateMachine.transition(TRANSITIONS.PAUSE)
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+  public pause(): void {
+    this.stateMachine.transition(TRANSITIONS.PAUSE);
+    this.services.timerRegistry.remove(this.heartbeatInterval as number);
     if (this.endpoint) {
-      this.endpoint.close()
+      this.endpoint.close();
     }
   }
 
-  public resume (callback: ResumeCallback): void {
-    this.stateMachine.transition(TRANSITIONS.RESUME)
-    this.resumeCallback = callback
-    this.tryReconnect()
-  }
-
-  /**
-   * Creates the endpoint to connect to using the url deepstream
-   * was initialised with.
-   */
-  private createEndpoint (): void {
-    this.endpoint = socketFactory(this.url, this.options.socketOptions, this.internalEmitter)
-
-    this.endpoint.onopen = this.onOpen.bind(this)
-    this.endpoint.onerror = this.onError.bind(this)
-    this.endpoint.onclose = this.onClose.bind(this)
-    this.endpoint.onparsedmessages = this.onMessages.bind(this)
-  }
-
-  /********************************
-  ****** Endpoint Callbacks ******
-  /********************************/
-
-  /**
-  * Will be invoked once the connection is established. The client
-  * can't send messages yet, and needs to get a connection ACK or REDIRECT
-  * from the server before authenticating
-  */
-  private onOpen (): void {
-    this.clearReconnect()
-    this.lastHeartBeat = Date.now()
-    this.checkHeartBeat()
-    this.stateMachine.transition(TRANSITIONS.CONNECTED)
-    this.sendMessage({
-      topic: TOPIC.CONNECTION,
-      action: CONNECTION_ACTION.CHALLENGE,
-      url: this.originalUrl,
-      protocolVersion: '0.1a'
-    })
-    this.stateMachine.transition(TRANSITIONS.CHALLENGE)
-  }
-
-  /**
-   * Callback for generic connection errors. Forwards
-   * the error to the client.
-   *
-   * The connection is considered broken once this method has been
-   * invoked.
-   */
-  private onError (error: NodeJS.ErrnoException) {
-    /*
-     * If the implementation isn't listening on the error event this will throw
-     * an error. So let's defer it to allow the reconnection to kick in.
-     */
-    setTimeout(() => {
-      let msg
-      if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
-        msg = `Can't connect! Deepstream server unreachable on ${this.originalUrl}`
-      } else {
-        try {
-          msg = JSON.stringify(error)
-        } catch (e) {
-          msg = error.toString()
-        }
-      }
-      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg)
-    }, 1)
-
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
-    this.stateMachine.transition(TRANSITIONS.ERROR)
-    this.tryReconnect()
-  }
-
-  /**
-   * Callback when the connection closes. This might have been a deliberate
-   * close triggered by the client or the result of the connection getting
-   * lost.
-   *
-   * In the latter case the client will try to reconnect using the configured
-   * strategy.
-   */
-  private onClose (): void {
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
-
-    if (this.stateMachine.state === CONNECTION_STATE.REDIRECTING) {
-      this.createEndpoint()
-      return
-    }
-
-    if (
-      this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
-      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
-    ) {
-      return
-    }
-
-    if (this.stateMachine.state === CONNECTION_STATE.CLOSING) {
-      this.stateMachine.transition(TRANSITIONS.CLOSED)
-      return
-    }
-
-    if (this.stateMachine.state === CONNECTION_STATE.PAUSING) {
-      this.stateMachine.transition(TRANSITIONS.OFFLINE)
-      return
-    }
-
-    this.stateMachine.transition(TRANSITIONS.LOST)
-    this.tryReconnect()
-  }
-
-  /**
-   * Callback for messages received on the connection.
-   */
-  private onMessages (parseResults: Array<ParseResult>): void {
-    parseResults.forEach(parseResult => {
-      if (parseResult.parseError) {
-        this.services.logger.error(
-          { topic: TOPIC.PARSER },
-          parseResult.action,
-          parseResult.raw && parseResult.raw.toString()
-        )
-        return
-      }
-      const message: any = parseResult
-      const res = parseData(message)
-      if (res !== true) {
-        this.services.logger.error({ topic: TOPIC.PARSER }, PARSER_ACTION.INVALID_MESSAGE, res)
-      }
-      if (message === null) {
-        return
-      }
-      if (message.topic === TOPIC.CONNECTION) {
-        this.handleConnectionResponse(message)
-        return
-      }
-      if (message.topic === TOPIC.AUTH) {
-        this.handleAuthResponse(message)
-        return
-      }
-      const handler = this.handlers.get(message.topic)
-      if (!handler) {
-        // this should never happen
-        return
-      }
-      handler(message)
-    })
-  }
-
-  /**
-  * Sends authentication params to the server. Please note, this
-  * doesn't use the queued message mechanism, but rather sends the message directly
-  */
-  private sendAuthParams (): void {
-    this.stateMachine.transition(TRANSITIONS.AUTHENTICATE)
-    this.sendMessage({
-      topic: TOPIC.AUTH,
-      action: AUTH_ACTION.REQUEST,
-      parsedData: this.authParams
-    })
-  }
-
-  /**
-  * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
-  * to have been lost and closes it for reconnection.
-  */
-  private checkHeartBeat (): void {
-    const heartBeatTolerance = this.options.heartbeatInterval * 2
-
-    if (Date.now() - (this.lastHeartBeat as number) > heartBeatTolerance) {
-      this.services.timerRegistry.remove(this.heartbeatInterval as number)
-      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT)
-      if (this.endpoint) {
-        this.endpoint.close()
-      }
-      return
-    }
-
-    this.heartbeatInterval = this.services.timerRegistry.add({
-      duration: this.options.heartbeatInterval,
-      callback: this.checkHeartBeat,
-      context: this
-    })
-  }
-
- /**
- * If the connection drops or is closed in error this
- * method schedules increasing reconnection intervals
- *
- * If the number of failed reconnection attempts exceeds
- * options.maxReconnectAttempts the connection is closed
- */
-  private tryReconnect (): void {
-    if (this.reconnectTimeout !== null) {
-      return
-    }
-    if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
-      this.stateMachine.transition(TRANSITIONS.RECONNECT)
-      this.reconnectTimeout = setTimeout(
-        this.tryOpen.bind(this),
-        Math.min(
-          this.options.maxReconnectInterval,
-          this.options.reconnectIntervalIncrement * this.reconnectionAttempt
-        )
-      )
-      this.reconnectionAttempt++
-      return
-    }
-
-    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
-    this.clearReconnect()
-    this.close()
+  public resume(callback: ResumeCallback): void {
+    this.stateMachine.transition(TRANSITIONS.RESUME);
+    this.resumeCallback = callback;
+    this.tryReconnect();
   }
 /**
    * Forces a new connection and does not wait for the current socket to close.
    * On OSX and iOS it happens that the current socket is dead but looks alive.
-   * Calling forceReconnect will regardles of current state reset and set up a 
+   * Calling forceReconnect will regardles of current state reset and set up a
    * new connection
    */
-  public forceReconnect (): void {
+  public forceReconnect(): void {
     if (this.endpoint) {
       this.endpoint.onopen = null;
       this.endpoint.onerror = null;
       this.endpoint.onclose = null;
       this.endpoint.onparsedmessages = (messages: Message[]) => {};
     }
-    
+
     utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
     utils.tryWrap(() => this.close(), this.services.logger.E);
 
@@ -539,15 +324,230 @@ export class Connection {
     this.createEndpoint();
   }
 
+  private isOpen(): boolean {
+    const connState = this.getConnectionState();
+    return connState !== CONNECTION_STATE.CLOSED
+      && connState !== CONNECTION_STATE.ERROR
+      && connState !== CONNECTION_STATE.CLOSING;
+  }
+
+  /**
+   * Creates the endpoint to connect to using the url deepstream
+   * was initialised with.
+   */
+  private createEndpoint(): void {
+    this.endpoint = socketFactory(this.url, this.options.socketOptions, this.internalEmitter);
+
+    this.endpoint.onopen = this.onOpen.bind(this);
+    this.endpoint.onerror = this.onError.bind(this);
+    this.endpoint.onclose = this.onClose.bind(this);
+    this.endpoint.onparsedmessages = this.onMessages.bind(this);
+  }
+
+  /********************************
+  ****** Endpoint Callbacks ******
+  /********************************/
+
+  /**
+  * Will be invoked once the connection is established. The client
+  * can't send messages yet, and needs to get a connection ACK or REDIRECT
+  * from the server before authenticating
+  */
+  private onOpen(): void {
+    this.clearReconnect();
+    this.lastHeartBeat = Date.now();
+    this.checkHeartBeat();
+    this.stateMachine.transition(TRANSITIONS.CONNECTED);
+    this.sendMessage({
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.CHALLENGE,
+      url: this.originalUrl,
+      protocolVersion: "0.1a",
+    });
+    this.stateMachine.transition(TRANSITIONS.CHALLENGE);
+  }
+
+  /**
+   * Callback for generic connection errors. Forwards
+   * the error to the client.
+   *
+   * The connection is considered broken once this method has been
+   * invoked.
+   */
+  private onError(error: NodeJS.ErrnoException) {
+    /*
+     * If the implementation isn't listening on the error event this will throw
+     * an error. So let's defer it to allow the reconnection to kick in.
+     */
+    setTimeout(() => {
+      let msg;
+      if (error.code === "ECONNRESET" || error.code === "ECONNREFUSED") {
+        msg = `Can't connect! Deepstream server unreachable on ${this.originalUrl}`;
+      } else {
+        try {
+          msg = JSON.stringify(error);
+        } catch (e) {
+          msg = error.toString();
+        }
+      }
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg);
+    }, 1);
+
+    this.services.timerRegistry.remove(this.heartbeatInterval as number);
+    this.stateMachine.transition(TRANSITIONS.ERROR);
+    this.tryReconnect();
+  }
+
+  /**
+   * Callback when the connection closes. This might have been a deliberate
+   * close triggered by the client or the result of the connection getting
+   * lost.
+   *
+   * In the latter case the client will try to reconnect using the configured
+   * strategy.
+   */
+  private onClose(): void {
+    this.services.timerRegistry.remove(this.heartbeatInterval as number);
+
+    if (this.stateMachine.state === CONNECTION_STATE.REDIRECTING) {
+      this.createEndpoint();
+      return;
+    }
+
+    if (
+      this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
+      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
+    ) {
+      return;
+    }
+
+    if (this.stateMachine.state === CONNECTION_STATE.CLOSING) {
+      this.stateMachine.transition(TRANSITIONS.CLOSED);
+      return;
+    }
+
+    if (this.stateMachine.state === CONNECTION_STATE.PAUSING) {
+      this.stateMachine.transition(TRANSITIONS.OFFLINE);
+      return;
+    }
+
+    this.stateMachine.transition(TRANSITIONS.LOST);
+    this.tryReconnect();
+  }
+
+  /**
+   * Callback for messages received on the connection.
+   */
+  private onMessages(parseResults: ParseResult[]): void {
+    parseResults.forEach((parseResult) => {
+      if (parseResult.parseError) {
+        this.services.logger.error(
+          { topic: TOPIC.PARSER },
+          parseResult.action,
+          parseResult.raw && parseResult.raw.toString(),
+        );
+        return;
+      }
+      const message: any = parseResult;
+      const res = parseData(message);
+      if (res !== true) {
+        this.services.logger.error({ topic: TOPIC.PARSER }, PARSER_ACTION.INVALID_MESSAGE, res);
+      }
+      if (message === null) {
+        return;
+      }
+      if (message.topic === TOPIC.CONNECTION) {
+        this.handleConnectionResponse(message);
+        return;
+      }
+      if (message.topic === TOPIC.AUTH) {
+        this.handleAuthResponse(message);
+        return;
+      }
+      const handler = this.handlers.get(message.topic);
+      if (!handler) {
+        // this should never happen
+        return;
+      }
+      handler(message);
+    });
+  }
+
+  /**
+  * Sends authentication params to the server. Please note, this
+  * doesn't use the queued message mechanism, but rather sends the message directly
+  */
+  private sendAuthParams(): void {
+    this.stateMachine.transition(TRANSITIONS.AUTHENTICATE);
+    this.sendMessage({
+      topic: TOPIC.AUTH,
+      action: AUTH_ACTION.REQUEST,
+      parsedData: this.authParams,
+    });
+  }
+
+  /**
+  * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
+  * to have been lost and closes it for reconnection.
+  */
+  private checkHeartBeat(): void {
+    const heartBeatTolerance = this.options.heartbeatInterval * 2;
+
+    if (Date.now() - (this.lastHeartBeat as number) > heartBeatTolerance) {
+      this.services.timerRegistry.remove(this.heartbeatInterval as number);
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT);
+      if (this.endpoint) {
+        this.endpoint.close();
+      }
+      return;
+    }
+
+    this.heartbeatInterval = this.services.timerRegistry.add({
+      duration: this.options.heartbeatInterval,
+      callback: this.checkHeartBeat,
+      context: this,
+    });
+  }
+
+ /**
+ * If the connection drops or is closed in error this
+ * method schedules increasing reconnection intervals
+ *
+ * If the number of failed reconnection attempts exceeds
+ * options.maxReconnectAttempts the connection is closed
+ */
+  private tryReconnect(): void {
+    if (this.reconnectTimeout !== null) {
+      return;
+    }
+    if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
+      this.stateMachine.transition(TRANSITIONS.RECONNECT);
+      this.reconnectTimeout = setTimeout(
+        this.tryOpen.bind(this),
+        Math.min(
+          this.options.maxReconnectInterval,
+          this.options.reconnectIntervalIncrement * this.reconnectionAttempt,
+        ),
+      );
+      this.reconnectionAttempt++;
+      return;
+    }
+
+    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt);
+    this.clearReconnect();
+    this.close();
+  }
+
   /**
    * Attempts to open a errourosly closed connection
    */
-  private tryOpen (): void {
+  private tryOpen(): void {
     if (this.stateMachine.state !== CONNECTION_STATE.REDIRECTING) {
-      this.url = this.originalUrl
+      this.url = this.originalUrl;
     }
-    this.createEndpoint()
-    this.reconnectTimeout = null
+    this.createEndpoint();
+    this.reconnectTimeout = null;
   }
 
   /**
@@ -556,12 +556,12 @@ export class Connection {
    * or because the maximal number of reconnection
    * attempts has been exceeded
    */
-  private clearReconnect (): void {
+  private clearReconnect(): void {
     if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
+      clearTimeout(this.reconnectTimeout);
     }
-    this.reconnectTimeout = null
-    this.reconnectionAttempt = 0
+    this.reconnectTimeout = null;
+    this.reconnectionAttempt = 0;
   }
 
   /**
@@ -581,43 +581,43 @@ export class Connection {
    * If a redirect is recieved, this connection is closed and updated with
    * a connection to the url supplied in the message.
    */
-  private handleConnectionResponse (message: Message): void {
+  private handleConnectionResponse(message: Message): void {
     if (message.action === CONNECTION_ACTION.PING) {
-      this.lastHeartBeat = Date.now()
+      this.lastHeartBeat = Date.now();
       if (
         this.getConnectionState() !== CONNECTION_STATE.CLOSING &&
         this.getConnectionState() !== CONNECTION_STATE.PAUSING
       ) {
-        this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG })
+        this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG });
       }
-      return
+      return;
     }
 
     if (message.action === CONNECTION_ACTION.ACCEPT) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGE_ACCEPTED)
-      return
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE_ACCEPTED);
+      return;
     }
 
     if (message.action === CONNECTION_ACTION.REJECT) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGE_DENIED)
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE_DENIED);
       if (this.endpoint) {
-        this.endpoint.close()
+        this.endpoint.close();
       }
-      return
+      return;
     }
 
     if (message.action === CONNECTION_ACTION.REDIRECT) {
-      this.url = message.url as string
-      this.stateMachine.transition(TRANSITIONS.CONNECTION_REDIRECTED)
+      this.url = message.url as string;
+      this.stateMachine.transition(TRANSITIONS.CONNECTION_REDIRECTED);
       if (this.endpoint) {
-        this.endpoint.close()
+        this.endpoint.close();
       }
-      return
+      return;
     }
 
     if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
-      this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
-      this.services.logger.error(message)
+      this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT);
+      this.services.logger.error(message);
     }
   }
 
@@ -627,73 +627,73 @@ export class Connection {
    * open the connection and send all messages that the client
    * tried to send so far.
    */
-  private handleAuthResponse (message: Message): void {
+  private handleAuthResponse(message: Message): void {
     if (message.action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
-      this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS)
-      this.services.logger.error(message)
-      return
+      this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS);
+      this.services.logger.error(message);
+      return;
     }
 
     if (message.action === AUTH_ACTION.AUTH_UNSUCCESSFUL) {
-      this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN)
-      this.onAuthUnSuccessful()
-      return
+      this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN);
+      this.onAuthUnSuccessful();
+      return;
     }
 
     if (message.action === AUTH_ACTION.AUTH_SUCCESSFUL) {
-      this.stateMachine.transition(TRANSITIONS.SUCCESFUL_LOGIN)
-      this.onAuthSuccessful(message.parsedData)
-      return
+      this.stateMachine.transition(TRANSITIONS.SUCCESFUL_LOGIN);
+      this.onAuthSuccessful(message.parsedData);
+      return;
     }
   }
 
-  private onAwaitingAuthentication (): void {
+  private onAwaitingAuthentication(): void {
     if (this.authParams) {
-      this.sendAuthParams()
+      this.sendAuthParams();
     }
   }
 
-  private onAuthSuccessful (clientData: any): void {
-    this.updateClientData(clientData)
+  private onAuthSuccessful(clientData: any): void {
+    this.updateClientData(clientData);
     if (this.resumeCallback) {
-      this.resumeCallback()
-      this.resumeCallback = null
+      this.resumeCallback();
+      this.resumeCallback = null;
     }
     if (this.authCallback === null) {
-      return
+      return;
     }
 
-    this.authCallback(true, this.clientData)
-    this.authCallback = null
+    this.authCallback(true, this.clientData);
+    this.authCallback = null;
   }
 
-  private onAuthUnSuccessful (): void {
-    const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] }
+  private onAuthUnSuccessful(): void {
+    const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] };
     if (this.resumeCallback) {
-      this.resumeCallback(reason)
-      this.resumeCallback = null
+      this.resumeCallback(reason);
+      this.resumeCallback = null;
     }
     if (this.authCallback === null) {
-      this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason)
-      return
+      this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason);
+      return;
     }
 
-    this.authCallback(false, reason)
-    this.authCallback = null
+    this.authCallback(false, reason);
+    this.authCallback = null;
   }
 
-  private updateClientData (data: any) {
-    const newClientData = data || null
+  private updateClientData(data: any) {
+    const newClientData = data || null;
     if (
       this.clientData === null &&
       (newClientData === null || Object.keys(newClientData).length === 0)
     ) {
-      return
+      return;
     }
 
     if (!utils.deepEquals(this.clientData, data)) {
-      this.emitter.emit(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData))
-      this.clientData = newClientData
+      this.emitter.emit(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData));
+      this.clientData = newClientData;
     }
   }
 }

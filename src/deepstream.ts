@@ -1,17 +1,17 @@
-import { Client } from './client'
-import { EVENT, CONNECTION_STATE } from './constants'
-import * as C from '../binary-protocol/src/message-constants'
-import { LOCAL_WINS, REMOTE_WINS } from './record/merge-strategy'
+import * as C from "../binary-protocol/src/message-constants";
+import { Client } from "./client";
+import { CONNECTION_STATE, EVENT } from "./constants";
+import { LOCAL_WINS, REMOTE_WINS } from "./record/merge-strategy";
 
 const client = (url: string, options?: any): Client => {
-    return new Client(url, options)
-}
+    return new Client(url, options);
+};
 export default Object.assign(client, {
     CONNECTION_STATE,
     C,
     EVENT,
     deepstream: client,
     MERGE_STRATEGIES: {
-      LOCAL_WINS, REMOTE_WINS
-    }
-})
+      LOCAL_WINS, REMOTE_WINS,
+    },
+});

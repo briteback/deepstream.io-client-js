@@ -1,7 +1,7 @@
-import { TOPIC, Message, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
+import { Message, RECORD_ACTIONS as RECORD_ACTION, TOPIC } from "../../binary-protocol/src/message-constants";
 
-import { EVENT } from '../constants'
-import { Services } from '../client'
+import { Services } from "../client";
+import { EVENT } from "../constants";
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
@@ -16,22 +16,22 @@ import { Services } from '../client'
  */
 export class SingleNotifier {
 
-  private services: Services
-  private requests: Map<string, Array<(error?: any, result?: any) => void>>
-  private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD
-  private internalRequests: Map<string, Array<(message: Message) => void>>
-  private limboQueue: Array<Message>
+  private services: Services;
+  private requests: Map<string, Array<(error?: any, result?: any) => void>>;
+  private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD;
+  private internalRequests: Map<string, Array<(message: Message) => void>>;
+  private limboQueue: Message[];
 
-  constructor (services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
-    this.services = services
-    this.action = action
-    this.requests = new Map()
-    this.internalRequests = new Map()
-    this.limboQueue = []
+  constructor(services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
+    this.services = services;
+    this.action = action;
+    this.requests = new Map();
+    this.internalRequests = new Map();
+    this.limboQueue = [];
 
-    this.services.connection.onLost(this.onConnectionLost.bind(this))
-    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
-    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
+    this.services.connection.onLost(this.onConnectionLost.bind(this));
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this));
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
   }
 
     /**
@@ -44,28 +44,28 @@ export class SingleNotifier {
    * @public
    * @returns {void}
    */
-  public request (name: string, callback: (error?: any, result?: any) => void): void {
+  public request(name: string, callback: (error?: any, result?: any) => void): void {
     const message = {
       topic: TOPIC.RECORD,
       action: this.action,
-      name
-    }
+      name,
+    };
 
-    const req = this.requests.get(name)
+    const req = this.requests.get(name);
     if (req) {
-      req.push(callback)
-      return
+      req.push(callback);
+      return;
     }
 
-    this.requests.set(name, [callback])
+    this.requests.set(name, [callback]);
 
     if (this.services.connection.isConnected) {
-      this.services.connection.sendMessage(message)
-      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message);
+      this.services.timeoutRegistry.add({ message });
     } else if (this.services.connection.isInLimbo) {
-      this.limboQueue.push(message)
+      this.limboQueue.push(message);
     } else {
-      callback(EVENT.CLIENT_OFFLINE)
+      callback(EVENT.CLIENT_OFFLINE);
     }
   }
 
@@ -76,57 +76,57 @@ export class SingleNotifier {
    * @param name
    * @param response
    */
-  public register (name: string, callback: (message: Message) => void): void {
-    const request = this.internalRequests.get(name)
+  public register(name: string, callback: (message: Message) => void): void {
+    const request = this.internalRequests.get(name);
     if (!request) {
-      this.internalRequests.set(name, [callback])
+      this.internalRequests.set(name, [callback]);
     } else {
-      request.push(callback)
+      request.push(callback);
     }
   }
 
-  public recieve (message: Message, error?: any, data?: any): void {
-    this.services.timeoutRegistry.remove(message)
-    const name = message.name as string
-    const responses = this.requests.get(name) || []
-    const internalResponses = this.internalRequests.get(name) || []
+  public recieve(message: Message, error?: any, data?: any): void {
+    this.services.timeoutRegistry.remove(message);
+    const name = message.name as string;
+    const responses = this.requests.get(name) || [];
+    const internalResponses = this.internalRequests.get(name) || [];
     if (!responses && !internalResponses) {
-      return
+      return;
     }
 
     for (let i = 0; i < internalResponses.length; i++) {
-      internalResponses[i](message)
+      internalResponses[i](message);
     }
-    this.internalRequests.delete(name)
+    this.internalRequests.delete(name);
 
     // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
     for (let i = 0; i < responses.length; i++) {
-      responses[i](error, data)
+      responses[i](error, data);
     }
-    this.requests.delete(name)
-    return
+    this.requests.delete(name);
+    return;
   }
 
-  private onConnectionLost (): void {
+  private onConnectionLost(): void {
   }
 
-  private onExitLimbo (): void {
+  private onExitLimbo(): void {
     for (let i = 0; i < this.limboQueue.length; i++) {
-      const message = this.limboQueue[i]
-      const requests = this.requests.get(message.name as string)
+      const message = this.limboQueue[i];
+      const requests = this.requests.get(message.name as string);
       if (requests) {
-        requests.forEach(cb => cb(EVENT.CLIENT_OFFLINE))
+        requests.forEach((cb) => cb(EVENT.CLIENT_OFFLINE));
       }
     }
-    this.requests.clear()
-    this.limboQueue = []
+    this.requests.clear();
+    this.limboQueue = [];
   }
 
-  private onConnectionReestablished (): void {
+  private onConnectionReestablished(): void {
     for (let i = 0; i < this.limboQueue.length; i++) {
-      const message = this.limboQueue[i]
-      this.services.connection.sendMessage(message)
-      this.services.timeoutRegistry.add({ message })
+      const message = this.limboQueue[i];
+      this.services.connection.sendMessage(message);
+      this.services.timeoutRegistry.add({ message });
     }
   }
 }

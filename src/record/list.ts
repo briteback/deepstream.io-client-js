@@ -1,124 +1,124 @@
-import * as utils from '../util/utils'
-import { EVENT } from '../constants'
-import { RecordMessage } from '../../binary-protocol/src/message-constants'
-import { RecordCore, WriteAckCallback } from './record-core'
-import * as Emitter from 'component-emitter2'
+import * as Emitter from "component-emitter2";
+import { RecordMessage } from "../../binary-protocol/src/message-constants";
+import { EVENT } from "../constants";
+import * as utils from "../util/utils";
+import { RecordCore, WriteAckCallback } from "./record-core";
 
 export class List extends Emitter {
-  private record: RecordCore
-  private wrappedFunctions: Map<Function, Function>
-  private originalApplyUpdate: Function
-  private originalApplyChange: Function
-  private beforeStructure: any
+  private record: RecordCore;
+  private wrappedFunctions: Map<Function, Function>;
+  private originalApplyUpdate: Function;
+  private originalApplyChange: Function;
+  private beforeStructure: any;
 
-  private hasAddListener: boolean
-  private hasRemoveListener: boolean
-  private hasMoveListener: boolean
+  private hasAddListener: boolean;
+  private hasRemoveListener: boolean;
+  private hasMoveListener: boolean;
 
-  constructor (record: RecordCore) {
-    super()
-    this.record = record
-    this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
-    this.record.applyUpdate = this.applyUpdate.bind(this)
-    this.originalApplyChange = this.record.applyChange.bind(this.record)
-    this.record.applyChange = this.applyChange.bind(this)
-    this.wrappedFunctions = new Map()
+  constructor(record: RecordCore) {
+    super();
+    this.record = record;
+    this.originalApplyUpdate = this.record.applyUpdate.bind(this.record);
+    this.record.applyUpdate = this.applyUpdate.bind(this);
+    this.originalApplyChange = this.record.applyChange.bind(this.record);
+    this.record.applyChange = this.applyChange.bind(this);
+    this.wrappedFunctions = new Map();
 
-    this.record.on('delete', this.emit.bind(this, 'delete'))
-    this.record.on('discard', this.emit.bind(this, 'discard'))
-    this.record.on('ready', this.emit.bind(this, 'ready'))
+    this.record.on("delete", this.emit.bind(this, "delete"));
+    this.record.on("discard", this.emit.bind(this, "discard"));
+    this.record.on("ready", this.emit.bind(this, "ready"));
 
-    this.hasAddListener = false
-    this.hasRemoveListener = false
-    this.hasMoveListener = false
+    this.hasAddListener = false;
+    this.hasRemoveListener = false;
+    this.hasMoveListener = false;
   }
 
-  get name (): string {
-    return this.record.name
+  get name(): string {
+    return this.record.name;
   }
 
-  get isReady (): boolean {
-    return this.record.isReady
+  get isReady(): boolean {
+    return this.record.isReady;
   }
 
-  get version (): number {
-    return this.record.version as number
+  get version(): number {
+    return this.record.version as number;
   }
 
-  public whenReady (callback?: ((list: List) => void)): void | Promise<List> {
-    return this.record.whenReady(this, callback)
+  public whenReady(callback?: ((list: List) => void)): void | Promise<List> {
+    return this.record.whenReady(this, callback);
   }
 
-  public discard (): void {
-    return this.record.discard()
+  public discard(): void {
+    return this.record.discard();
   }
 
-  public delete (): void | Promise<void> {
-    return this.record.delete()
+  public delete(): void | Promise<void> {
+    return this.record.delete();
   }
 
   /**
    * Returns the array of list entries or an
    * empty array if the list hasn't been populated yet.
    */
-  public getEntries (): Array<string> {
-    const entries = this.record.get()
+  public getEntries(): string[] {
+    const entries = this.record.get();
 
     if (!(entries instanceof Array)) {
-      return []
+      return [];
     }
 
-    return entries
+    return entries;
   }
 
   /**
    * Returns true if the list is empty
    */
-  public isEmpty (): boolean {
-    return this.getEntries().length === 0
+  public isEmpty(): boolean {
+    return this.getEntries().length === 0;
   }
 
   /**
    * Updates the list with a new set of entries
    */
-  public setEntriesWithAck (entries: Array<string>, callback?: WriteAckCallback): Promise<void> | void {
+  public setEntriesWithAck(entries: string[], callback?: WriteAckCallback): Promise<void> | void {
     if (!callback) {
       return new Promise(( resolve, reject ) => {
         this.setEntries(entries, (error: string | null) => {
           if (error) {
-            reject(error)
+            reject(error);
           } else {
-            resolve()
+            resolve();
           }
-        })
-      })
+        });
+      });
     }
-    this.setEntries(entries, callback)
+    this.setEntries(entries, callback);
   }
 
   /**
    * Updates the list with a new set of entries
    */
-  public setEntries (entries: Array<string>, callback?: WriteAckCallback) {
-    const errorMsg = 'entries must be an array of record names'
-    let i
+  public setEntries(entries: string[], callback?: WriteAckCallback) {
+    const errorMsg = "entries must be an array of record names";
+    let i;
 
     if (!(entries instanceof Array)) {
-      throw new Error(errorMsg)
+      throw new Error(errorMsg);
     }
 
     for (i = 0; i < entries.length; i++) {
-      if (typeof entries[i] !== 'string') {
-        throw new Error(errorMsg)
+      if (typeof entries[i] !== "string") {
+        throw new Error(errorMsg);
       }
     }
 
     if (this.record.isReady === false) {
       // ...
     } else {
-      this.beforeChange()
-      this.record.set({ data: entries, callback })
-      this.afterChange()
+      this.beforeChange();
+      this.record.set({ data: entries, callback });
+      this.afterChange();
     }
   }
 
@@ -128,25 +128,25 @@ export class List extends Emitter {
    * @param {String} entry
    * @param {Number} [index]
    */
-  public removeEntry (entry: string, index?: number, callback?: WriteAckCallback) {
+  public removeEntry(entry: string, index?: number, callback?: WriteAckCallback) {
     if (this.record.isReady === false) {
       // ...
-      return
+      return;
     }
 
-    const currentEntries: Array<string> = this.record.get()
-    const hasIndex = this.hasIndex(index)
-    const entries: Array<string> = []
-    let i
+    const currentEntries: string[] = this.record.get();
+    const hasIndex = this.hasIndex(index);
+    const entries: string[] = [];
+    let i;
 
     for (i = 0; i < currentEntries.length; i++) {
       if (currentEntries[i] !== entry || (hasIndex && index !== i)) {
-        entries.push(currentEntries[i])
+        entries.push(currentEntries[i]);
       }
     }
-    this.beforeChange()
-    this.record.set({ data: entries, callback })
-    this.afterChange()
+    this.beforeChange();
+    this.record.set({ data: entries, callback });
+    this.afterChange();
   }
 
   /**
@@ -155,43 +155,43 @@ export class List extends Emitter {
    * @param {String} entry
    * @param {Number} [index]
    */
-  public addEntry (entry: string, index?: number, callback?: WriteAckCallback) {
-    if (typeof entry !== 'string') {
-      throw new Error('Entry must be a recordName')
+  public addEntry(entry: string, index?: number, callback?: WriteAckCallback) {
+    if (typeof entry !== "string") {
+      throw new Error("Entry must be a recordName");
     }
 
     if (this.record.isReady === false) {
       // ..
-      return
+      return;
     }
 
-    const hasIndex = this.hasIndex(index)
-    const entries = this.getEntries()
+    const hasIndex = this.hasIndex(index);
+    const entries = this.getEntries();
     if (hasIndex) {
-      entries.splice(index as number, 0, entry)
+      entries.splice(index as number, 0, entry);
     } else {
-      entries.push(entry)
+      entries.push(entry);
     }
-    this.beforeChange()
-    this.record.set({ data: entries, callback })
-    this.afterChange()
+    this.beforeChange();
+    this.record.set({ data: entries, callback });
+    this.afterChange();
   }
 
   /**
    * Proxies the underlying Record's subscribe method. Makes sure
    * that no path is provided
    */
-  public subscribe (callback: (entries: Array<string>) => void) {
-    const parameters = utils.normalizeArguments(arguments)
+  public subscribe(callback: (entries: string[]) => void) {
+    const parameters = utils.normalizeArguments(arguments);
 
     if (parameters.path) {
-      throw new Error('path is not supported for List.subscribe')
+      throw new Error("path is not supported for List.subscribe");
     }
 
     // Make sure the callback is invoked with an empty array for new records
-    const listCallback = function (scope: any, cb: Function) {
-      cb(scope.getEntries())
-    }.bind(this, this, parameters.callback)
+    const listCallback = function(scope: any, cb: Function) {
+      cb(scope.getEntries());
+    }.bind(this, this, parameters.callback);
 
     /**
      * Adding a property onto a function directly is terrible practice,
@@ -202,70 +202,70 @@ export class List extends Emitter {
      * on unsubscribe it can provide a reference to the actual method the
      * record is subscribed too.
      **/
-    this.wrappedFunctions.set(parameters.callback, listCallback)
-    parameters.callback = listCallback
-    this.record.subscribe(parameters)
+    this.wrappedFunctions.set(parameters.callback, listCallback);
+    parameters.callback = listCallback;
+    this.record.subscribe(parameters);
   }
 
   /**
    * Proxies the underlying Record's unsubscribe method. Makes sure
    * that no path is provided
    */
-  public unsubscribe (callback: (entries: Array<string>) => void) {
-    const parameters = utils.normalizeArguments(arguments)
+  public unsubscribe(callback: (entries: string[]) => void) {
+    const parameters = utils.normalizeArguments(arguments);
 
     if (parameters.path) {
-      throw new Error('path is not supported for List.unsubscribe')
+      throw new Error("path is not supported for List.unsubscribe");
     }
 
-    const listenCallback = this.wrappedFunctions.get(parameters.callback)
-    parameters.callback = listenCallback as (data: any) => void
-    this.record.unsubscribe(parameters)
-    this.wrappedFunctions.delete(parameters.callback)
+    const listenCallback = this.wrappedFunctions.get(parameters.callback);
+    parameters.callback = listenCallback as (data: any) => void;
+    this.record.unsubscribe(parameters);
+    this.wrappedFunctions.delete(parameters.callback);
   }
 
   /**
    * Proxies the underlying Record's _update method. Set's
    * data to an empty array if no data is provided.
    */
-  private applyUpdate (message: RecordMessage) {
+  private applyUpdate(message: RecordMessage) {
     if (!(message.parsedData instanceof Array)) {
-      message.parsedData = []
+      message.parsedData = [];
     }
 
-    this.originalApplyUpdate(message)
+    this.originalApplyUpdate(message);
   }
 
   /**
    * Proxies the underlying Record's _update method. Set's
    * data to an empty array if no data is provided.
    */
-  private applyChange (message: RecordMessage) {
+  private applyChange(message: RecordMessage) {
     if (!(message.parsedData instanceof Array)) {
-      message.parsedData = []
+      message.parsedData = [];
     }
 
-    this.beforeChange()
-    this.originalApplyChange(message)
-    this.afterChange()
+    this.beforeChange();
+    this.originalApplyChange(message);
+    this.afterChange();
   }
 
   /**
    * Validates that the index provided is within the current set of entries.
    */
-  private hasIndex (index?: number) {
-    let hasIndex = false
-    const entries = this.getEntries()
+  private hasIndex(index?: number) {
+    let hasIndex = false;
+    const entries = this.getEntries();
     if (index !== undefined) {
       if (isNaN(index)) {
-        throw new Error('Index must be a number')
+        throw new Error("Index must be a number");
       }
       if (index !== entries.length && (index >= entries.length || index < 0)) {
-        throw new Error('Index must be within current entries')
+        throw new Error("Index must be within current entries");
       }
-      hasIndex = true
+      hasIndex = true;
     }
-    return hasIndex
+    return hasIndex;
   }
 
   /**
@@ -275,15 +275,15 @@ export class List extends Emitter {
    * This will be called before any change to the list, regardsless if the change was triggered
    * by an incoming message from the server or by the client
    */
-  private beforeChange (): void {
-    this.hasAddListener = this.listeners(EVENT.ENTRY_ADDED_EVENT).length > 0
-    this.hasRemoveListener = this.listeners(EVENT.ENTRY_REMOVED_EVENT).length > 0
-    this.hasMoveListener = this.listeners(EVENT.ENTRY_MOVED_EVENT).length > 0
+  private beforeChange(): void {
+    this.hasAddListener = this.listeners(EVENT.ENTRY_ADDED_EVENT).length > 0;
+    this.hasRemoveListener = this.listeners(EVENT.ENTRY_REMOVED_EVENT).length > 0;
+    this.hasMoveListener = this.listeners(EVENT.ENTRY_MOVED_EVENT).length > 0;
 
     if (this.hasAddListener || this.hasRemoveListener || this.hasMoveListener) {
-      this.beforeStructure = this.getStructure()
+      this.beforeStructure = this.getStructure();
     } else {
-      this.beforeStructure = null
+      this.beforeStructure = null;
     }
   }
 
@@ -291,21 +291,21 @@ export class List extends Emitter {
    * Compares the structure of the list after a change to its previous structure and notifies
    * any add / move / remove listener. Won't do anything if no listeners are attached.
    */
-  private afterChange (): void {
+  private afterChange(): void {
     if (this.beforeStructure === null) {
-      return
+      return;
     }
 
-    const after = this.getStructure()
-    const before = this.beforeStructure
-    let entry
-    let i
+    const after = this.getStructure();
+    const before = this.beforeStructure;
+    let entry;
+    let i;
 
     if (this.hasRemoveListener) {
       for (entry in before) {
         for (i = 0; i < before[entry].length; i++) {
           if (after[entry] === undefined || after[entry][i] === undefined) {
-            this.emit(EVENT.ENTRY_REMOVED_EVENT, entry, before[entry][i])
+            this.emit(EVENT.ENTRY_REMOVED_EVENT, entry, before[entry][i]);
           }
         }
       }
@@ -315,15 +315,15 @@ export class List extends Emitter {
       for (entry in after) {
         if (before[entry] === undefined) {
           for (i = 0; i < after[entry].length; i++) {
-            this.emit(EVENT.ENTRY_ADDED_EVENT, entry, after[entry][i])
+            this.emit(EVENT.ENTRY_ADDED_EVENT, entry, after[entry][i]);
           }
         } else {
           for (i = 0; i < after[entry].length; i++) {
             if (before[entry][i] !== after[entry][i]) {
               if (before[entry][i] === undefined) {
-                this.emit(EVENT.ENTRY_ADDED_EVENT, entry, after[entry][i])
+                this.emit(EVENT.ENTRY_ADDED_EVENT, entry, after[entry][i]);
               } else {
-                this.emit(EVENT.ENTRY_MOVED_EVENT, entry, after[entry][i])
+                this.emit(EVENT.ENTRY_MOVED_EVENT, entry, after[entry][i]);
               }
             }
           }
@@ -342,20 +342,20 @@ export class List extends Emitter {
    *   'recordC': [ 2 ]
    * }
    */
-  private getStructure (): any {
-    const structure: any = {}
-    let i
-    const entries = this.record.get()
+  private getStructure(): any {
+    const structure: any = {};
+    let i;
+    const entries = this.record.get();
 
     for (i = 0; i < entries.length; i++) {
       if (structure[entries[i]] === undefined) {
-        structure[entries[i]] = [i]
+        structure[entries[i]] = [i];
       } else {
-        structure[entries[i]].push(i)
+        structure[entries[i]].push(i);
       }
     }
 
-    return structure
+    return structure;
   }
 
 }

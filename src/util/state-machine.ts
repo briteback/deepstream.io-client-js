@@ -1,42 +1,42 @@
 export class StateMachine {
 
-  private _logger: any
-  private _state: any
-  private _transitions: any
-  private _stateMachine: any
+  private _logger: any;
+  private _state: any;
+  private _transitions: any;
+  private _stateMachine: any;
 
-  constructor (logger: any, stateMachine: any) {
-    this._logger = logger
-    this._transitions = stateMachine.transitions
-    this._state = stateMachine.init
-    this._stateMachine = stateMachine
+  constructor(logger: any, stateMachine: any) {
+    this._logger = logger;
+    this._transitions = stateMachine.transitions;
+    this._state = stateMachine.init;
+    this._stateMachine = stateMachine;
   }
 
   /**
    * Try to perform a state change
    */
-  public transition (transitionName: any): void {
-    let transition
+  public transition(transitionName: any): void {
+    let transition;
     for (let i = 0; i < this._transitions.length; i++) {
-      transition = this._transitions[i]
+      transition = this._transitions[i];
       if (transitionName === transition.name && (this._state === transition.from || transition.from === undefined)) {
-        const oldState = this._state
-        this._state = transition.to
+        const oldState = this._state;
+        this._state = transition.to;
         if (this._stateMachine.onStateChanged) {
-          this._stateMachine.onStateChanged(this._state, oldState)
+          this._stateMachine.onStateChanged(this._state, oldState);
         }
         if (transition.handler) {
-          transition.handler()
+          transition.handler();
         }
-        return
+        return;
       }
     }
-    const details = JSON.stringify({ transition: transitionName, state: this._state })
-    this._logger.warn(`Invalid state transition: ${details}`)
+    const details = JSON.stringify({ transition: transitionName, state: this._state });
+    this._logger.warn(`Invalid state transition: ${details}`);
   }
 
   public get state() {
-    return this._state
+    return this._state;
   }
 
   public resetToInitialState() {

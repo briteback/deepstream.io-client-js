@@ -19,7 +19,9 @@
     "preversion": "npm run build && git add distESM dist",
     "postversion": "git push && git push --tags",
     "test": "mocha -r ts-node/register ./test/**/*Spec.ts --recursive --reporter dot --require source-map-support/register",
-    "test:coverage": "nyc mocha"
+    "test:coverage": "nyc mocha",
+    "lint": "tslint -c tslint.json 'src/**/*.ts'",
+    "lint:fix": "tslint -c tslint.json 'src/**/*.ts' --fix"
   },
   "nyc": {
     "include": [
@@ -70,7 +72,7 @@
     "sinon": "^4.1.2",
     "source-map-support": "^0.5.10",
     "ts-node": "^8.0.1",
-    "tslint": "^5.8.0",
+    "tslint": "^5.12.1",
     "typescript": "^2.6.2"
   },
   "author": "deepstreamHub GmbH",
