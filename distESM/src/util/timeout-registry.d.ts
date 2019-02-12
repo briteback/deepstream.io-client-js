@@ -1,9 +1,9 @@
-import { Services } from '../client';
-import { Options } from '../client-options';
-import { EVENT } from '../constants';
-import { RECORD_ACTIONS as RECORD_ACTION, RPC_ACTIONS as RPC_ACTION, Message } from '../../binary-protocol/src/message-constants';
-import * as EventEmitter from 'component-emitter2';
-export interface Timeout {
+import { Message, RECORD_ACTIONS as RECORD_ACTION, RPC_ACTIONS as RPC_ACTION } from "../../binary-protocol/src/message-constants";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
+import { EVENT } from "../constants";
+import * as EventEmitter from "component-emitter2";
+export interface ITimeout {
     event?: EVENT | RPC_ACTION | RECORD_ACTION;
     message: Message;
     callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void;
@@ -20,11 +20,11 @@ export declare class TimeoutRegistry extends EventEmitter {
     private services;
     private register;
     private ackRegister;
-    constructor(services: Services, options: Options);
+    constructor(services: IServices, options: IOptions);
     /**
      * Add an entry
      */
-    add(timeout: Timeout): number;
+    add(timeout: ITimeout): number;
     /**
      * Remove an entry
      */
@@ -34,6 +34,10 @@ export declare class TimeoutRegistry extends EventEmitter {
      */
     clear(timerId: number): void;
     /**
+     * Remote all timeouts when connection disconnects
+     */
+    onConnectionLost(): void;
+    /**
      * Will be invoked if the timeout has occured before the ack message was received
      */
     private onTimeout;
@@ -41,8 +45,4 @@ export declare class TimeoutRegistry extends EventEmitter {
      * Returns a unique name from the timeout
      */
     private getUniqueName;
-    /**
-     * Remote all timeouts when connection disconnects
-     */
-    onConnectionLost(): void;
 }

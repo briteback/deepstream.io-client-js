@@ -1,7 +1,7 @@
-import { TOPIC, EVENT_ACTIONS as EVENT_ACTION } from '../../binary-protocol/src/message-constants';
-import { EVENT } from '../constants';
-import { Listener } from '../util/listener';
-import * as Emitter from 'component-emitter2';
+import * as Emitter from "component-emitter2";
+import { EVENT_ACTIONS as EVENT_ACTION, TOPIC } from "../../binary-protocol/src/message-constants";
+import { EVENT } from "../constants";
+import { Listener } from "../util/listener";
 export class EventHandler {
     constructor(services, options, listeners) {
         this.services = services;
@@ -17,11 +17,11 @@ export class EventHandler {
      * as well as events emitted by other connected clients.
      */
     subscribe(name, callback) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
-        if (typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         if (!this.emitter.hasListeners(name)) {
             if (this.services.connection.isConnected) {
@@ -36,26 +36,26 @@ export class EventHandler {
      * that the client is unsubscribed as a listener
      */
     unsubscribe(name, callback) {
-        if (!name || typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (!name || typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
-        if (callback !== undefined && typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (callback !== undefined && typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         if (!this.emitter.hasListeners(name)) {
             this.services.logger.warn({
-                topic: TOPIC.EVENT,
                 action: EVENT_ACTION.NOT_SUBSCRIBED,
-                name
+                name,
+                topic: TOPIC.EVENT,
             });
             return;
         }
         this.emitter.off(name, callback);
         if (!this.emitter.hasListeners(name)) {
             const message = {
-                topic: TOPIC.EVENT,
                 action: EVENT_ACTION.UNSUBSCRIBE,
-                name
+                name,
+                topic: TOPIC.EVENT,
             };
             this.services.timeoutRegistry.add({ message });
             if (this.services.connection.isConnected) {
@@ -71,14 +71,14 @@ export class EventHandler {
      * broadcast the event to the other connected clients
      */
     emit(name, data) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
         const message = {
-            topic: TOPIC.EVENT,
             action: EVENT_ACTION.EMIT,
             name,
-            parsedData: data
+            parsedData: data,
+            topic: TOPIC.EVENT,
         };
         if (this.services.connection.isConnected) {
             this.services.connection.sendMessage(message);
@@ -129,14 +129,14 @@ export class EventHandler {
         }
         if (message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS) {
             this.services.timeoutRegistry.remove(Object.assign({}, message, {
-                action: EVENT_ACTION.SUBSCRIBE
+                action: EVENT_ACTION.SUBSCRIBE,
             }));
             this.services.logger.warn(message);
             return;
         }
         if (message.action === EVENT_ACTION.NOT_SUBSCRIBED) {
             this.services.timeoutRegistry.remove(Object.assign({}, message, {
-                action: EVENT_ACTION.SUBSCRIBE
+                action: EVENT_ACTION.SUBSCRIBE,
             }));
             this.services.logger.warn(message);
             return;
@@ -160,8 +160,8 @@ export class EventHandler {
         for (const name of callbacks) {
             this.sendSubscriptionMessage(name);
         }
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            this.services.connection.sendMessage(this.limboQueue[i]);
+        for (const limboObject of this.limboQueue) {
+            this.services.connection.sendMessage(limboObject);
         }
         this.limboQueue = [];
     }
@@ -170,9 +170,9 @@ export class EventHandler {
     }
     sendSubscriptionMessage(name) {
         const message = {
-            topic: TOPIC.EVENT,
             action: EVENT_ACTION.SUBSCRIBE,
-            name
+            name,
+            topic: TOPIC.EVENT,
         };
         this.services.timeoutRegistry.add({ message });
         this.services.connection.sendMessage(message);

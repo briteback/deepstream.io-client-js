@@ -1,13 +1,26 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const constants_1 = require("../constants");
-const message_constants_1 = require("../../binary-protocol/src/message-constants");
-const json_path_1 = require("./json-path");
 const Emitter = require("component-emitter2");
-const utils = require("../util/utils");
-const state_machine_1 = require("../util/state-machine");
 const isEqual = require("fast-deep-equal");
+const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_1 = require("../constants");
+const state_machine_1 = require("../util/state-machine");
+const utils = require("../util/utils");
+const json_path_1 = require("./json-path");
 class RecordCore extends Emitter {
+    get recordState() {
+        return this.stateMachine.state;
+    }
+    set usages(usages) {
+        this.references = usages;
+        if (this.references === 1) {
+            this.services.timerRegistry.remove(this.discardTimeout);
+            this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
+        }
+    }
+    get usages() {
+        return this.references;
+    }
     constructor(name, services, options, recordServices, whenComplete) {
         super();
         this.services = services;
@@ -28,60 +41,70 @@ class RecordCore extends Emitter {
         this.discardTimeout = -1;
         this.deletedTimeout = -1;
         this.deleteResponse = {};
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
-        const [onSubscribing, onReady, onDeleted, onUnsubscribed, onRefreshed] = [
-            this.onSubscribing, this.onReady, this.onDeleted, this.onUnsubscribed, this.onRefreshed
-        ].map(f => f.bind(this));
+        const [onSubscribing, onReady, onDeleted, onUnsubscribed, onRefreshed,] = [
+            this.onSubscribing, this.onReady, this.onDeleted, this.onUnsubscribed, this.onRefreshed,
+        ].map((f) => f.bind(this));
         const transitions = [
             {
+                from: 0 /* INITIAL */,
+                handler: onSubscribing,
                 name: message_constants_1.RECORD_ACTIONS.SUBSCRIBE,
-                from: 0 /* INITIAL */, to: 1 /* SUBSCRIBING */,
-                handler: onSubscribing
+                to: 1 /* SUBSCRIBING */,
             },
             {
+                from: 1 /* SUBSCRIBING */,
+                handler: onReady,
                 name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE,
-                from: 1 /* SUBSCRIBING */, to: 2 /* READY */,
-                handler: onReady
+                to: 2 /* READY */,
             },
             {
+                from: 2 /* READY */,
                 name: message_constants_1.RECORD_ACTIONS.DELETE,
-                from: 2 /* READY */, to: 5 /* DELETING */
+                to: 5 /* DELETING */,
             },
             {
+                from: 2 /* READY */,
+                handler: onDeleted,
                 name: message_constants_1.RECORD_ACTIONS.DELETED,
-                from: 2 /* READY */, to: 6 /* DELETED */,
-                handler: onDeleted
+                to: 6 /* DELETED */,
             },
             // Ignore extra read responses while in the ready state.
             {
+                from: 2 /* READY */,
+                handler: onRefreshed,
                 name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE,
-                from: 2 /* READY */, to: 2 /* READY */,
-                handler: onRefreshed
+                to: 2 /* READY */,
             },
             {
+                from: 5 /* DELETING */,
+                handler: onDeleted,
                 name: message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS,
-                from: 5 /* DELETING */, to: 6 /* DELETED */,
-                handler: onDeleted
+                to: 6 /* DELETED */,
             },
             {
+                from: 2 /* READY */,
                 name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE,
-                from: 2 /* READY */, to: 3 /* UNSUBSCRIBING */
+                to: 3 /* UNSUBSCRIBING */,
             },
             // Ignore unsubscribes while in the unsubscribing state.
             {
+                from: 3 /* UNSUBSCRIBING */,
                 name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE,
-                from: 3 /* UNSUBSCRIBING */, to: 3 /* UNSUBSCRIBING */
+                to: 3 /* UNSUBSCRIBING */,
             },
             {
+                from: 3 /* UNSUBSCRIBING */,
                 name: message_constants_1.RECORD_ACTIONS.SUBSCRIBE,
-                from: 3 /* UNSUBSCRIBING */, to: 2 /* READY */
+                to: 2 /* READY */,
             },
             {
+                from: 3 /* UNSUBSCRIBING */,
+                handler: onUnsubscribed,
                 name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE_ACK,
-                from: 3 /* UNSUBSCRIBING */, to: 4 /* UNSUBSCRIBED */,
-                handler: onUnsubscribed
+                to: 4 /* UNSUBSCRIBED */,
             },
         ];
         const onStateChanged = (newState, oldState) => {
@@ -92,19 +115,6 @@ class RecordCore extends Emitter {
         this.handleReadResponse = this.handleReadResponse.bind(this);
         this.onConnectionLost = this.onConnectionLost.bind(this);
         this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
-    }
-    get recordState() {
-        return this.stateMachine.state;
-    }
-    set usages(usages) {
-        this.references = usages;
-        if (this.references === 1) {
-            this.services.timerRegistry.remove(this.discardTimeout);
-            this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
-        }
-    }
-    get usages() {
-        return this.references;
     }
     /**
      * Convenience method, similar to promises. Executes callback
@@ -140,8 +150,8 @@ class RecordCore extends Emitter {
      * @param {Object} data     The data that should be stored in the record
      */
     set({ path, data, callback }) {
-        if (!path && (data === null || typeof data !== 'object')) {
-            throw new Error('invalid arguments, scalar values cannot be set without path');
+        if (!path && (data === null || typeof data !== "object")) {
+            throw new Error("invalid arguments, scalar values cannot be set without path");
         }
         if (!this.isReady || !this.services.connection.isConnected) {
             this.pendingWrites.push({ path, data, callback });
@@ -169,7 +179,7 @@ class RecordCore extends Emitter {
             return;
         }
         return new Promise((resolve, reject) => {
-            args.callback = error => error === null ? resolve() : reject(error);
+            args.callback = (error) => error === null ? resolve() : reject(error);
             this.set(args);
         });
     }
@@ -197,20 +207,20 @@ class RecordCore extends Emitter {
      * be called immediatly with the current value
      */
     subscribe(args) {
-        if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
-            throw new Error('invalid argument path');
+        if (args.path !== undefined && (typeof args.path !== "string" || args.path.length === 0)) {
+            throw new Error("invalid argument path");
         }
-        if (typeof args.callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (typeof args.callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         if (args.triggerNow) {
             this.whenReady(null, () => {
-                this.emitter.on(args.path || '', args.callback);
+                this.emitter.on(args.path || "", args.callback);
                 args.callback(this.get(args.path));
             });
         }
         else {
-            this.emitter.on(args.path || '', args.callback);
+            this.emitter.on(args.path || "", args.callback);
         }
     }
     /**
@@ -229,13 +239,13 @@ class RecordCore extends Emitter {
      *                                          must be passed to unsubscribe as well.
      */
     unsubscribe(args) {
-        if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
-            throw new Error('invalid argument path');
+        if (args.path !== undefined && (typeof args.path !== "string" || args.path.length === 0)) {
+            throw new Error("invalid argument path");
         }
-        if (args.callback !== undefined && typeof args.callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (args.callback !== undefined && typeof args.callback !== "function") {
+            throw new Error("invalid argument callback");
         }
-        this.emitter.off(args.path || '', args.callback);
+        this.emitter.off(args.path || "", args.callback);
     }
     /**
      * Removes all change listeners and notifies the server that the client is
@@ -246,9 +256,9 @@ class RecordCore extends Emitter {
             this.references--;
             if (this.references <= 0) {
                 const message = {
-                    topic: message_constants_1.TOPIC.RECORD,
                     action: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE,
-                    name: this.name
+                    name: this.name,
+                    topic: message_constants_1.TOPIC.RECORD,
                 };
                 if (this.services.connection.isConnected) {
                     this.services.connection.sendMessage(message);
@@ -266,14 +276,14 @@ class RecordCore extends Emitter {
             // this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
             if (callback) {
                 this.services.timerRegistry.requestIdleCallback(() => {
-                    callback('Deleting while offline is not supported');
+                    callback("Deleting while offline is not supported");
                 });
                 return;
             }
-            return Promise.reject('Deleting while offline is not supported');
+            return Promise.reject("Deleting while offline is not supported");
         }
         this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.DELETE);
-        if (callback && typeof callback === 'function') {
+        if (callback && typeof callback === "function") {
             this.deleteResponse = { callback };
             this.sendDelete();
         }
@@ -294,27 +304,86 @@ class RecordCore extends Emitter {
     setMergeStrategy(mergeStrategy) {
         this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy);
     }
+    handle(message) {
+        if (message.isAck) {
+            this.handleAckMessage(message);
+            return;
+        }
+        const mapping = {
+            [message_constants_1.RECORD_ACTIONS.PATCH]: () => this.handleUpdateMessage(message),
+            [message_constants_1.RECORD_ACTIONS.UPDATE]: () => this.handleUpdateMessage(message),
+            [message_constants_1.RECORD_ACTIONS.ERASE]: () => this.handleUpdateMessage(message),
+            [message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS]: () => this.handleDeleteSuccess(),
+            [message_constants_1.RECORD_ACTIONS.DELETED]: () => this.handleDeleted(),
+            [message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]: () => this.handleMessageDenied(message),
+            [message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR]: () => this.handleMessageDenied(message),
+            [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER]: () => this.handleChangedProvider(message),
+            [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER]: () => this.handleChangedProvider(message),
+        };
+        // tslint:disable-next-line
+        const defaultAction = () => { };
+        const handleAction = mapping[message.action] || defaultAction;
+        return handleAction();
+    }
+    /**
+     * Applies incoming updates and patches to the record's dataset
+     */
+    applyUpdate(message) {
+        const version = message.version;
+        const data = message.parsedData;
+        if (this.version && this.version >= version) {
+            return;
+        }
+        this.version = version;
+        let newData;
+        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH) {
+            newData = json_path_1.setValue(this.data, message.path, data);
+        }
+        else if (message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
+            newData = json_path_1.setValue(this.data, message.path, undefined);
+        }
+        else {
+            newData = json_path_1.setValue(this.data, null, data);
+        }
+        this.applyChange(newData);
+    }
+    /**
+     * Compares the new values for every path with the previously stored ones and
+     * updates the subscribers if the value has changed
+     */
+    applyChange(newData) {
+        const oldData = this.data;
+        this.data = newData;
+        const paths = this.emitter.eventNames();
+        for (const path of paths) {
+            const newValue = json_path_1.get(newData, path, false);
+            const oldValue = json_path_1.get(oldData, path, false);
+            if (!isEqual(newValue, oldValue)) {
+                this.emitter.emit(path, this.get(path));
+            }
+        }
+    }
     sendSUBCRToServer() {
         this.pendingUpdates = [];
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
         this.services.timeoutRegistry.add({
             message: {
-                topic: message_constants_1.TOPIC.RECORD,
                 action: message_constants_1.RECORD_ACTIONS.SUBSCRIBE,
                 name: this.name,
-            }
+                topic: message_constants_1.TOPIC.RECORD,
+            },
         });
         this.responseTimeout = this.services.timeoutRegistry.add({
             message: {
-                topic: message_constants_1.TOPIC.RECORD,
                 action: message_constants_1.RECORD_ACTIONS.READ_RESPONSE,
-                name: this.name
-            }
+                name: this.name,
+                topic: message_constants_1.TOPIC.RECORD,
+            },
         });
         this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RECORD,
             action: message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD,
-            name: this.name
+            name: this.name,
+            topic: message_constants_1.TOPIC.RECORD,
         });
     }
     /**
@@ -351,8 +420,7 @@ class RecordCore extends Emitter {
         const writeCallbacks = [];
         const oldData = this.data;
         let newData = oldData;
-        for (let i = 0; i < this.pendingWrites.length; i++) {
-            const { callback, path, data } = this.pendingWrites[i];
+        for (const { callback, path, data } of this.pendingWrites) {
             if (callback) {
                 writeCallbacks.push(callback);
             }
@@ -361,8 +429,8 @@ class RecordCore extends Emitter {
         this.pendingWrites = [];
         this.applyChange(newData);
         const runFns = (err) => {
-            for (let i = 0; i < writeCallbacks.length; i++) {
-                writeCallbacks[i](err, this.name);
+            for (const writeCallback of writeCallbacks) {
+                writeCallback(err, this.name);
             }
         };
         if (utils.deepEquals(oldData, newData)) {
@@ -434,26 +502,6 @@ class RecordCore extends Emitter {
         this.hasProvider = message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER;
         this.emit(constants_1.EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider);
     }
-    handle(message) {
-        if (message.isAck) {
-            this.handleAckMessage(message);
-            return;
-        }
-        const mapping = {
-            [message_constants_1.RECORD_ACTIONS.PATCH]: () => this.handleUpdateMessage(message),
-            [message_constants_1.RECORD_ACTIONS.UPDATE]: () => this.handleUpdateMessage(message),
-            [message_constants_1.RECORD_ACTIONS.ERASE]: () => this.handleUpdateMessage(message),
-            [message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS]: () => this.handleDeleteSuccess(),
-            [message_constants_1.RECORD_ACTIONS.DELETED]: () => this.handleDeleted(),
-            [message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]: () => this.handleMessageDenied(message),
-            [message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR]: () => this.handleMessageDenied(message),
-            [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER]: () => this.handleChangedProvider(message),
-            [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER]: () => this.handleChangedProvider(message)
-        };
-        const defaultAction = () => { };
-        const handleAction = mapping[message.action] || defaultAction;
-        return handleAction();
-    }
     handleReadResponse(message) {
         this.version = message.version;
         this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
@@ -463,9 +511,9 @@ class RecordCore extends Emitter {
     sendUpdate(path = null, data, callback) {
         this.version++;
         const message = {
+            name: this.name,
             topic: message_constants_1.TOPIC.RECORD,
             version: this.version,
-            name: this.name
         };
         if (!path) {
             Object.assign(message, { action: message_constants_1.RECORD_ACTIONS.UPDATE, parsedData: data });
@@ -484,44 +532,6 @@ class RecordCore extends Emitter {
         }
     }
     /**
-     * Applies incoming updates and patches to the record's dataset
-     */
-    applyUpdate(message) {
-        const version = message.version;
-        const data = message.parsedData;
-        if (this.version && this.version >= version) {
-            return;
-        }
-        this.version = version;
-        let newData;
-        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH) {
-            newData = json_path_1.setValue(this.data, message.path, data);
-        }
-        else if (message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
-            newData = json_path_1.setValue(this.data, message.path, undefined);
-        }
-        else {
-            newData = json_path_1.setValue(this.data, null, data);
-        }
-        this.applyChange(newData);
-    }
-    /**
-     * Compares the new values for every path with the previously stored ones and
-     * updates the subscribers if the value has changed
-     */
-    applyChange(newData) {
-        const oldData = this.data;
-        this.data = newData;
-        const paths = this.emitter.eventNames();
-        for (let i = 0; i < paths.length; i++) {
-            const newValue = json_path_1.get(newData, paths[i], false);
-            const oldValue = json_path_1.get(oldData, paths[i], false);
-            if (!isEqual(newValue, oldValue)) {
-                this.emitter.emit(paths[i], this.get(paths[i]));
-            }
-        }
-    }
-    /**
      * If connected sends the delete message to server, otherwise
      * we transition to delete success.
      */
@@ -529,14 +539,14 @@ class RecordCore extends Emitter {
         this.whenReady(null, () => {
             if (this.services.connection.isConnected) {
                 const message = {
-                    topic: message_constants_1.TOPIC.RECORD,
                     action: message_constants_1.RECORD_ACTIONS.DELETE,
-                    name: this.name
+                    name: this.name,
+                    topic: message_constants_1.TOPIC.RECORD,
                 };
                 this.deletedTimeout = this.services.timeoutRegistry.add({
-                    message,
+                    duration: this.options.recordDeleteTimeout,
                     event: constants_1.EVENT.RECORD_DELETE_TIMEOUT,
-                    duration: this.options.recordDeleteTimeout
+                    message,
                 });
                 this.services.connection.sendMessage(message);
             }
@@ -560,8 +570,8 @@ class RecordCore extends Emitter {
         this.isReady = false;
         this.whenComplete(this.name);
     }
-    onConnectionLost() {
-    }
+    // tslint:disable-next-line
+    onConnectionLost() { }
 }
 exports.RecordCore = RecordCore;
 //# sourceMappingURL=record-core.js.map

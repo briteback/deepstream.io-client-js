@@ -1,8 +1,8 @@
 export declare class StateMachine {
-    private _logger;
-    private _state;
-    private _transitions;
-    private _stateMachine;
+    private logger;
+    private currentState;
+    private transitions;
+    private stateMachine;
     constructor(logger: any, stateMachine: any);
     /**
      * Try to perform a state change

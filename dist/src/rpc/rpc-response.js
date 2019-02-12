@@ -25,10 +25,10 @@ class RPCResponse {
     accept() {
         if (this.isAccepted === false) {
             this.services.connection.sendMessage({
-                topic: message_constants_1.TOPIC.RPC,
                 action: message_constants_1.RPC_ACTIONS.ACCEPT,
+                correlationId: this.correlationId,
                 name: this.name,
-                correlationId: this.correlationId
+                topic: message_constants_1.TOPIC.RPC,
             });
             this.isAccepted = true;
         }
@@ -48,10 +48,10 @@ class RPCResponse {
         this.isComplete = true;
         this.isAccepted = true;
         this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RPC,
             action: message_constants_1.RPC_ACTIONS.REJECT,
+            correlationId: this.correlationId,
             name: this.name,
-            correlationId: this.correlationId
+            topic: message_constants_1.TOPIC.RPC,
         });
     }
     /**
@@ -62,16 +62,16 @@ class RPCResponse {
         if (this.isComplete === true) {
             throw new Error(`Rpc ${this.name} already completed`);
         }
-        error = error || 'Error';
+        error = error || "Error";
         this.autoAccept = false;
         this.isComplete = true;
         this.isAccepted = true;
         this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RPC,
             action: message_constants_1.RPC_ACTIONS.REQUEST_ERROR,
-            name: this.name,
             correlationId: this.correlationId,
-            parsedData: error
+            name: this.name,
+            parsedData: error,
+            topic: message_constants_1.TOPIC.RPC,
         });
     }
     /**
@@ -88,11 +88,11 @@ class RPCResponse {
         }
         this.accept();
         this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RPC,
             action: message_constants_1.RPC_ACTIONS.RESPONSE,
-            name: this.name,
             correlationId: this.correlationId,
-            parsedData: data
+            name: this.name,
+            parsedData: data,
+            topic: message_constants_1.TOPIC.RPC,
         });
         this.isComplete = true;
     }

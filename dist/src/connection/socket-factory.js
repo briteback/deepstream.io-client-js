@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const message_parser_1 = require("../../binary-protocol/src/message-parser");
 const message_builder_1 = require("../../binary-protocol/src/message-builder");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
-exports.SOCKET_UNOPENED_ON_SEND = 'CLOSED_SOCKET';
+const message_parser_1 = require("../../binary-protocol/src/message-parser");
+exports.SOCKET_UNOPENED_ON_SEND = "CLOSED_SOCKET";
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
 const NodeWebSocket = require("ws");
 exports.socketFactory = (url, options, internalEmitter) => {
@@ -11,12 +11,12 @@ exports.socketFactory = (url, options, internalEmitter) => {
         ? new BrowserWebsocket(url, [], options)
         : new NodeWebSocket(url, options);
     if (BrowserWebsocket) {
-        socket.binaryType = 'arraybuffer';
+        socket.binaryType = "arraybuffer";
     }
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => { };
     socket.onmessage = (raw) => {
-        if (typeof raw.data === 'string') {
+        if (typeof raw.data === "string") {
             // TODO: We expect to always receive a buffer here but it seems like we
             // sometimes get string. How does this happen?
             raw.data = Buffer.from(raw.data);

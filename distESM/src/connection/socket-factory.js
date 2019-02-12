@@ -1,20 +1,20 @@
-import { parse } from '../../binary-protocol/src/message-parser';
-import { getMessage } from '../../binary-protocol/src/message-builder';
-import { TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants';
-export const SOCKET_UNOPENED_ON_SEND = 'CLOSED_SOCKET';
+import { getMessage } from "../../binary-protocol/src/message-builder";
+import { CONNECTION_ACTIONS, TOPIC } from "../../binary-protocol/src/message-constants";
+import { parse } from "../../binary-protocol/src/message-parser";
+export const SOCKET_UNOPENED_ON_SEND = "CLOSED_SOCKET";
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
-import * as NodeWebSocket from 'ws';
+import * as NodeWebSocket from "ws";
 export const socketFactory = (url, options, internalEmitter) => {
     const socket = BrowserWebsocket
         ? new BrowserWebsocket(url, [], options)
         : new NodeWebSocket(url, options);
     if (BrowserWebsocket) {
-        socket.binaryType = 'arraybuffer';
+        socket.binaryType = "arraybuffer";
     }
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => { };
     socket.onmessage = (raw) => {
-        if (typeof raw.data === 'string') {
+        if (typeof raw.data === "string") {
             // TODO: We expect to always receive a buffer here but it seems like we
             // sometimes get string. How does this happen?
             raw.data = Buffer.from(raw.data);

@@ -1,7 +1,7 @@
 /**
-* Returns the value of the path or
-* undefined if the path can't be resolved
-*/
+ * Returns the value of the path or
+ * undefined if the path can't be resolved
+ */
 export declare function get(data: any, path: string | null, deepCopy: boolean): any;
 /**
  * This class allows to set or get specific

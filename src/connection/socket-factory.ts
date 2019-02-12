@@ -2,8 +2,8 @@ import { getMessage } from "../../binary-protocol/src/message-builder";
 import { CONNECTION_ACTIONS, Message, TOPIC } from "../../binary-protocol/src/message-constants";
 import { parse } from "../../binary-protocol/src/message-parser";
 
-export type SocketFactory = (url: string, options: object, internalEmitter: any) => Socket;
-export interface Socket extends WebSocket {
+export type SocketFactory = (url: string, options: object, internalEmitter: any) => ISocket;
+export interface ISocket extends WebSocket {
   onparsedmessages: (messages: Message[]) => void;
   sendParsedMessage: (message: Message) => void;
 }
@@ -14,7 +14,7 @@ const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any;
 
 import * as NodeWebSocket from "ws";
 
-export const socketFactory = (url: string, options: any, internalEmitter: any): Socket => {
+export const socketFactory = (url: string, options: any, internalEmitter: any): ISocket => {
   const socket = BrowserWebsocket
     ? new BrowserWebsocket(url, [], options)
     : new NodeWebSocket(url, options) as any;
@@ -24,8 +24,8 @@ export const socketFactory = (url: string, options: any, internalEmitter: any): 
   }
 
   // tslint:disable-next-line:no-empty
-  socket.onparsedmessage = () => {};
-  socket.onmessage = (raw: {data: Buffer}) => {
+  socket.onparsedmessage = () => { };
+  socket.onmessage = (raw: { data: Buffer }) => {
     if (typeof raw.data === "string") {
       // TODO: We expect to always receive a buffer here but it seems like we
       // sometimes get string. How does this happen?

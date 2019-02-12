@@ -1,18 +1,27 @@
 import { TOPIC } from "../../binary-protocol/src/message-constants";
-import { Services } from "../client";
+import { IServices } from "../client";
 import { EVENT } from "../constants";
 
 import { MergeStrategy } from "./merge-strategy";
 
-export type MergeCompleteInternal = (error: string | null, recordName: string, mergedData: any, localVersion: number, localData: object, remoteVersion: number, remoteData: object) => void;
+export type MergeCompleteInternal = (
+  error: string | null,
+  recordName: string,
+  mergedData: any,
+  localVersion: number,
+  localData: object,
+  remoteVersion: number,
+  remoteData: object,
+) => void;
+
 export class MergeStrategyService {
 
-  private services: Services;
+  private services: IServices;
   private strategiesByRecord: Map<string, MergeStrategy>;
   private strategiesByPattern: Map<RegExp, MergeStrategy>;
   private defaultStrategy: MergeStrategy | null;
 
-  constructor(services: Services, defaultStrategy: MergeStrategy | null) {
+  constructor(services: IServices, defaultStrategy: MergeStrategy | null) {
     this.services = services;
     this.defaultStrategy = defaultStrategy;
     this.strategiesByRecord = new Map();
@@ -28,7 +37,12 @@ export class MergeStrategyService {
   }
 
   public merge(
-    recordName: string, localVersion: number, localData: object, remoteVersion: number, remoteData: object, callback: MergeCompleteInternal,
+    recordName: string,
+    localVersion: number,
+    localData: object,
+    remoteVersion: number,
+    remoteData: object,
+    callback: MergeCompleteInternal,
   ): void {
     const exactMergeStrategy = this.strategiesByRecord.get(recordName);
     if (exactMergeStrategy) {

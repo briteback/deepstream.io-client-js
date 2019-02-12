@@ -1,5 +1,5 @@
-import * as utils from '../util/utils';
-import * as Emitter from 'component-emitter2';
+import * as Emitter from "component-emitter2";
+import * as utils from "../util/utils";
 export class AnonymousRecord extends Emitter {
     constructor(getRecordCore) {
         super();
@@ -9,7 +9,7 @@ export class AnonymousRecord extends Emitter {
     }
     get name() {
         if (!this.record) {
-            return '';
+            return "";
         }
         return this.record.name;
     }
@@ -36,10 +36,10 @@ export class AnonymousRecord extends Emitter {
         }
         this.discard();
         this.record = this.getRecordCore(recordName);
-        for (let i = 0; i < this.subscriptions.length; i++) {
-            this.record.subscribe(this.subscriptions[i]);
+        for (const subscription of this.subscriptions) {
+            this.record.subscribe(subscription);
         }
-        this.emit('nameChanged', recordName);
+        this.emit("nameChanged", recordName);
         return this.record.whenReady(this, callback);
     }
     get(path) {
@@ -76,7 +76,7 @@ export class AnonymousRecord extends Emitter {
     }
     unsubscribe(path, callback) {
         const parameters = utils.normalizeArguments(arguments);
-        this.subscriptions = this.subscriptions.filter(subscription => {
+        this.subscriptions = this.subscriptions.filter((subscription) => {
             return (subscription.path !== parameters.path ||
                 subscription.callback !== parameters.callback);
         });
@@ -86,8 +86,8 @@ export class AnonymousRecord extends Emitter {
     }
     discard() {
         if (this.record) {
-            for (let i = 0; i < this.subscriptions.length; i++) {
-                this.record.unsubscribe(this.subscriptions[i]);
+            for (const subscription of this.subscriptions) {
+                this.record.unsubscribe(subscription);
             }
             return this.record.discard();
         }

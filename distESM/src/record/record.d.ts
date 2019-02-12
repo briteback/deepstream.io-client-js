@@ -1,6 +1,6 @@
-import { RecordCore, WriteAckCallback } from './record-core';
-import { MergeStrategy } from './merge-strategy';
-import * as Emitter from 'component-emitter2';
+import * as Emitter from "component-emitter2";
+import { MergeStrategy } from "./merge-strategy";
+import { RecordCore, WriteAckCallback } from "./record-core";
 export declare class Record extends Emitter {
     private record;
     private subscriptions;

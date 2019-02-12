@@ -4,23 +4,23 @@ import {
   RPC_ACTIONS as RPC_ACTION,
 } from "../../binary-protocol/src/message-constants";
 import { RESPONSE_TO_REQUEST } from "../../binary-protocol/src/utils";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { EVENT } from "../constants";
 
 import * as EventEmitter from "component-emitter2";
 
-export interface Timeout {
-    event?: EVENT | RPC_ACTION | RECORD_ACTION;
-    message: Message;
-    callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void;
-    duration?: number;
+export interface ITimeout {
+  event?: EVENT | RPC_ACTION | RECORD_ACTION;
+  message: Message;
+  callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void;
+  duration?: number;
 }
 
-interface InternalTimeout {
+interface IInternalTimeout {
   timerId: number;
   uniqueName: string;
-  timeout: Timeout;
+  timeout: ITimeout;
 }
 
 /**
@@ -30,12 +30,12 @@ interface InternalTimeout {
  * their respective timeouts.
  */
 export class TimeoutRegistry extends EventEmitter {
-  private options: Options;
-  private services: Services;
-  private register: Map<number, InternalTimeout>;
-  private ackRegister: Map<string, InternalTimeout>;
+  private options: IOptions;
+  private services: IServices;
+  private register: Map<number, IInternalTimeout>;
+  private ackRegister: Map<string, IInternalTimeout>;
 
-  constructor(services: Services, options: Options) {
+  constructor(services: IServices, options: IOptions) {
     super();
     this.options = options;
     this.services = services;
@@ -46,7 +46,7 @@ export class TimeoutRegistry extends EventEmitter {
   /**
    * Add an entry
    */
-  public add(timeout: Timeout): number {
+  public add(timeout: ITimeout): number {
     if (timeout.duration === undefined) {
       timeout.duration = this.options.subscriptionTimeout;
     }
@@ -67,17 +67,17 @@ export class TimeoutRegistry extends EventEmitter {
 
     this.remove(timeout.message);
 
-    const internalTimeout: InternalTimeout = Object.assign({}, {
+    const internalTimeout: IInternalTimeout = Object.assign({}, {
+      event: timeout.event,
       timerId: -1,
       uniqueName: this.getUniqueName(timeout.message),
-      event: timeout.event,
     }, { timeout });
 
     internalTimeout.timerId = this.services.timerRegistry.add({
-      context: this,
       callback: this.onTimeout,
-      duration: timeout.duration,
+      context: this,
       data: internalTimeout,
+      duration: timeout.duration,
     });
     this.register.set(internalTimeout.timerId, internalTimeout);
     this.ackRegister.set(internalTimeout.uniqueName, internalTimeout);
@@ -119,7 +119,7 @@ export class TimeoutRegistry extends EventEmitter {
    * Remote all timeouts when connection disconnects
    */
   public onConnectionLost(): void {
-    for (const [ timerId ] of this.register) {
+    for (const [timerId] of this.register) {
       clearTimeout(timerId);
       this.register.delete(timerId);
     }
@@ -128,7 +128,7 @@ export class TimeoutRegistry extends EventEmitter {
   /**
    * Will be invoked if the timeout has occured before the ack message was received
    */
-  private onTimeout(internalTimeout: InternalTimeout): void {
+  private onTimeout(internalTimeout: IInternalTimeout): void {
     this.register.delete(internalTimeout.timerId);
     const timeout = internalTimeout.timeout;
     if (timeout.callback) {

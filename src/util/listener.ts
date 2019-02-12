@@ -1,27 +1,33 @@
-import { EVENT_ACTIONS, EventMessage, RECORD_ACTIONS, RecordMessage, TOPIC } from "../../binary-protocol/src/message-constants";
+import {
+  EVENT_ACTIONS,
+  EventMessage,
+  RECORD_ACTIONS,
+  RecordMessage,
+  TOPIC,
+} from "../../binary-protocol/src/message-constants";
 import { EVENT } from "../../src/constants";
-import { Services } from "../client";
+import { IServices } from "../client";
 
-export interface ListenResponse {
+export interface IListenResponse {
   accept: () => void;
   reject: (reason?: string) => void;
   onStop: (callback: (subscriptionName: string) => void) => void;
 }
 
-export type ListenCallback = (subscriptionName: string, listenResponse: ListenResponse) => void;
+export type ListenCallback = (subscriptionName: string, listenResponse: IListenResponse) => void;
 
 export class Listener {
   private topic: TOPIC;
   private actions: any;
-  private services: Services;
+  private services: IServices;
   private listeners: Map<string, ListenCallback>; // <patterm, callback>
-  private stopCallbacks: Map<string, Function>; // <subscription, callback>
+  private stopCallbacks: Map<string, (...args: any[]) => void>; // <subscription, callback>
 
-  constructor(topic: TOPIC, services: Services) {
+  constructor(topic: TOPIC, services: IServices) {
     this.topic = topic;
     this.services = services;
     this.listeners = new Map<string, ListenCallback>();
-    this.stopCallbacks = new Map<string, Function>();
+    this.stopCallbacks = new Map<string, (...args: any[]) => void>();
 
     if (topic === TOPIC.RECORD) {
       this.actions = RECORD_ACTIONS;
@@ -43,9 +49,9 @@ export class Listener {
 
     if (this.listeners.has(pattern)) {
       this.services.logger.warn({
-        topic: this.topic,
         action: EVENT.LISTENER_EXISTS,
         name: pattern,
+        topic: this.topic,
       });
       return;
     }
@@ -61,9 +67,9 @@ export class Listener {
 
     if (!this.listeners.has(pattern)) {
       this.services.logger.warn({
-        topic: this.topic,
         action: EVENT.NOT_LISTENING,
         name: pattern,
+        topic: this.topic,
       });
       return;
     }
@@ -83,8 +89,8 @@ export class Listener {
         listener(
           message.subscription as string, {
             accept: this.accept.bind(this, message.name, message.subscription),
-            reject: this.reject.bind(this, message.name, message.subscription),
             onStop: this.stop.bind(this, message.subscription),
+            reject: this.reject.bind(this, message.name, message.subscription),
           },
         );
       }
@@ -103,38 +109,38 @@ export class Listener {
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE);
   }
 
-  /*
- * Accepting a listener request informs deepstream that the current provider is willing to
- * provide the record or event matching the subscriptionName . This will establish the current
- * provider as the only publisher for the actual subscription with the deepstream cluster.
- * Either accept or reject needs to be called by the listener
- */
+  /**
+   * Accepting a listener request informs deepstream that the current provider is willing to
+   * provide the record or event matching the subscriptionName . This will establish the current
+   * provider as the only publisher for the actual subscription with the deepstream cluster.
+   * Either accept or reject needs to be called by the listener
+   */
   private accept(pattern: string, subscription: string): void {
     this.services.connection.sendMessage({
-      topic: this.topic,
       action: this.actions.LISTEN_ACCEPT,
       name: pattern,
       subscription,
+      topic: this.topic,
     });
   }
 
- /*
- * Rejecting a listener request informs deepstream that the current provider is not willing
- * to provide the record or event matching the subscriptionName . This will result in deepstream
- * requesting another provider to do so instead. If no other provider accepts or exists, the
- * resource will remain unprovided.
- * Either accept or reject needs to be called by the listener
- */
+  /**
+   * Rejecting a listener request informs deepstream that the current provider is not willing
+   * to provide the record or event matching the subscriptionName . This will result in deepstream
+   * requesting another provider to do so instead. If no other provider accepts or exists, the
+   * resource will remain unprovided.
+   * Either accept or reject needs to be called by the listener
+   */
   private reject(pattern: string, subscription: string): void {
     this.services.connection.sendMessage({
-      topic: this.topic,
       action: this.actions.LISTEN_REJECT,
       name: pattern,
       subscription,
+      topic: this.topic,
     });
   }
 
-  private stop(subscription: string, callback: Function): void {
+  private stop(subscription: string, callback: (...args: any[]) => void): void {
     this.stopCallbacks.set(subscription, callback);
   }
 
@@ -156,9 +162,9 @@ export class Listener {
   */
   private sendListen(pattern: string): void {
     const message = {
-      topic: this.topic,
       action: this.actions.LISTEN,
       name: pattern,
+      topic: this.topic,
     };
     this.services.timeoutRegistry.add({ message });
     this.services.connection.sendMessage(message);
@@ -166,9 +172,9 @@ export class Listener {
 
   private sendUnlisten(pattern: string): void {
     const message = {
-      topic: this.topic,
       action: this.actions.UNLISTEN,
       name: pattern,
+      topic: this.topic,
     };
     this.services.timeoutRegistry.add({ message });
     this.services.connection.sendMessage(message);

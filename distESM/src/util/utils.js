@@ -1,4 +1,4 @@
-import * as URL from 'url';
+import * as URL from "url";
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string
@@ -7,11 +7,11 @@ const TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 /**
  * Removes whitespace from the beginning and end of a string
  */
-export const trim = function (inputString) {
+export const trim = (inputString) => {
     if (inputString.trim) {
         return inputString.trim();
     }
-    return inputString.replace(TRIM_REGULAR_EXPRESSION, '');
+    return inputString.replace(TRIM_REGULAR_EXPRESSION, "");
 };
 /**
  * Compares two objects for deep (recoursive) equality
@@ -32,7 +32,7 @@ export const deepEquals = (objA, objB) => {
     if (objA === objB) {
         return true;
     }
-    else if (typeof objA !== 'object' || typeof objB !== 'object') {
+    else if (typeof objA !== "object" || typeof objB !== "object") {
         return false;
     }
     return JSON.stringify(objA) === JSON.stringify(objB);
@@ -51,7 +51,7 @@ export const deepEquals = (objA, objB) => {
  * http://jsperf.com/object-deep-copy-assign
  */
 export const deepCopy = (obj) => {
-    if (typeof obj === 'object') {
+    if (typeof obj === "object") {
         return JSON.parse(JSON.stringify(obj));
     }
     return obj;
@@ -65,9 +65,10 @@ export const shallowCopy = (obj) => {
     if (Array.isArray(obj)) {
         return obj.slice(0);
     }
-    else if (typeof obj === 'object') {
+    else if (typeof obj === "object") {
         const copy = Object.create(null);
         const props = Object.keys(obj);
+        // tslint:disable-next-line
         for (let i = 0; i < props.length; i++) {
             copy[props[i]] = obj[props[i]];
         }
@@ -94,30 +95,30 @@ const unsupportedProtocol = /^http:|^https:/;
 export const parseUrl = (initialURl, defaultPath) => {
     let url = initialURl;
     if (unsupportedProtocol.test(url)) {
-        throw new Error('Only ws and wss are supported');
+        throw new Error("Only ws and wss are supported");
     }
     if (!hasUrlProtocol.test(url)) {
         url = `ws://${url}`;
     }
-    else if (url.indexOf('//') === 0) {
+    else if (url.indexOf("//") === 0) {
         url = `ws:${url}`;
     }
     const serverUrl = URL.parse(url);
     if (!serverUrl.host) {
-        throw new Error('invalid url, missing host');
+        throw new Error("invalid url, missing host");
     }
-    serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
+    serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : "ws:";
     serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
     return URL.format(serverUrl);
 };
 /**
-* Returns a random string. The first block of characters
-* is a timestamp, in order to allow databases to optimize for semi-
-* sequentuel numberings
-*/
+ * Returns a random string. The first block of characters
+ * is a timestamp, in order to allow databases to optimize for semi-
+ * sequentuel numberings
+ */
 export const getUid = () => {
     const timestamp = (new Date()).getTime().toString(36);
-    const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '');
+    const randomString = (Math.random() * 10000000000000000).toString(36).replace(".", "");
     return `${timestamp}-${randomString}`;
 };
 /**
@@ -125,15 +126,15 @@ export const getUid = () => {
  */
 export const normalizeSetArguments = (args, startIndex = 0) => {
     let result;
-    const isRootData = (data) => data !== undefined && typeof data === 'object';
-    const isNestedData = (data) => typeof data !== 'function';
-    const isPath = (path) => path !== undefined && typeof path === 'string';
-    const isCallback = (callback) => typeof callback === 'function';
+    const isRootData = (data) => data !== undefined && typeof data === "object";
+    const isNestedData = (data) => typeof data !== "function";
+    const isPath = (path) => path !== undefined && typeof path === "string";
+    const isCallback = (callback) => typeof callback === "function";
     if (args.length === startIndex + 1) {
         result = {
-            path: undefined,
+            callback: undefined,
             data: isRootData(args[startIndex]) ? args[startIndex] : undefined,
-            callback: undefined
+            path: undefined,
         };
     }
     if (args.length === startIndex + 2) {
@@ -153,26 +154,26 @@ export const normalizeSetArguments = (args, startIndex = 0) => {
     }
     if (args.length === startIndex + 3) {
         result = {
-            path: isPath(args[startIndex]) ? args[startIndex] : undefined,
+            callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : undefined,
             data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
-            callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : undefined
+            path: isPath(args[startIndex]) ? args[startIndex] : undefined,
         };
     }
     if (result) {
         if (result.path !== undefined && result.path.length === 0 ||
             (result.path === undefined && !result.data)) {
-            throw Error('Invalid set path argument');
+            throw Error("Invalid set path argument");
         }
         if (result.data === undefined && result.path === undefined) {
-            throw Error('Invalid set data argument');
+            throw Error("Invalid set data argument");
         }
         if (result.callback !== undefined && result.callback === false ||
             result.callback === undefined && args.length === startIndex + 3) {
-            throw Error('Invalid set callback argument');
+            throw Error("Invalid set callback argument");
         }
         return result;
     }
-    throw Error('Invalid set arguments');
+    throw Error("Invalid set arguments");
 };
 /**
  * Creates a map based on the types of the provided arguments
@@ -180,19 +181,19 @@ export const normalizeSetArguments = (args, startIndex = 0) => {
 export const normalizeArguments = (args) => {
     // If arguments is already a map of normalized parameters
     // (e.g. when called by AnonymousRecord), just return it.
-    if (args.length === 1 && typeof args[0] === 'object') {
+    if (args.length === 1 && typeof args[0] === "object") {
         return args[0];
     }
     const result = Object.create(null);
-    for (let i = 0; i < args.length; i++) {
-        if (typeof args[i] === 'string') {
-            result.path = args[i];
+    for (const arg of args) {
+        if (typeof arg === "string") {
+            result.path = arg;
         }
-        else if (typeof args[i] === 'function') {
-            result.callback = args[i];
+        else if (typeof arg === "function") {
+            result.callback = arg;
         }
-        else if (typeof args[i] === 'boolean') {
-            result.triggerNow = args[i];
+        else if (typeof arg === "boolean") {
+            result.triggerNow = arg;
         }
     }
     return result;

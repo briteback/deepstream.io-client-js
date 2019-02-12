@@ -1,11 +1,11 @@
-import { Message } from '../../binary-protocol/src/message-constants';
-import { Services } from '../client';
-import { WriteAckCallback } from './record-core';
+import { Message } from "../../binary-protocol/src/message-constants";
+import { IServices } from "../client";
+import { WriteAckCallback } from "./record-core";
 export declare class WriteAcknowledgementService {
     private services;
     private responses;
     private count;
-    constructor(services: Services);
+    constructor(services: IServices);
     /**
      * Send message with write ack callback.
      */

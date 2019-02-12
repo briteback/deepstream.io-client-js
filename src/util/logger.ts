@@ -32,6 +32,7 @@ export class Logger {
       warnMessage += ` – ${typeof meta === "string" ? meta : JSON.stringify(meta)}`;
     }
 
+    // tslint:disable-next-line
     console.warn(warnMessage);
   }
 
@@ -55,6 +56,7 @@ export class Logger {
   }
 
   public E(message: string) {
+    // tslint:disable-next-line
     console.error(message);
   }
 }

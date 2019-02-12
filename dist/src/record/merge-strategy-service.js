@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_1 = require("../constants");
 class MergeStrategyService {
     constructor(services, defaultStrategy) {
         this.services = services;

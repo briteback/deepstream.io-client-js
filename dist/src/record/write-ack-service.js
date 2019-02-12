@@ -37,7 +37,7 @@ class WriteAcknowledgementService {
         this.responses.delete(id);
     }
     onConnectionLost() {
-        this.responses.forEach(response => response(constants_1.EVENT.CLIENT_OFFLINE));
+        this.responses.forEach((response) => response(constants_1.EVENT.CLIENT_OFFLINE));
         this.responses.clear();
     }
 }

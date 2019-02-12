@@ -1,4 +1,4 @@
-import { TOPIC, RPC_ACTIONS as RPC_ACTION } from '../../binary-protocol/src/message-constants';
+import { RPC_ACTIONS as RPC_ACTION, TOPIC } from "../../binary-protocol/src/message-constants";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -23,10 +23,10 @@ export class RPCResponse {
     accept() {
         if (this.isAccepted === false) {
             this.services.connection.sendMessage({
-                topic: TOPIC.RPC,
                 action: RPC_ACTION.ACCEPT,
+                correlationId: this.correlationId,
                 name: this.name,
-                correlationId: this.correlationId
+                topic: TOPIC.RPC,
             });
             this.isAccepted = true;
         }
@@ -46,10 +46,10 @@ export class RPCResponse {
         this.isComplete = true;
         this.isAccepted = true;
         this.services.connection.sendMessage({
-            topic: TOPIC.RPC,
             action: RPC_ACTION.REJECT,
+            correlationId: this.correlationId,
             name: this.name,
-            correlationId: this.correlationId
+            topic: TOPIC.RPC,
         });
     }
     /**
@@ -60,16 +60,16 @@ export class RPCResponse {
         if (this.isComplete === true) {
             throw new Error(`Rpc ${this.name} already completed`);
         }
-        error = error || 'Error';
+        error = error || "Error";
         this.autoAccept = false;
         this.isComplete = true;
         this.isAccepted = true;
         this.services.connection.sendMessage({
-            topic: TOPIC.RPC,
             action: RPC_ACTION.REQUEST_ERROR,
-            name: this.name,
             correlationId: this.correlationId,
-            parsedData: error
+            name: this.name,
+            parsedData: error,
+            topic: TOPIC.RPC,
         });
     }
     /**
@@ -86,11 +86,11 @@ export class RPCResponse {
         }
         this.accept();
         this.services.connection.sendMessage({
-            topic: TOPIC.RPC,
             action: RPC_ACTION.RESPONSE,
-            name: this.name,
             correlationId: this.correlationId,
-            parsedData: data
+            name: this.name,
+            parsedData: data,
+            topic: TOPIC.RPC,
         });
         this.isComplete = true;
     }

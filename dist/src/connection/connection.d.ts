@@ -1,10 +1,11 @@
-import { CONNECTION_STATE } from '../constants';
-import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
-import { Services } from '../client';
-import { Options } from '../client-options';
+import { Message, TOPIC } from "../../binary-protocol/src/message-constants";
+import { CONNECTION_STATE } from "../constants";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 export declare type AuthenticationCallback = (success: boolean, clientData: object | null) => void;
 export declare type ResumeCallback = (error?: object) => void;
 export declare class Connection {
+    readonly isConnected: boolean;
     emitter: Emitter;
     isInLimbo: boolean;
     private internalEmitter;
@@ -26,27 +27,21 @@ export declare class Connection {
     private limboTimeout;
     private isReconnecting;
     private firstOpen;
-    constructor(services: Services, options: Options, url: string, emitter: Emitter);
-    readonly isConnected: boolean;
-    onLost(callback: Function): void;
-    removeOnLost(callback: Function): void;
-    onReestablished(callback: Function): void;
-    removeOnReestablished(callback: Function): void;
-    onExitLimbo(callback: Function): void;
-    registerHandler(topic: TOPIC, callback: Function): void;
+    constructor(services: IServices, options: IOptions, url: string, emitter: Emitter);
+    onLost(callback: () => void): void;
+    removeOnLost(callback: () => void): void;
+    onReestablished(callback: () => void): void;
+    removeOnReestablished(callback: () => void): void;
+    onExitLimbo(callback: () => void): void;
+    registerHandler(topic: TOPIC, callback: () => void): void;
     sendMessage(message: Message): void;
     /**
      * Sends the specified authentication parameters
      * to the server. Can be called up to <maxAuthAttempts>
      * times for the same connection.
-     *
-     * @param   {Object}   authParams A map of user defined auth parameters.
-     *                E.g. { username:<String>, password:<String> }
-     * @param   {Function} callback   A callback that will be invoked with the authenticationr result
      */
     authenticate(authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void;
     getConnectionState(): CONNECTION_STATE;
-    private isOpen;
     /**
      * Closes the connection. Using this method
      * will prevent the client from reconnecting.
@@ -55,18 +50,26 @@ export declare class Connection {
     pause(): void;
     resume(callback: ResumeCallback): void;
     /**
+     * Forces a new connection and does not wait for the current socket to close.
+     * On OSX and iOS it happens that the current socket is dead but looks alive.
+     * Calling forceReconnect will regardles of current state reset and set up a
+     * new connection
+     */
+    forceReconnect(): void;
+    private isOpen;
+    /**
      * Creates the endpoint to connect to using the url deepstream
      * was initialised with.
      */
     private createEndpoint;
     /********************************
-    ****** Endpoint Callbacks ******
+     ****** Endpoint Callbacks ******
     /********************************/
     /**
-    * Will be invoked once the connection is established. The client
-    * can't send messages yet, and needs to get a connection ACK or REDIRECT
-    * from the server before authenticating
-    */
+     * Will be invoked once the connection is established. The client
+     * can't send messages yet, and needs to get a connection ACK or REDIRECT
+     * from the server before authenticating
+     */
     private onOpen;
     /**
      * Callback for generic connection errors. Forwards
@@ -90,30 +93,23 @@ export declare class Connection {
      */
     private onMessages;
     /**
-    * Sends authentication params to the server. Please note, this
-    * doesn't use the queued message mechanism, but rather sends the message directly
-    */
+     * Sends authentication params to the server. Please note, this
+     * doesn't use the queued message mechanism, but rather sends the message directly
+     */
     private sendAuthParams;
     /**
-    * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
-    * to have been lost and closes it for reconnection.
-    */
+     * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
+     * to have been lost and closes it for reconnection.
+     */
     private checkHeartBeat;
     /**
-    * If the connection drops or is closed in error this
-    * method schedules increasing reconnection intervals
-    *
-    * If the number of failed reconnection attempts exceeds
-    * options.maxReconnectAttempts the connection is closed
-    */
+     * If the connection drops or is closed in error this
+     * method schedules increasing reconnection intervals
+     *
+     * If the number of failed reconnection attempts exceeds
+     * options.maxReconnectAttempts the connection is closed
+     */
     private tryReconnect;
-    /**
-       * Forces a new connection and does not wait for the current socket to close.
-       * On OSX and iOS it happens that the current socket is dead but looks alive.
-       * Calling forceReconnect will regardles of current state reset and set up a
-       * new connection
-       */
-    forceReconnect(): void;
     /**
      * Attempts to open a errourosly closed connection
      */

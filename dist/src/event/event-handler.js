@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const Emitter = require("component-emitter2");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const constants_1 = require("../constants");
 const listener_1 = require("../util/listener");
-const Emitter = require("component-emitter2");
 class EventHandler {
     constructor(services, options, listeners) {
         this.services = services;
@@ -19,11 +19,11 @@ class EventHandler {
      * as well as events emitted by other connected clients.
      */
     subscribe(name, callback) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
-        if (typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         if (!this.emitter.hasListeners(name)) {
             if (this.services.connection.isConnected) {
@@ -38,26 +38,26 @@ class EventHandler {
      * that the client is unsubscribed as a listener
      */
     unsubscribe(name, callback) {
-        if (!name || typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (!name || typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
-        if (callback !== undefined && typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (callback !== undefined && typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         if (!this.emitter.hasListeners(name)) {
             this.services.logger.warn({
-                topic: message_constants_1.TOPIC.EVENT,
                 action: message_constants_1.EVENT_ACTIONS.NOT_SUBSCRIBED,
-                name
+                name,
+                topic: message_constants_1.TOPIC.EVENT,
             });
             return;
         }
         this.emitter.off(name, callback);
         if (!this.emitter.hasListeners(name)) {
             const message = {
-                topic: message_constants_1.TOPIC.EVENT,
                 action: message_constants_1.EVENT_ACTIONS.UNSUBSCRIBE,
-                name
+                name,
+                topic: message_constants_1.TOPIC.EVENT,
             };
             this.services.timeoutRegistry.add({ message });
             if (this.services.connection.isConnected) {
@@ -73,14 +73,14 @@ class EventHandler {
      * broadcast the event to the other connected clients
      */
     emit(name, data) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
         const message = {
-            topic: message_constants_1.TOPIC.EVENT,
             action: message_constants_1.EVENT_ACTIONS.EMIT,
             name,
-            parsedData: data
+            parsedData: data,
+            topic: message_constants_1.TOPIC.EVENT,
         };
         if (this.services.connection.isConnected) {
             this.services.connection.sendMessage(message);
@@ -131,14 +131,14 @@ class EventHandler {
         }
         if (message.action === message_constants_1.EVENT_ACTIONS.MULTIPLE_SUBSCRIPTIONS) {
             this.services.timeoutRegistry.remove(Object.assign({}, message, {
-                action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE
+                action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE,
             }));
             this.services.logger.warn(message);
             return;
         }
         if (message.action === message_constants_1.EVENT_ACTIONS.NOT_SUBSCRIBED) {
             this.services.timeoutRegistry.remove(Object.assign({}, message, {
-                action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE
+                action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE,
             }));
             this.services.logger.warn(message);
             return;
@@ -162,8 +162,8 @@ class EventHandler {
         for (const name of callbacks) {
             this.sendSubscriptionMessage(name);
         }
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            this.services.connection.sendMessage(this.limboQueue[i]);
+        for (const limboObject of this.limboQueue) {
+            this.services.connection.sendMessage(limboObject);
         }
         this.limboQueue = [];
     }
@@ -172,9 +172,9 @@ class EventHandler {
     }
     sendSubscriptionMessage(name) {
         const message = {
-            topic: message_constants_1.TOPIC.EVENT,
             action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE,
-            name
+            name,
+            topic: message_constants_1.TOPIC.EVENT,
         };
         this.services.timeoutRegistry.add({ message });
         this.services.connection.sendMessage(message);

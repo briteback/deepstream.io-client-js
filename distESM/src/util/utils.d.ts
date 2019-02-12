@@ -46,17 +46,17 @@ export declare const shallowCopy: (obj: any) => any;
  */
 export declare const parseUrl: (initialURl: string, defaultPath: string) => string;
 /**
-* Returns a random string. The first block of characters
-* is a timestamp, in order to allow databases to optimize for semi-
-* sequentuel numberings
-*/
+ * Returns a random string. The first block of characters
+ * is a timestamp, in order to allow databases to optimize for semi-
+ * sequentuel numberings
+ */
 export declare const getUid: () => string;
-export interface RecordSetArguments {
+export interface IRecordSetArguments {
     callback?: (error: string | null, recordName: string) => void;
     path?: string;
     data?: any;
 }
-export interface RecordSubscribeArguments {
+export interface IRecordSubscribeArguments {
     callback: (data: any) => void;
     path?: string;
     triggerNow?: boolean;
@@ -64,9 +64,9 @@ export interface RecordSubscribeArguments {
 /**
  * Creates a map based on the types of the provided arguments
  */
-export declare const normalizeSetArguments: (args: IArguments, startIndex?: number) => RecordSetArguments;
+export declare const normalizeSetArguments: (args: IArguments, startIndex?: number) => IRecordSetArguments;
 /**
  * Creates a map based on the types of the provided arguments
  */
-export declare const normalizeArguments: (args: IArguments) => RecordSubscribeArguments;
+export declare const normalizeArguments: (args: IArguments) => IRecordSubscribeArguments;
 export declare const tryWrap: (func: () => void, logger: (log: any) => void) => void;

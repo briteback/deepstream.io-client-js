@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const message_parser_1 = require("../../binary-protocol/src/message-parser");
-const state_machine_1 = require("../util/state-machine");
-const socket_factory_1 = require("./socket-factory");
-const utils = require("../util/utils");
+const constants_1 = require("../constants");
 const Emitter = require("component-emitter2");
+const state_machine_1 = require("../util/state-machine");
+const utils = require("../util/utils");
+const socket_factory_1 = require("./socket-factory");
 class Connection {
+    get isConnected() {
+        return this.stateMachine.state === constants_1.CONNECTION_STATE.OPEN;
+    }
     constructor(services, options, url, emitter) {
         this.options = options;
         this.services = services;
@@ -44,12 +47,12 @@ class Connection {
                             this.services.timerRegistry.remove(this.limboTimeout);
                         }
                         this.limboTimeout = this.services.timerRegistry.add({
-                            duration: this.options.offlineBufferTimeout,
-                            context: this,
                             callback: () => {
                                 this.isInLimbo = false;
                                 this.internalEmitter.emit(constants_1.EVENT.EXIT_LIMBO);
-                            }
+                            },
+                            context: this,
+                            duration: this.options.offlineBufferTimeout,
                         });
                     }
                 }
@@ -62,31 +65,123 @@ class Connection {
                 }
             },
             transitions: [
-                { name: "initialised" /* INITIALISED */, from: constants_1.CONNECTION_STATE.CLOSED, to: constants_1.CONNECTION_STATE.INITIALISING },
-                { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.INITIALISING, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
-                { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.REDIRECTING, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
-                { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.RECONNECTING, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
-                { name: "challenge" /* CHALLENGE */, from: constants_1.CONNECTION_STATE.AWAITING_CONNECTION, to: constants_1.CONNECTION_STATE.CHALLENGING },
-                { name: "redirected" /* CONNECTION_REDIRECTED */, from: constants_1.CONNECTION_STATE.CHALLENGING, to: constants_1.CONNECTION_STATE.REDIRECTING },
-                { name: "challenge-denied" /* CHALLENGE_DENIED */, from: constants_1.CONNECTION_STATE.CHALLENGING, to: constants_1.CONNECTION_STATE.CHALLENGE_DENIED },
-                { name: "accepted" /* CHALLENGE_ACCEPTED */, from: constants_1.CONNECTION_STATE.CHALLENGING, to: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION, handler: this.onAwaitingAuthentication.bind(this) },
-                { name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */, from: constants_1.CONNECTION_STATE.AWAITING_CONNECTION, to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
-                { name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */, from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION, to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
-                { name: "authenticate" /* AUTHENTICATE */, from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION, to: constants_1.CONNECTION_STATE.AUTHENTICATING },
-                { name: "unsuccesful-login" /* UNSUCCESFUL_LOGIN */, from: constants_1.CONNECTION_STATE.AUTHENTICATING, to: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION },
-                { name: "succesful-login" /* SUCCESFUL_LOGIN */, from: constants_1.CONNECTION_STATE.AUTHENTICATING, to: constants_1.CONNECTION_STATE.OPEN },
-                { name: "too-many-auth-attempts" /* TOO_MANY_AUTH_ATTEMPTS */, from: constants_1.CONNECTION_STATE.AUTHENTICATING, to: constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
-                { name: "too-many-auth-attempts" /* TOO_MANY_AUTH_ATTEMPTS */, from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION, to: constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
-                { name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */, from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION, to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
-                { name: "reconnect" /* RECONNECT */, from: constants_1.CONNECTION_STATE.RECONNECTING, to: constants_1.CONNECTION_STATE.RECONNECTING },
-                { name: "closed" /* CLOSED */, from: constants_1.CONNECTION_STATE.CLOSING, to: constants_1.CONNECTION_STATE.CLOSED },
-                { name: "offline" /* OFFLINE */, from: constants_1.CONNECTION_STATE.PAUSING, to: constants_1.CONNECTION_STATE.OFFLINE },
-                { name: "error" /* ERROR */, to: constants_1.CONNECTION_STATE.RECONNECTING },
-                { name: "connection-lost" /* LOST */, to: constants_1.CONNECTION_STATE.RECONNECTING },
-                { name: "resume" /* RESUME */, to: constants_1.CONNECTION_STATE.RECONNECTING },
-                { name: "pause" /* PAUSE */, to: constants_1.CONNECTION_STATE.PAUSING },
-                { name: "close" /* CLOSE */, to: constants_1.CONNECTION_STATE.CLOSING },
-            ]
+                {
+                    from: constants_1.CONNECTION_STATE.CLOSED,
+                    name: "initialised" /* INITIALISED */,
+                    to: constants_1.CONNECTION_STATE.INITIALISING,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.INITIALISING,
+                    name: "connected" /* CONNECTED */,
+                    to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.REDIRECTING,
+                    name: "connected" /* CONNECTED */,
+                    to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.RECONNECTING,
+                    name: "connected" /* CONNECTED */,
+                    to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AWAITING_CONNECTION,
+                    name: "challenge" /* CHALLENGE */,
+                    to: constants_1.CONNECTION_STATE.CHALLENGING,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.CHALLENGING,
+                    name: "redirected" /* CONNECTION_REDIRECTED */,
+                    to: constants_1.CONNECTION_STATE.REDIRECTING,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.CHALLENGING,
+                    name: "challenge-denied" /* CHALLENGE_DENIED */,
+                    to: constants_1.CONNECTION_STATE.CHALLENGE_DENIED,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.CHALLENGING,
+                    handler: this.onAwaitingAuthentication.bind(this),
+                    name: "accepted" /* CHALLENGE_ACCEPTED */,
+                    to: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AWAITING_CONNECTION,
+                    name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */,
+                    to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION,
+                    name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */,
+                    to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION,
+                    name: "authenticate" /* AUTHENTICATE */,
+                    to: constants_1.CONNECTION_STATE.AUTHENTICATING,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AUTHENTICATING,
+                    name: "unsuccesful-login" /* UNSUCCESFUL_LOGIN */,
+                    to: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AUTHENTICATING,
+                    name: "succesful-login" /* SUCCESFUL_LOGIN */,
+                    to: constants_1.CONNECTION_STATE.OPEN,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AUTHENTICATING,
+                    name: "too-many-auth-attempts" /* TOO_MANY_AUTH_ATTEMPTS */,
+                    to: constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION,
+                    name: "too-many-auth-attempts" /* TOO_MANY_AUTH_ATTEMPTS */,
+                    to: constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION,
+                    name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */,
+                    to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.RECONNECTING,
+                    name: "reconnect" /* RECONNECT */,
+                    to: constants_1.CONNECTION_STATE.RECONNECTING,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.CLOSING,
+                    name: "closed" /* CLOSED */,
+                    to: constants_1.CONNECTION_STATE.CLOSED,
+                },
+                {
+                    from: constants_1.CONNECTION_STATE.PAUSING,
+                    name: "offline" /* OFFLINE */,
+                    to: constants_1.CONNECTION_STATE.OFFLINE,
+                },
+                {
+                    name: "error" /* ERROR */,
+                    to: constants_1.CONNECTION_STATE.RECONNECTING,
+                },
+                {
+                    name: "connection-lost" /* LOST */,
+                    to: constants_1.CONNECTION_STATE.RECONNECTING,
+                },
+                {
+                    name: "resume" /* RESUME */,
+                    to: constants_1.CONNECTION_STATE.RECONNECTING,
+                },
+                {
+                    name: "pause" /* PAUSE */,
+                    to: constants_1.CONNECTION_STATE.PAUSING,
+                },
+                {
+                    name: "close" /* CLOSE */,
+                    to: constants_1.CONNECTION_STATE.CLOSING,
+                },
+            ],
         });
         this.stateMachine.transition("initialised" /* INITIALISED */);
         this.originalUrl = utils.parseUrl(url, this.options.path);
@@ -101,12 +196,9 @@ class Connection {
                 this.forceReconnect();
             }
             else {
-                this.services.logger.E('Trying to send messages before socket is opened?');
+                this.services.logger.E("Trying to send messages before socket is opened?");
             }
         });
-    }
-    get isConnected() {
-        return this.stateMachine.state === constants_1.CONNECTION_STATE.OPEN;
     }
     onLost(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_LOST, callback);
@@ -139,19 +231,15 @@ class Connection {
      * Sends the specified authentication parameters
      * to the server. Can be called up to <maxAuthAttempts>
      * times for the same connection.
-     *
-     * @param   {Object}   authParams A map of user defined auth parameters.
-     *                E.g. { username:<String>, password:<String> }
-     * @param   {Function} callback   A callback that will be invoked with the authenticationr result
      */
     authenticate(authParamsOrCallback, callback) {
         if (authParamsOrCallback &&
-            typeof authParamsOrCallback !== 'object' &&
-            typeof authParamsOrCallback !== 'function') {
-            throw new Error('invalid argument authParamsOrCallback');
+            typeof authParamsOrCallback !== "object" &&
+            typeof authParamsOrCallback !== "function") {
+            throw new Error("invalid argument authParamsOrCallback");
         }
-        if (callback && typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (callback && typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         if (this.stateMachine.state === constants_1.CONNECTION_STATE.CHALLENGE_DENIED ||
             this.stateMachine.state === constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
@@ -160,15 +248,16 @@ class Connection {
             return;
         }
         if (authParamsOrCallback) {
-            this.authParams = typeof authParamsOrCallback === 'object' ? authParamsOrCallback : {};
+            this.authParams = typeof authParamsOrCallback === "object" ? authParamsOrCallback : {};
         }
-        if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {
+        if (authParamsOrCallback && typeof authParamsOrCallback === "function") {
             this.authCallback = authParamsOrCallback;
         }
         else if (callback) {
             this.authCallback = callback;
         }
         else {
+            // tslint:disable-next-line
             this.authCallback = () => { };
         }
         // if (this.stateMachine.state === CONNECTION_STATE.CLOSED && !this.endpoint) {
@@ -183,16 +272,10 @@ class Connection {
         }
     }
     /*
-    * Returns the current connection state.
-    */
+     * Returns the current connection state.
+     */
     getConnectionState() {
         return this.stateMachine.state;
-    }
-    isOpen() {
-        const connState = this.getConnectionState();
-        return connState !== constants_1.CONNECTION_STATE.CLOSED
-            && connState !== constants_1.CONNECTION_STATE.ERROR
-            && connState !== constants_1.CONNECTION_STATE.CLOSING;
     }
     /**
      * Closes the connection. Using this method
@@ -201,8 +284,8 @@ class Connection {
     close() {
         this.services.timerRegistry.remove(this.heartbeatInterval);
         this.sendMessage({
+            action: message_constants_1.CONNECTION_ACTIONS.CLOSING,
             topic: message_constants_1.TOPIC.CONNECTION,
-            action: message_constants_1.CONNECTION_ACTIONS.CLOSING
         });
         this.stateMachine.transition("close" /* CLOSE */);
     }
@@ -219,6 +302,35 @@ class Connection {
         this.tryReconnect();
     }
     /**
+     * Forces a new connection and does not wait for the current socket to close.
+     * On OSX and iOS it happens that the current socket is dead but looks alive.
+     * Calling forceReconnect will regardles of current state reset and set up a
+     * new connection
+     */
+    forceReconnect() {
+        if (this.endpoint) {
+            this.endpoint.onopen = null;
+            this.endpoint.onerror = null;
+            this.endpoint.onclose = null;
+            // tslint:disable-next-line
+            this.endpoint.onparsedmessages = (messages) => { };
+        }
+        utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
+        utils.tryWrap(() => this.close(), this.services.logger.E);
+        this.stateMachine.resetToInitialState();
+        this.stateMachine.transition("initialised" /* INITIALISED */);
+        this.isInLimbo = true;
+        this.firstOpen = true;
+        this.isReconnecting = false;
+        this.createEndpoint();
+    }
+    isOpen() {
+        const connState = this.getConnectionState();
+        return connState !== constants_1.CONNECTION_STATE.CLOSED
+            && connState !== constants_1.CONNECTION_STATE.ERROR
+            && connState !== constants_1.CONNECTION_STATE.CLOSING;
+    }
+    /**
      * Creates the endpoint to connect to using the url deepstream
      * was initialised with.
      */
@@ -230,23 +342,23 @@ class Connection {
         this.endpoint.onparsedmessages = this.onMessages.bind(this);
     }
     /********************************
-    ****** Endpoint Callbacks ******
+     ****** Endpoint Callbacks ******
     /********************************/
     /**
-    * Will be invoked once the connection is established. The client
-    * can't send messages yet, and needs to get a connection ACK or REDIRECT
-    * from the server before authenticating
-    */
+     * Will be invoked once the connection is established. The client
+     * can't send messages yet, and needs to get a connection ACK or REDIRECT
+     * from the server before authenticating
+     */
     onOpen() {
         this.clearReconnect();
         this.lastHeartBeat = Date.now();
         this.checkHeartBeat();
         this.stateMachine.transition("connected" /* CONNECTED */);
         this.sendMessage({
-            topic: message_constants_1.TOPIC.CONNECTION,
             action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE,
+            protocolVersion: "0.1a",
+            topic: message_constants_1.TOPIC.CONNECTION,
             url: this.originalUrl,
-            protocolVersion: '0.1a'
         });
         this.stateMachine.transition("challenge" /* CHALLENGE */);
     }
@@ -264,7 +376,7 @@ class Connection {
          */
         setTimeout(() => {
             let msg;
-            if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
+            if (error.code === "ECONNRESET" || error.code === "ECONNREFUSED") {
                 msg = `Can't connect! Deepstream server unreachable on ${this.originalUrl}`;
             }
             else {
@@ -315,7 +427,7 @@ class Connection {
      * Callback for messages received on the connection.
      */
     onMessages(parseResults) {
-        parseResults.forEach(parseResult => {
+        parseResults.forEach((parseResult) => {
             if (parseResult.parseError) {
                 this.services.logger.error({ topic: message_constants_1.TOPIC.PARSER }, parseResult.action, parseResult.raw && parseResult.raw.toString());
                 return;
@@ -345,21 +457,21 @@ class Connection {
         });
     }
     /**
-    * Sends authentication params to the server. Please note, this
-    * doesn't use the queued message mechanism, but rather sends the message directly
-    */
+     * Sends authentication params to the server. Please note, this
+     * doesn't use the queued message mechanism, but rather sends the message directly
+     */
     sendAuthParams() {
         this.stateMachine.transition("authenticate" /* AUTHENTICATE */);
         this.sendMessage({
-            topic: message_constants_1.TOPIC.AUTH,
             action: message_constants_1.AUTH_ACTIONS.REQUEST,
-            parsedData: this.authParams
+            parsedData: this.authParams,
+            topic: message_constants_1.TOPIC.AUTH,
         });
     }
     /**
-    * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
-    * to have been lost and closes it for reconnection.
-    */
+     * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
+     * to have been lost and closes it for reconnection.
+     */
     checkHeartBeat() {
         const heartBeatTolerance = this.options.heartbeatInterval * 2;
         if (Date.now() - this.lastHeartBeat > heartBeatTolerance) {
@@ -371,18 +483,18 @@ class Connection {
             return;
         }
         this.heartbeatInterval = this.services.timerRegistry.add({
-            duration: this.options.heartbeatInterval,
             callback: this.checkHeartBeat,
-            context: this
+            context: this,
+            duration: this.options.heartbeatInterval,
         });
     }
     /**
-    * If the connection drops or is closed in error this
-    * method schedules increasing reconnection intervals
-    *
-    * If the number of failed reconnection attempts exceeds
-    * options.maxReconnectAttempts the connection is closed
-    */
+     * If the connection drops or is closed in error this
+     * method schedules increasing reconnection intervals
+     *
+     * If the number of failed reconnection attempts exceeds
+     * options.maxReconnectAttempts the connection is closed
+     */
     tryReconnect() {
         if (this.reconnectTimeout !== null) {
             return;
@@ -396,28 +508,6 @@ class Connection {
         this.emitter.emit(constants_1.EVENT[constants_1.EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt);
         this.clearReconnect();
         this.close();
-    }
-    /**
-       * Forces a new connection and does not wait for the current socket to close.
-       * On OSX and iOS it happens that the current socket is dead but looks alive.
-       * Calling forceReconnect will regardles of current state reset and set up a
-       * new connection
-       */
-    forceReconnect() {
-        if (this.endpoint) {
-            this.endpoint.onopen = null;
-            this.endpoint.onerror = null;
-            this.endpoint.onclose = null;
-            this.endpoint.onparsedmessages = (messages) => { };
-        }
-        utils.tryWrap(() => this.clearReconnect(), this.services.logger.E);
-        utils.tryWrap(() => this.close(), this.services.logger.E);
-        this.stateMachine.resetToInitialState();
-        this.stateMachine.transition("initialised" /* INITIALISED */);
-        this.isInLimbo = true;
-        this.firstOpen = true;
-        this.isReconnecting = false;
-        this.createEndpoint();
     }
     /**
      * Attempts to open a errourosly closed connection

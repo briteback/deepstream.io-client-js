@@ -1,8 +1,14 @@
 import * as Emitter from "component-emitter2";
 import * as isEqual from "fast-deep-equal";
-import { Message, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage, TOPIC } from "../../binary-protocol/src/message-constants";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import {
+  Message,
+  RECORD_ACTIONS as RA,
+  RecordMessage,
+  RecordWriteMessage,
+  TOPIC,
+} from "../../binary-protocol/src/message-constants";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { CONNECTION_STATE, EVENT } from "../constants";
 import { StateMachine } from "../util/state-machine";
 import * as utils from "../util/utils";
@@ -11,7 +17,7 @@ import { get as getPath, setValue as setPath } from "./json-path";
 import { List } from "./list";
 import { MergeStrategy } from "./merge-strategy";
 import { Record } from "./record";
-import { RecordServices } from "./record-handler";
+import { IRecordServices } from "./record-handler";
 
 export type WriteAckCallback = (error: string | null, recordName: string) => void;
 
@@ -48,9 +54,9 @@ export class RecordCore extends Emitter {
   public version: number | null;
 
   private references: number;
-  private services: Services;
-  private options: Options;
-  private recordServices: RecordServices;
+  private services: IServices;
+  private options: IOptions;
+  private recordServices: IRecordServices;
   private emitter: Emitter;
   private parentEmitter: Emitter;
   private pendingUpdates: any[];
@@ -67,8 +73,8 @@ export class RecordCore extends Emitter {
   private whenComplete: (recordName: string) => void;
   private pendingWrites: any[];
 
-  constructor(name: string, services: Services,
-              options: Options, recordServices: RecordServices,
+  constructor(name: string, services: IServices,
+              options: IOptions, recordServices: IRecordServices,
               whenComplete: (recordName: string) => void) {
     super();
     this.services = services;
@@ -103,52 +109,62 @@ export class RecordCore extends Emitter {
 
     const transitions = [
       {
-        name: RA.SUBSCRIBE,
-        from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING,
+        from: RECORD_STATE.INITIAL,
         handler: onSubscribing,
+        name: RA.SUBSCRIBE,
+        to: RECORD_STATE.SUBSCRIBING,
       },
       {
-        name: RA.READ_RESPONSE,
-        from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY,
+        from: RECORD_STATE.SUBSCRIBING,
         handler: onReady,
+        name: RA.READ_RESPONSE,
+        to: RECORD_STATE.READY,
       },
       {
+        from: RECORD_STATE.READY,
         name: RA.DELETE,
-        from: RECORD_STATE.READY, to: RECORD_STATE.DELETING,
+        to: RECORD_STATE.DELETING,
       },
       {
-        name: RA.DELETED,
-        from: RECORD_STATE.READY, to: RECORD_STATE.DELETED,
+        from: RECORD_STATE.READY,
         handler: onDeleted,
+        name: RA.DELETED,
+        to: RECORD_STATE.DELETED,
       },
       // Ignore extra read responses while in the ready state.
       {
-        name: RA.READ_RESPONSE,
-        from: RECORD_STATE.READY, to: RECORD_STATE.READY,
+        from: RECORD_STATE.READY,
         handler: onRefreshed,
+        name: RA.READ_RESPONSE,
+        to: RECORD_STATE.READY,
       },
       {
-        name: RA.DELETE_SUCCESS,
-        from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED,
+        from: RECORD_STATE.DELETING,
         handler: onDeleted,
+        name: RA.DELETE_SUCCESS,
+        to: RECORD_STATE.DELETED,
       },
       {
+        from: RECORD_STATE.READY,
         name: RA.UNSUBSCRIBE,
-        from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING,
+        to: RECORD_STATE.UNSUBSCRIBING,
       },
       // Ignore unsubscribes while in the unsubscribing state.
       {
+        from: RECORD_STATE.UNSUBSCRIBING,
         name: RA.UNSUBSCRIBE,
-        from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBING,
+        to: RECORD_STATE.UNSUBSCRIBING,
       },
       {
+        from: RECORD_STATE.UNSUBSCRIBING,
         name: RA.SUBSCRIBE,
-        from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY,
+        to: RECORD_STATE.READY,
       },
       {
-        name: RA.UNSUBSCRIBE_ACK,
-        from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED,
+        from: RECORD_STATE.UNSUBSCRIBING,
         handler: onUnsubscribed,
+        name: RA.UNSUBSCRIBE_ACK,
+        to: RECORD_STATE.UNSUBSCRIBED,
       },
     ];
     const onStateChanged = (newState: string, oldState: string) => {
@@ -200,7 +216,7 @@ export class RecordCore extends Emitter {
    *                                     two arguments or the data itself
    * @param {Object} data     The data that should be stored in the record
    */
-  public set({ path, data, callback }: utils.RecordSetArguments): void {
+  public set({ path, data, callback }: utils.IRecordSetArguments): void {
     if (!path && (data === null || typeof data !== "object")) {
       throw new Error("invalid arguments, scalar values cannot be set without path");
     }
@@ -229,7 +245,7 @@ export class RecordCore extends Emitter {
    * if no callback is supplied.
    * @returns {Promise} if a callback is omitted a Promise is returned with the result of the write
    */
-  public setWithAck(args: utils.RecordSetArguments): Promise<void> | void {
+  public setWithAck(args: utils.IRecordSetArguments): Promise<void> | void {
     if (args.callback) {
       this.set(args);
       return;
@@ -265,7 +281,7 @@ export class RecordCore extends Emitter {
    * If called with true for triggerNow, the callback will
    * be called immediatly with the current value
    */
-  public subscribe(args: utils.RecordSubscribeArguments) {
+  public subscribe(args: utils.IRecordSubscribeArguments) {
     if (args.path !== undefined && (typeof args.path !== "string" || args.path.length === 0)) {
       throw new Error("invalid argument path");
     }
@@ -298,7 +314,7 @@ export class RecordCore extends Emitter {
    *                                          method was passed to subscribe, the same method
    *                                          must be passed to unsubscribe as well.
    */
-  public unsubscribe(args: utils.RecordSubscribeArguments) {
+  public unsubscribe(args: utils.IRecordSubscribeArguments) {
     if (args.path !== undefined && (typeof args.path !== "string" || args.path.length === 0)) {
       throw new Error("invalid argument path");
     }
@@ -318,9 +334,9 @@ export class RecordCore extends Emitter {
       this.references--;
       if (this.references <= 0) {
         const message = {
-          topic: TOPIC.RECORD,
           action: RA.UNSUBSCRIBE,
           name: this.name,
+          topic: TOPIC.RECORD,
         };
         if (this.services.connection.isConnected) {
           this.services.connection.sendMessage(message);
@@ -387,6 +403,7 @@ export class RecordCore extends Emitter {
       [RA.SUBSCRIPTION_HAS_PROVIDER]: () => this.handleChangedProvider(message),
       [RA.SUBSCRIPTION_HAS_NO_PROVIDER]: () => this.handleChangedProvider(message),
     };
+    // tslint:disable-next-line
     const defaultAction = () => {};
 
     const handleAction = mapping[message.action] || defaultAction;
@@ -425,12 +442,12 @@ export class RecordCore extends Emitter {
     this.data = newData;
 
     const paths = this.emitter.eventNames();
-    for (let i = 0; i < paths.length; i++) {
-      const newValue = getPath(newData, paths[i], false);
-      const oldValue = getPath(oldData, paths[i], false);
+    for (const path of paths) {
+      const newValue = getPath(newData, path, false);
+      const oldValue = getPath(oldData, path, false);
 
       if (!isEqual(newValue, oldValue)) {
-        this.emitter.emit(paths[i], this.get(paths[i]));
+        this.emitter.emit(path, this.get(path));
       }
     }
   }
@@ -441,24 +458,24 @@ export class RecordCore extends Emitter {
 
     this.services.timeoutRegistry.add({
       message: {
-        topic: TOPIC.RECORD,
         action: RA.SUBSCRIBE,
         name: this.name,
+        topic: TOPIC.RECORD,
       },
     });
 
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
-        topic: TOPIC.RECORD,
         action: RA.READ_RESPONSE,
         name: this.name,
+        topic: TOPIC.RECORD,
       },
     });
 
     this.services.connection.sendMessage({
-      topic: TOPIC.RECORD,
       action: RA.SUBSCRIBECREATEANDREAD,
       name: this.name,
+      topic: TOPIC.RECORD,
     });
   }
 
@@ -500,8 +517,7 @@ export class RecordCore extends Emitter {
     const writeCallbacks: WriteAckCallback[] = [];
     const oldData = this.data;
     let newData = oldData;
-    for (let i = 0; i < this.pendingWrites.length; i++) {
-      const { callback, path, data } = this.pendingWrites[i];
+    for (const { callback, path, data } of this.pendingWrites) {
       if (callback) {
         writeCallbacks.push(callback);
       }
@@ -511,8 +527,8 @@ export class RecordCore extends Emitter {
     this.applyChange(newData);
 
     const runFns = (err: any) => {
-      for (let i = 0; i < writeCallbacks.length; i++) {
-        writeCallbacks[i](err, this.name);
+      for (const writeCallback of writeCallbacks) {
+        writeCallback(err, this.name);
       }
     };
 
@@ -545,13 +561,13 @@ export class RecordCore extends Emitter {
     if (!this.isReady) {
       this.pendingUpdates.push(message as RecordWriteMessage);
       return;
-  }
+    }
     this.applyUpdate(message as RecordWriteMessage);
   }
 
   private applyPendingUpdates(): void {
     this.pendingUpdates.forEach((message: any) => {
-        this.applyUpdate(message);
+      this.applyUpdate(message);
     });
     this.pendingUpdates = [];
   }
@@ -573,8 +589,8 @@ export class RecordCore extends Emitter {
   private handleMessageDenied(message: RecordMessage): void {
     const isSubscribeMessage = (
       message.originalAction === RA.SUBSCRIBECREATEANDREAD ||
-        message.originalAction === RA.SUBSCRIBEANDHEAD ||
-        message.originalAction === RA.SUBSCRIBEANDREAD
+      message.originalAction === RA.SUBSCRIBEANDHEAD ||
+      message.originalAction === RA.SUBSCRIBEANDREAD
     );
 
     if (isSubscribeMessage) {
@@ -616,9 +632,9 @@ export class RecordCore extends Emitter {
     (this.version as number)++;
 
     const message = {
+      name: this.name,
       topic: TOPIC.RECORD,
       version: this.version,
-      name: this.name,
     };
 
     if (!path) {
@@ -644,14 +660,14 @@ export class RecordCore extends Emitter {
     this.whenReady(null, () => {
       if (this.services.connection.isConnected) {
         const message = {
-          topic: TOPIC.RECORD,
           action: RA.DELETE,
           name: this.name,
+          topic: TOPIC.RECORD,
         };
         this.deletedTimeout = this.services.timeoutRegistry.add({
-          message,
-          event: EVENT.RECORD_DELETE_TIMEOUT,
           duration: this.options.recordDeleteTimeout,
+          event: EVENT.RECORD_DELETE_TIMEOUT,
+          message,
         });
         this.services.connection.sendMessage(message);
       } else {
@@ -676,7 +692,7 @@ export class RecordCore extends Emitter {
     this.whenComplete(this.name);
   }
 
-  private onConnectionLost(): void {
-  }
+  // tslint:disable-next-line
+  private onConnectionLost(): void {}
 
 }

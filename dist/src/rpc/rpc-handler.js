@@ -34,14 +34,14 @@ class RPCHandler {
      * respective format as well
      */
     provide(name, callback) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
         if (this.providers.has(name)) {
             throw new Error(`RPC ${name} already registered`);
         }
-        if (typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         this.providers.set(name, callback);
         if (this.services.connection.isConnected) {
@@ -52,14 +52,14 @@ class RPCHandler {
      * Unregisters this client as a provider for a remote procedure call
      */
     unprovide(name) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
         if (!this.providers.has(name)) {
             this.services.logger.warn({
-                topic: message_constants_1.TOPIC.RPC,
                 action: message_constants_1.RPC_ACTIONS.NOT_PROVIDED,
-                name
+                name,
+                topic: message_constants_1.TOPIC.RPC,
             });
             return;
         }
@@ -72,11 +72,11 @@ class RPCHandler {
         }
     }
     make(name, data, callback) {
-        if (typeof name !== 'string' || name.length === 0) {
-            throw new Error('invalid argument name');
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("invalid argument name");
         }
-        if (callback && typeof callback !== 'function') {
-            throw new Error('invalid argument callback');
+        if (callback && typeof callback !== "function") {
+            throw new Error("invalid argument callback");
         }
         const correlationId = utils_1.getUid();
         if (this.services.connection.isConnected) {
@@ -94,7 +94,13 @@ class RPCHandler {
             }
             else {
                 return new Promise((resolve, reject) => {
-                    this.limboQueue.push({ correlationId, name, data, callback: (error, result) => error ? reject(error) : resolve(result) });
+                    const limboCallback = (error, result) => error ? reject(error) : resolve(result);
+                    this.limboQueue.push({
+                        callback: limboCallback,
+                        correlationId,
+                        data,
+                        name,
+                    });
                 });
             }
         }
@@ -123,10 +129,10 @@ class RPCHandler {
         }
         else {
             this.services.connection.sendMessage({
-                topic: message_constants_1.TOPIC.RPC,
                 action: message_constants_1.RPC_ACTIONS.REJECT,
+                correlationId: message.correlationId,
                 name: message.name,
-                correlationId: message.correlationId
+                topic: message_constants_1.TOPIC.RPC,
             });
         }
     }
@@ -191,9 +197,9 @@ class RPCHandler {
     }
     sendProvide(name) {
         const message = {
-            topic: message_constants_1.TOPIC.RPC,
             action: message_constants_1.RPC_ACTIONS.PROVIDE,
-            name
+            name,
+            topic: message_constants_1.TOPIC.RPC,
         };
         this.services.timeoutRegistry.add({ message });
         this.services.connection.sendMessage(message);
@@ -202,20 +208,20 @@ class RPCHandler {
         for (const [name] of this.providers) {
             this.sendProvide(name);
         }
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            const { correlationId, name, data, callback } = this.limboQueue[i];
+        for (const limboObject of this.limboQueue) {
+            const { correlationId, name, data, callback } = limboObject;
             this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, callback, this.options, this.services));
         }
         this.limboQueue = [];
     }
     onExitLimbo() {
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            this.limboQueue[i].callback(constants_1.EVENT.CLIENT_OFFLINE);
+        for (const limboObject of this.limboQueue) {
+            limboObject.callback(constants_1.EVENT.CLIENT_OFFLINE);
         }
         this.limboQueue = [];
     }
-    onConnectionLost() {
-    }
+    // tslint:disable-next-line
+    onConnectionLost() { }
 }
 exports.RPCHandler = RPCHandler;
 //# sourceMappingURL=rpc-handler.js.map

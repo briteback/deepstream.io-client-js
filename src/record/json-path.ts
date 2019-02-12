@@ -2,23 +2,23 @@ import * as utils from "../util/utils";
 const SPLIT_REG_EXP = /[[\]]/g;
 
 /**
-* Returns the value of the path or
-* undefined if the path can't be resolved
-*/
+ * Returns the value of the path or
+ * undefined if the path can't be resolved
+ */
 export function get(data: any, path: string | null, deepCopy: boolean): any {
- const tokens = tokenize(path);
- let value = data;
- for (let i = 0; i < tokens.length; i++) {
-   if (value === undefined) {
-     return undefined;
-   }
-   if (typeof value !== "object") {
-     throw new Error("invalid data or path");
-   }
-   value = value[tokens[i]];
- }
+  const tokens = tokenize(path);
+  let value = data;
+  for (const token of tokens) {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (typeof value !== "object") {
+      throw new Error("invalid data or path");
+    }
+    value = value[token];
+  }
 
- return deepCopy !== false ? utils.deepCopy(value) : value;
+  return deepCopy !== false ? utils.deepCopy(value) : value;
 }
 
 /**
@@ -71,8 +71,8 @@ function tokenize(path: string | null): Array<string | number> {
 
   const parts = path.split(".");
 
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i].trim();
+  for (const untrimmedPart of parts) {
+    const part = untrimmedPart.trim();
 
     if (part.length === 0) {
       continue;

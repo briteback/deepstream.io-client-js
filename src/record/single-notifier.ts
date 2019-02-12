@@ -1,6 +1,6 @@
 import { Message, RECORD_ACTIONS as RECORD_ACTION, TOPIC } from "../../binary-protocol/src/message-constants";
 
-import { Services } from "../client";
+import { IServices } from "../client";
 import { EVENT } from "../constants";
 
 /**
@@ -9,20 +9,20 @@ import { EVENT } from "../constants";
  * that they can can be notified at once, and also includes reconnection funcionality
  * incase the connection drops.
  *
- * @param {Services} services          The deepstream client
+ * @param {IServices} services          The deepstream client
  * @param {Options} options     Function to call to allow resubscribing
  *
  * @constructor
  */
 export class SingleNotifier {
 
-  private services: Services;
+  private services: IServices;
   private requests: Map<string, Array<(error?: any, result?: any) => void>>;
   private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD;
   private internalRequests: Map<string, Array<(message: Message) => void>>;
   private limboQueue: Message[];
 
-  constructor(services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
+  constructor(services: IServices, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
     this.services = services;
     this.action = action;
     this.requests = new Map();
@@ -34,7 +34,7 @@ export class SingleNotifier {
     this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
   }
 
-    /**
+  /**
    * Add a request. If one has already been made it will skip the server request
    * and multiplex the response
    *
@@ -46,9 +46,9 @@ export class SingleNotifier {
    */
   public request(name: string, callback: (error?: any, result?: any) => void): void {
     const message = {
-      topic: TOPIC.RECORD,
       action: this.action,
       name,
+      topic: TOPIC.RECORD,
     };
 
     const req = this.requests.get(name);
@@ -94,25 +94,24 @@ export class SingleNotifier {
       return;
     }
 
-    for (let i = 0; i < internalResponses.length; i++) {
-      internalResponses[i](message);
+    for (const internalResponse of internalResponses) {
+      internalResponse(message);
     }
     this.internalRequests.delete(name);
 
     // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
-    for (let i = 0; i < responses.length; i++) {
-      responses[i](error, data);
+    for (const response of responses) {
+      response(error, data);
     }
     this.requests.delete(name);
     return;
   }
 
-  private onConnectionLost(): void {
-  }
+  // tslint:disable-next-line
+  private onConnectionLost(): void {}
 
   private onExitLimbo(): void {
-    for (let i = 0; i < this.limboQueue.length; i++) {
-      const message = this.limboQueue[i];
+    for (const message of this.limboQueue) {
       const requests = this.requests.get(message.name as string);
       if (requests) {
         requests.forEach((cb) => cb(EVENT.CLIENT_OFFLINE));
@@ -123,8 +122,7 @@ export class SingleNotifier {
   }
 
   private onConnectionReestablished(): void {
-    for (let i = 0; i < this.limboQueue.length; i++) {
-      const message = this.limboQueue[i];
+    for (const message of this.limboQueue) {
       this.services.connection.sendMessage(message);
       this.services.timeoutRegistry.add({ message });
     }

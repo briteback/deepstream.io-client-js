@@ -1,5 +1,5 @@
-import { EVENT } from '../constants';
-import { TOPIC, ALL_ACTIONS, Message } from '../../binary-protocol/src/message-constants';
+import { ALL_ACTIONS, Message, TOPIC } from "../../binary-protocol/src/message-constants";
+import { EVENT } from "../constants";
 export declare class Logger {
     private emitter;
     constructor(emitter: Emitter);

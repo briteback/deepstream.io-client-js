@@ -1,20 +1,20 @@
-import * as utils from '../util/utils';
+import * as utils from "../util/utils";
 const SPLIT_REG_EXP = /[[\]]/g;
 /**
-* Returns the value of the path or
-* undefined if the path can't be resolved
-*/
+ * Returns the value of the path or
+ * undefined if the path can't be resolved
+ */
 export function get(data, path, deepCopy) {
     const tokens = tokenize(path);
     let value = data;
-    for (let i = 0; i < tokens.length; i++) {
+    for (const token of tokens) {
         if (value === undefined) {
             return undefined;
         }
-        if (typeof value !== 'object') {
-            throw new Error('invalid data or path');
+        if (typeof value !== "object") {
+            throw new Error("invalid data or path");
         }
-        value = value[tokens[i]];
+        value = value[token];
     }
     return deepCopy !== false ? utils.deepCopy(value) : value;
 }
@@ -34,10 +34,10 @@ export function setValue(root, path, value) {
     let i;
     for (i = 0; i < tokens.length - 1; i++) {
         const token = tokens[i];
-        if (node[token] !== undefined && node[token] !== null && typeof node[token] === 'object') {
+        if (node[token] !== undefined && node[token] !== null && typeof node[token] === "object") {
             node = node[token];
         }
-        else if (typeof tokens[i + 1] === 'number') {
+        else if (typeof tokens[i + 1] === "number") {
             const array = new Array(tokens[i + 1]);
             array.fill(null);
             node = node[token] = array;
@@ -63,9 +63,9 @@ function tokenize(path) {
         return [];
     }
     const tokens = [];
-    const parts = path.split('.');
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i].trim();
+    const parts = path.split(".");
+    for (const untrimmedPart of parts) {
+        const part = untrimmedPart.trim();
         if (part.length === 0) {
             continue;
         }

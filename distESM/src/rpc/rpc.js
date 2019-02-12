@@ -1,4 +1,4 @@
-import { TOPIC, RPC_ACTIONS as RPC_ACTION } from '../../binary-protocol/src/message-constants';
+import { RPC_ACTIONS as RPC_ACTION, TOPIC } from "../../binary-protocol/src/message-constants";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -13,33 +13,33 @@ export class RPC {
         this.correlationId = correlationId;
         this.response = response;
         const message = {
-            topic: TOPIC.RPC,
             action: RPC_ACTION.REQUEST,
             correlationId,
             name,
-            parsedData: data
+            parsedData: data,
+            topic: TOPIC.RPC,
         };
         this.acceptTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: TOPIC.RPC,
-                action: RPC_ACTION.ACCEPT,
-                name: this.name,
-                correlationId: this.correlationId
-            },
-            event: RPC_ACTION.ACCEPT_TIMEOUT,
+            callback: this.onTimeout.bind(this),
             duration: this.options.rpcAcceptTimeout,
-            callback: this.onTimeout.bind(this)
+            event: RPC_ACTION.ACCEPT_TIMEOUT,
+            message: {
+                action: RPC_ACTION.ACCEPT,
+                correlationId: this.correlationId,
+                name: this.name,
+                topic: TOPIC.RPC,
+            },
         });
         this.responseTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: TOPIC.RPC,
-                action: RPC_ACTION.REQUEST,
-                name: this.name,
-                correlationId: this.correlationId
-            },
-            event: RPC_ACTION.RESPONSE_TIMEOUT,
+            callback: this.onTimeout.bind(this),
             duration: this.options.rpcResponseTimeout,
-            callback: this.onTimeout.bind(this)
+            event: RPC_ACTION.RESPONSE_TIMEOUT,
+            message: {
+                action: RPC_ACTION.REQUEST,
+                correlationId: this.correlationId,
+                name: this.name,
+                topic: TOPIC.RPC,
+            },
         });
         this.services.connection.sendMessage(message);
     }
@@ -76,7 +76,7 @@ export class RPC {
     /**
      * Called after either an error or a response
      * was received
-    */
+     */
     complete() {
         this.services.timeoutRegistry.clear(this.acceptTimeout);
         this.services.timeoutRegistry.clear(this.responseTimeout);

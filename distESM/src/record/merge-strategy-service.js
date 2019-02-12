@@ -1,5 +1,5 @@
-import { EVENT } from '../constants';
-import { TOPIC } from '../../binary-protocol/src/message-constants';
+import { TOPIC } from "../../binary-protocol/src/message-constants";
+import { EVENT } from "../constants";
 export class MergeStrategyService {
     constructor(services, defaultStrategy) {
         this.services = services;

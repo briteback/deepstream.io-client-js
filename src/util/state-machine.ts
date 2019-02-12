@@ -1,29 +1,28 @@
 export class StateMachine {
 
-  private _logger: any;
-  private _state: any;
-  private _transitions: any;
-  private _stateMachine: any;
+  private logger: any;
+  private currentState: any;
+  private transitions: any;
+  private stateMachine: any;
 
   constructor(logger: any, stateMachine: any) {
-    this._logger = logger;
-    this._transitions = stateMachine.transitions;
-    this._state = stateMachine.init;
-    this._stateMachine = stateMachine;
+    this.logger = logger;
+    this.transitions = stateMachine.transitions;
+    this.currentState = stateMachine.init;
+    this.stateMachine = stateMachine;
   }
 
   /**
    * Try to perform a state change
    */
   public transition(transitionName: any): void {
-    let transition;
-    for (let i = 0; i < this._transitions.length; i++) {
-      transition = this._transitions[i];
-      if (transitionName === transition.name && (this._state === transition.from || transition.from === undefined)) {
-        const oldState = this._state;
-        this._state = transition.to;
-        if (this._stateMachine.onStateChanged) {
-          this._stateMachine.onStateChanged(this._state, oldState);
+    for (const transition of this.transitions) {
+      if (transitionName === transition.name &&
+          (this.currentState === transition.from || transition.from === undefined)) {
+        const oldState = this.currentState;
+        this.currentState = transition.to;
+        if (this.stateMachine.onStateChanged) {
+          this.stateMachine.onStateChanged(this.currentState, oldState);
         }
         if (transition.handler) {
           transition.handler();
@@ -31,16 +30,16 @@ export class StateMachine {
         return;
       }
     }
-    const details = JSON.stringify({ transition: transitionName, state: this._state });
-    this._logger.warn(`Invalid state transition: ${details}`);
+    const details = JSON.stringify({ transition: transitionName, state: this.currentState });
+    this.logger.warn(`Invalid state transition: ${details}`);
   }
 
   public get state() {
-    return this._state;
+    return this.currentState;
   }
 
   public resetToInitialState() {
-    this._state = this._stateMachine.init;
+    this.currentState = this.stateMachine.init;
   }
 
 }

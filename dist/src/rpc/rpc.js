@@ -15,33 +15,33 @@ class RPC {
         this.correlationId = correlationId;
         this.response = response;
         const message = {
-            topic: message_constants_1.TOPIC.RPC,
             action: message_constants_1.RPC_ACTIONS.REQUEST,
             correlationId,
             name,
-            parsedData: data
+            parsedData: data,
+            topic: message_constants_1.TOPIC.RPC,
         };
         this.acceptTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: message_constants_1.TOPIC.RPC,
-                action: message_constants_1.RPC_ACTIONS.ACCEPT,
-                name: this.name,
-                correlationId: this.correlationId
-            },
-            event: message_constants_1.RPC_ACTIONS.ACCEPT_TIMEOUT,
+            callback: this.onTimeout.bind(this),
             duration: this.options.rpcAcceptTimeout,
-            callback: this.onTimeout.bind(this)
+            event: message_constants_1.RPC_ACTIONS.ACCEPT_TIMEOUT,
+            message: {
+                action: message_constants_1.RPC_ACTIONS.ACCEPT,
+                correlationId: this.correlationId,
+                name: this.name,
+                topic: message_constants_1.TOPIC.RPC,
+            },
         });
         this.responseTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: message_constants_1.TOPIC.RPC,
-                action: message_constants_1.RPC_ACTIONS.REQUEST,
-                name: this.name,
-                correlationId: this.correlationId
-            },
-            event: message_constants_1.RPC_ACTIONS.RESPONSE_TIMEOUT,
+            callback: this.onTimeout.bind(this),
             duration: this.options.rpcResponseTimeout,
-            callback: this.onTimeout.bind(this)
+            event: message_constants_1.RPC_ACTIONS.RESPONSE_TIMEOUT,
+            message: {
+                action: message_constants_1.RPC_ACTIONS.REQUEST,
+                correlationId: this.correlationId,
+                name: this.name,
+                topic: message_constants_1.TOPIC.RPC,
+            },
         });
         this.services.connection.sendMessage(message);
     }
@@ -78,7 +78,7 @@ class RPC {
     /**
      * Called after either an error or a response
      * was received
-    */
+     */
     complete() {
         this.services.timeoutRegistry.clear(this.acceptTimeout);
         this.services.timeoutRegistry.clear(this.responseTimeout);

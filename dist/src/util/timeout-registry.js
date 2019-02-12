@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const constants_1 = require("../constants");
 const utils_1 = require("../../binary-protocol/src/utils");
+const constants_1 = require("../constants");
 const EventEmitter = require("component-emitter2");
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -38,15 +38,15 @@ class TimeoutRegistry extends EventEmitter {
         }
         this.remove(timeout.message);
         const internalTimeout = Object.assign({}, {
+            event: timeout.event,
             timerId: -1,
             uniqueName: this.getUniqueName(timeout.message),
-            event: timeout.event
         }, { timeout });
         internalTimeout.timerId = this.services.timerRegistry.add({
-            context: this,
             callback: this.onTimeout,
+            context: this,
+            data: internalTimeout,
             duration: timeout.duration,
-            data: internalTimeout
         });
         this.register.set(internalTimeout.timerId, internalTimeout);
         this.ackRegister.set(internalTimeout.uniqueName, internalTimeout);
@@ -82,6 +82,15 @@ class TimeoutRegistry extends EventEmitter {
         }
     }
     /**
+     * Remote all timeouts when connection disconnects
+     */
+    onConnectionLost() {
+        for (const [timerId] of this.register) {
+            clearTimeout(timerId);
+            this.register.delete(timerId);
+        }
+    }
+    /**
      * Will be invoked if the timeout has occured before the ack message was received
      */
     onTimeout(internalTimeout) {
@@ -107,15 +116,6 @@ class TimeoutRegistry extends EventEmitter {
             name += message.name;
         }
         return name;
-    }
-    /**
-     * Remote all timeouts when connection disconnects
-     */
-    onConnectionLost() {
-        for (const [timerId] of this.register) {
-            clearTimeout(timerId);
-            this.register.delete(timerId);
-        }
     }
 }
 exports.TimeoutRegistry = TimeoutRegistry;

@@ -1,7 +1,7 @@
 import { RECORD_ACTIONS as RECORD_ACTION, RecordMessage, TOPIC } from "../../binary-protocol/src/message-constants";
 import { isWriteAck } from "../../binary-protocol/src/utils";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { EVENT } from "../constants";
 import { ListenCallback, Listener } from "../util/listener";
 import * as utils from "../util/utils";
@@ -14,7 +14,7 @@ import { RecordCore, WriteAckCallback } from "./record-core";
 import { SingleNotifier } from "./single-notifier";
 import { WriteAcknowledgementService } from "./write-ack-service";
 
-export interface RecordServices {
+export interface IRecordServices {
   writeAckService: WriteAcknowledgementService;
   readRegistry: SingleNotifier;
   headRegistry: SingleNotifier;
@@ -22,13 +22,13 @@ export interface RecordServices {
 }
 
 export class RecordHandler {
-  private services: Services;
-  private options: Options;
+  private services: IServices;
+  private options: IOptions;
   private listener: Listener;
   private recordCores: Map<string, RecordCore>;
-  private recordServices: RecordServices;
+  private recordServices: IRecordServices;
 
-  constructor(services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
+  constructor(services: IServices, options: IOptions, recordServices?: IRecordServices, listener?: Listener) {
     this.services = services;
     this.options = options;
     this.listener = listener || new Listener(TOPIC.RECORD, this.services);
@@ -36,11 +36,11 @@ export class RecordHandler {
     this.recordCores = new Map();
 
     this.recordServices = recordServices || {
-      writeAckService: new WriteAcknowledgementService(services),
-      readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
       headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),
       mergeStrategy: new MergeStrategyService(services, options.mergeStrategy),
-    } as RecordServices;
+      readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
+      writeAckService: new WriteAcknowledgementService(services),
+    } as IRecordServices;
 
     this.getRecordCore = this.getRecordCore.bind(this);
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this));
@@ -63,10 +63,10 @@ export class RecordHandler {
   }
 
   /**
- * Returns an existing record or creates a new one.
- *
- * @param   {String} name              the unique name of the record
- */
+   * Returns an existing record or creates a new one.
+   *
+   * @param   {String} name              the unique name of the record
+   */
   public getRecord(name: string): Record {
     return new Record(this.getRecordCore(name));
   }
@@ -241,7 +241,8 @@ export class RecordHandler {
    *                    with the result of the write
    */
   public setDataWithAck(recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
-  public setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
+  public setDataWithAck(recordName: string, path: string,
+                        data: any, callback?: WriteAckCallback): Promise<string> | void;
   public setDataWithAck(recordName: string, ...rest: any[]): Promise<string> | void {
     const args = utils.normalizeSetArguments(arguments, 1);
     if (!args.callback) {
@@ -270,13 +271,14 @@ export class RecordHandler {
    */
   public setData(recordName: string, data: any): void;
   public setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
-  public setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
+  public setData(recordName: string, pathOrData: string | any,
+                 dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
   public setData(recordName: string): void {
     const args = utils.normalizeSetArguments(arguments, 1);
     this.sendSetData(recordName, -1, args);
   }
 
-  private sendSetData(recordName: string, version: number, args: utils.RecordSetArguments): void {
+  private sendSetData(recordName: string, version: number, args: utils.IRecordSetArguments): void {
     const { path, data, callback } = args;
     if (!recordName || typeof recordName !== "string" || recordName.length === 0) {
       throw new Error("invalid argument: recordName must be an non empty string");
@@ -302,12 +304,12 @@ export class RecordHandler {
     })();
 
     const message = {
-      topic: TOPIC.RECORD,
       action,
       name: recordName,
-      path,
-      version,
       parsedData: data,
+      path,
+      topic: TOPIC.RECORD,
+      version,
     };
 
     if (callback) {
@@ -397,7 +399,13 @@ export class RecordHandler {
   private getRecordCore(recordName: string): RecordCore {
     let recordCore = this.recordCores.get(recordName);
     if (!recordCore) {
-      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this));
+      recordCore = new RecordCore(
+        recordName,
+        this.services,
+        this.options,
+        this.recordServices,
+        this.removeRecord.bind(this),
+      );
       this.recordCores.set(recordName, recordCore);
     } else {
       recordCore.usages++;

@@ -12,11 +12,11 @@ import {
 import { CONNECTION_STATE, EVENT } from "../constants";
 
 import * as Emitter from "component-emitter2";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { StateMachine } from "../util/state-machine";
 import * as utils from "../util/utils";
-import { Socket, SOCKET_UNOPENED_ON_SEND, socketFactory } from "./socket-factory";
+import { ISocket, SOCKET_UNOPENED_ON_SEND, socketFactory } from "./socket-factory";
 export type AuthenticationCallback = (success: boolean, clientData: object | null) => void;
 export type ResumeCallback = (error?: object) => void;
 
@@ -52,8 +52,8 @@ export class Connection {
   public isInLimbo: boolean;
 
   private internalEmitter: Emitter;
-  private services: Services;
-  private options: Options;
+  private services: IServices;
+  private options: IOptions;
   private stateMachine: StateMachine;
   private authParams: object | null;
   private clientData: object | null;
@@ -63,8 +63,8 @@ export class Connection {
   private url: string;
   private heartbeatInterval: number | null;
   private lastHeartBeat: number | null;
-  private endpoint: Socket | null;
-  private handlers: Map<TOPIC, Function>;
+  private endpoint: ISocket | null;
+  private handlers: Map<TOPIC, (...args: any[]) => void>;
 
   private reconnectTimeout: number | null;
   private reconnectionAttempt: number;
@@ -72,7 +72,7 @@ export class Connection {
   private isReconnecting: boolean;
   private firstOpen: boolean;
 
-  constructor(services: Services, options: Options, url: string, emitter: Emitter) {
+  constructor(services: IServices, options: IOptions, url: string, emitter: Emitter) {
     this.options = options;
     this.services = services;
     this.authParams = null;
@@ -112,12 +112,12 @@ export class Connection {
                 this.services.timerRegistry.remove(this.limboTimeout as number);
               }
               this.limboTimeout = this.services.timerRegistry.add({
-                duration: this.options.offlineBufferTimeout,
-                context: this,
                 callback: () => {
                   this.isInLimbo = false;
                   this.internalEmitter.emit(EVENT.EXIT_LIMBO);
                 },
+                context: this,
+                duration: this.options.offlineBufferTimeout,
               });
             }
           } else if (newState === CONNECTION_STATE.OPEN && (this.isReconnecting || this.firstOpen)) {
@@ -129,30 +129,122 @@ export class Connection {
           }
         },
         transitions: [
-          { name: TRANSITIONS.INITIALISED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.INITIALISING },
-          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.INITIALISING, to: CONNECTION_STATE.AWAITING_CONNECTION },
-          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.REDIRECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
-          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
-          { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
-          { name: TRANSITIONS.CONNECTION_REDIRECTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.REDIRECTING },
-          { name: TRANSITIONS.CHALLENGE_DENIED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.CHALLENGE_DENIED },
-          { name: TRANSITIONS.CHALLENGE_ACCEPTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION, handler: this.onAwaitingAuthentication.bind(this) },
-          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
-          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT  },
-          { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATING },
-          { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
-          { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
-          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
-          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
-          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
-          { name: TRANSITIONS.RECONNECT, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.RECONNECTING },
-          { name: TRANSITIONS.CLOSED, from: CONNECTION_STATE.CLOSING, to: CONNECTION_STATE.CLOSED },
-          { name: TRANSITIONS.OFFLINE, from: CONNECTION_STATE.PAUSING, to: CONNECTION_STATE.OFFLINE },
-          { name: TRANSITIONS.ERROR, to: CONNECTION_STATE.RECONNECTING },
-          { name: TRANSITIONS.LOST, to: CONNECTION_STATE.RECONNECTING },
-          { name: TRANSITIONS.RESUME, to: CONNECTION_STATE.RECONNECTING },
-          { name: TRANSITIONS.PAUSE, to: CONNECTION_STATE.PAUSING },
-          { name: TRANSITIONS.CLOSE, to: CONNECTION_STATE.CLOSING },
+          {
+            from: CONNECTION_STATE.CLOSED,
+            name: TRANSITIONS.INITIALISED,
+            to: CONNECTION_STATE.INITIALISING,
+          },
+          {
+            from: CONNECTION_STATE.INITIALISING,
+            name: TRANSITIONS.CONNECTED,
+            to: CONNECTION_STATE.AWAITING_CONNECTION,
+          },
+          {
+            from: CONNECTION_STATE.REDIRECTING,
+            name: TRANSITIONS.CONNECTED,
+            to: CONNECTION_STATE.AWAITING_CONNECTION,
+          },
+          {
+            from: CONNECTION_STATE.RECONNECTING,
+            name: TRANSITIONS.CONNECTED,
+            to: CONNECTION_STATE.AWAITING_CONNECTION,
+          },
+          {
+            from: CONNECTION_STATE.AWAITING_CONNECTION,
+            name: TRANSITIONS.CHALLENGE,
+            to: CONNECTION_STATE.CHALLENGING,
+          },
+          {
+            from: CONNECTION_STATE.CHALLENGING,
+            name: TRANSITIONS.CONNECTION_REDIRECTED,
+            to: CONNECTION_STATE.REDIRECTING,
+          },
+          {
+            from: CONNECTION_STATE.CHALLENGING,
+            name: TRANSITIONS.CHALLENGE_DENIED,
+            to: CONNECTION_STATE.CHALLENGE_DENIED,
+          },
+          {
+            from: CONNECTION_STATE.CHALLENGING,
+            handler: this.onAwaitingAuthentication.bind(this),
+            name: TRANSITIONS.CHALLENGE_ACCEPTED,
+            to: CONNECTION_STATE.AWAITING_AUTHENTICATION,
+          },
+          {
+            from: CONNECTION_STATE.AWAITING_CONNECTION,
+            name: TRANSITIONS.AUTHENTICATION_TIMEOUT,
+            to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT,
+          },
+          {
+            from: CONNECTION_STATE.AWAITING_AUTHENTICATION,
+            name: TRANSITIONS.AUTHENTICATION_TIMEOUT,
+            to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT,
+          },
+          {
+            from: CONNECTION_STATE.AWAITING_AUTHENTICATION,
+            name: TRANSITIONS.AUTHENTICATE,
+            to: CONNECTION_STATE.AUTHENTICATING,
+          },
+          {
+            from: CONNECTION_STATE.AUTHENTICATING,
+            name: TRANSITIONS.UNSUCCESFUL_LOGIN,
+            to: CONNECTION_STATE.AWAITING_AUTHENTICATION,
+          },
+          {
+            from: CONNECTION_STATE.AUTHENTICATING,
+            name: TRANSITIONS.SUCCESFUL_LOGIN,
+            to: CONNECTION_STATE.OPEN,
+          },
+          {
+            from: CONNECTION_STATE.AUTHENTICATING,
+            name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS,
+            to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS,
+          },
+          {
+            from: CONNECTION_STATE.AWAITING_AUTHENTICATION,
+            name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS,
+            to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS,
+          },
+          {
+            from: CONNECTION_STATE.AWAITING_AUTHENTICATION,
+            name: TRANSITIONS.AUTHENTICATION_TIMEOUT,
+            to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT,
+          },
+          {
+            from: CONNECTION_STATE.RECONNECTING,
+            name: TRANSITIONS.RECONNECT,
+            to: CONNECTION_STATE.RECONNECTING,
+          },
+          {
+            from: CONNECTION_STATE.CLOSING,
+            name: TRANSITIONS.CLOSED,
+            to: CONNECTION_STATE.CLOSED,
+          },
+          {
+            from: CONNECTION_STATE.PAUSING,
+            name: TRANSITIONS.OFFLINE,
+            to: CONNECTION_STATE.OFFLINE,
+          },
+          {
+            name: TRANSITIONS.ERROR,
+            to: CONNECTION_STATE.RECONNECTING,
+          },
+          {
+            name: TRANSITIONS.LOST,
+            to: CONNECTION_STATE.RECONNECTING,
+          },
+          {
+            name: TRANSITIONS.RESUME,
+            to: CONNECTION_STATE.RECONNECTING,
+          },
+          {
+            name: TRANSITIONS.PAUSE,
+            to: CONNECTION_STATE.PAUSING,
+          },
+          {
+            name: TRANSITIONS.CLOSE,
+            to: CONNECTION_STATE.CLOSING,
+          },
         ],
       },
     );
@@ -175,27 +267,27 @@ export class Connection {
     });
   }
 
-  public onLost(callback: Function): void {
+  public onLost(callback: () => void): void {
     this.internalEmitter.on(EVENT.CONNECTION_LOST, callback);
   }
 
-  public removeOnLost(callback: Function): void {
+  public removeOnLost(callback: () => void): void {
     this.internalEmitter.off(EVENT.CONNECTION_LOST, callback);
   }
 
-  public onReestablished(callback: Function): void {
+  public onReestablished(callback: () => void): void {
     this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback);
   }
 
-  public removeOnReestablished(callback: Function): void {
+  public removeOnReestablished(callback: () => void): void {
     this.internalEmitter.off(EVENT.CONNECTION_REESTABLISHED, callback);
   }
 
-  public onExitLimbo(callback: Function): void {
+  public onExitLimbo(callback: () => void): void {
     this.internalEmitter.on(EVENT.EXIT_LIMBO, callback);
   }
 
-  public registerHandler(topic: TOPIC, callback: Function): void {
+  public registerHandler(topic: TOPIC, callback: () => void): void {
     this.handlers.set(topic, callback);
   }
 
@@ -213,16 +305,12 @@ export class Connection {
    * Sends the specified authentication parameters
    * to the server. Can be called up to <maxAuthAttempts>
    * times for the same connection.
-   *
-   * @param   {Object}   authParams A map of user defined auth parameters.
-   *                E.g. { username:<String>, password:<String> }
-   * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
   public authenticate(authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void {
     if (
       authParamsOrCallback &&
-      typeof authParamsOrCallback !== "object" &&
-      typeof authParamsOrCallback !== "function"
+        typeof authParamsOrCallback !== "object" &&
+        typeof authParamsOrCallback !== "function"
     ) {
       throw new Error("invalid argument authParamsOrCallback");
     }
@@ -232,8 +320,8 @@ export class Connection {
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
-      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
+        this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
+        this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED);
       return;
@@ -248,6 +336,7 @@ export class Connection {
     } else if (callback) {
       this.authCallback = callback;
     } else {
+      // tslint:disable-next-line
       this.authCallback = () => {};
     }
 
@@ -266,8 +355,8 @@ export class Connection {
   }
 
   /*
-  * Returns the current connection state.
-  */
+   * Returns the current connection state.
+   */
   public getConnectionState(): CONNECTION_STATE {
     return this.stateMachine.state;
   }
@@ -279,8 +368,8 @@ export class Connection {
   public close(): void {
     this.services.timerRegistry.remove(this.heartbeatInterval as number);
     this.sendMessage({
-      topic: TOPIC.CONNECTION,
       action: CONNECTION_ACTION.CLOSING,
+      topic: TOPIC.CONNECTION,
     });
     this.stateMachine.transition(TRANSITIONS.CLOSE);
   }
@@ -298,7 +387,8 @@ export class Connection {
     this.resumeCallback = callback;
     this.tryReconnect();
   }
-/**
+
+  /**
    * Forces a new connection and does not wait for the current socket to close.
    * On OSX and iOS it happens that the current socket is dead but looks alive.
    * Calling forceReconnect will regardles of current state reset and set up a
@@ -309,6 +399,7 @@ export class Connection {
       this.endpoint.onopen = null;
       this.endpoint.onerror = null;
       this.endpoint.onclose = null;
+      // tslint:disable-next-line
       this.endpoint.onparsedmessages = (messages: Message[]) => {};
     }
 
@@ -345,24 +436,24 @@ export class Connection {
   }
 
   /********************************
-  ****** Endpoint Callbacks ******
+   ****** Endpoint Callbacks ******
   /********************************/
 
   /**
-  * Will be invoked once the connection is established. The client
-  * can't send messages yet, and needs to get a connection ACK or REDIRECT
-  * from the server before authenticating
-  */
+   * Will be invoked once the connection is established. The client
+   * can't send messages yet, and needs to get a connection ACK or REDIRECT
+   * from the server before authenticating
+   */
   private onOpen(): void {
     this.clearReconnect();
     this.lastHeartBeat = Date.now();
     this.checkHeartBeat();
     this.stateMachine.transition(TRANSITIONS.CONNECTED);
     this.sendMessage({
-      topic: TOPIC.CONNECTION,
       action: CONNECTION_ACTION.CHALLENGE,
-      url: this.originalUrl,
       protocolVersion: "0.1a",
+      topic: TOPIC.CONNECTION,
+      url: this.originalUrl,
     });
     this.stateMachine.transition(TRANSITIONS.CHALLENGE);
   }
@@ -416,8 +507,8 @@ export class Connection {
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
-      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
+        this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
+        this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       return;
     }
@@ -475,22 +566,22 @@ export class Connection {
   }
 
   /**
-  * Sends authentication params to the server. Please note, this
-  * doesn't use the queued message mechanism, but rather sends the message directly
-  */
+   * Sends authentication params to the server. Please note, this
+   * doesn't use the queued message mechanism, but rather sends the message directly
+   */
   private sendAuthParams(): void {
     this.stateMachine.transition(TRANSITIONS.AUTHENTICATE);
     this.sendMessage({
-      topic: TOPIC.AUTH,
       action: AUTH_ACTION.REQUEST,
       parsedData: this.authParams,
+      topic: TOPIC.AUTH,
     });
   }
 
   /**
-  * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
-  * to have been lost and closes it for reconnection.
-  */
+   * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
+   * to have been lost and closes it for reconnection.
+   */
   private checkHeartBeat(): void {
     const heartBeatTolerance = this.options.heartbeatInterval * 2;
 
@@ -504,19 +595,19 @@ export class Connection {
     }
 
     this.heartbeatInterval = this.services.timerRegistry.add({
-      duration: this.options.heartbeatInterval,
       callback: this.checkHeartBeat,
       context: this,
+      duration: this.options.heartbeatInterval,
     });
   }
 
- /**
- * If the connection drops or is closed in error this
- * method schedules increasing reconnection intervals
- *
- * If the number of failed reconnection attempts exceeds
- * options.maxReconnectAttempts the connection is closed
- */
+  /**
+   * If the connection drops or is closed in error this
+   * method schedules increasing reconnection intervals
+   *
+   * If the number of failed reconnection attempts exceeds
+   * options.maxReconnectAttempts the connection is closed
+   */
   private tryReconnect(): void {
     if (this.reconnectTimeout !== null) {
       return;
@@ -586,7 +677,7 @@ export class Connection {
       this.lastHeartBeat = Date.now();
       if (
         this.getConnectionState() !== CONNECTION_STATE.CLOSING &&
-        this.getConnectionState() !== CONNECTION_STATE.PAUSING
+          this.getConnectionState() !== CONNECTION_STATE.PAUSING
       ) {
         this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG });
       }
@@ -686,7 +777,7 @@ export class Connection {
     const newClientData = data || null;
     if (
       this.clientData === null &&
-      (newClientData === null || Object.keys(newClientData).length === 0)
+        (newClientData === null || Object.keys(newClientData).length === 0)
     ) {
       return;
     }

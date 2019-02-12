@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_1 = require("../constants");
 function isEvent(action) {
     return constants_1.EVENT[action] !== undefined;
 }
@@ -20,26 +20,28 @@ class Logger {
             warnMessage += `: ${constants_1.EVENT[event]}`;
         }
         if (meta) {
-            warnMessage += ` – ${typeof meta === 'string' ? meta : JSON.stringify(meta)}`;
+            warnMessage += ` – ${typeof meta === "string" ? meta : JSON.stringify(meta)}`;
         }
+        // tslint:disable-next-line
         console.warn(warnMessage);
     }
     error(message, event, meta) {
         // tslint:disable-next-line:no-console
         if (isEvent(event)) {
             if (event === constants_1.EVENT.IS_CLOSED) {
-                this.emitter.emit('error', meta, constants_1.EVENT[event], message_constants_1.TOPIC[message_constants_1.TOPIC.CONNECTION]);
+                this.emitter.emit("error", meta, constants_1.EVENT[event], message_constants_1.TOPIC[message_constants_1.TOPIC.CONNECTION]);
             }
             else if (event === constants_1.EVENT.CONNECTION_ERROR) {
-                this.emitter.emit('error', meta, constants_1.EVENT[event], message_constants_1.TOPIC[message_constants_1.TOPIC.CONNECTION]);
+                this.emitter.emit("error", meta, constants_1.EVENT[event], message_constants_1.TOPIC[message_constants_1.TOPIC.CONNECTION]);
             }
         }
         else {
             const action = event ? event : message.action;
-            this.emitter.emit('error', meta, message_constants_1.ACTIONS[message.topic][action], message_constants_1.TOPIC[message.topic]);
+            this.emitter.emit("error", meta, message_constants_1.ACTIONS[message.topic][action], message_constants_1.TOPIC[message.topic]);
         }
     }
     E(message) {
+        // tslint:disable-next-line
         console.error(message);
     }
 }

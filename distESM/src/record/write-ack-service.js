@@ -1,6 +1,6 @@
-import { RECORD_ACTIONS } from '../../binary-protocol/src/message-constants';
-import { ACTION_TO_WRITE_ACK } from '../../binary-protocol/src/utils';
-import { EVENT } from '../constants';
+import { RECORD_ACTIONS } from "../../binary-protocol/src/message-constants";
+import { ACTION_TO_WRITE_ACK } from "../../binary-protocol/src/utils";
+import { EVENT } from "../constants";
 export class WriteAcknowledgementService {
     constructor(services) {
         this.services = services;
@@ -35,7 +35,7 @@ export class WriteAcknowledgementService {
         this.responses.delete(id);
     }
     onConnectionLost() {
-        this.responses.forEach(response => response(EVENT.CLIENT_OFFLINE));
+        this.responses.forEach((response) => response(EVENT.CLIENT_OFFLINE));
         this.responses.clear();
     }
 }

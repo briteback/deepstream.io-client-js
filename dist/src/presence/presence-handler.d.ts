@@ -1,7 +1,7 @@
-import { EVENT } from '../constants';
-import { Services } from '../client';
-import { Options } from '../client-options';
-export declare type QueryResult = Array<string>;
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
+import { EVENT } from "../constants";
+export declare type QueryResult = string[];
 export interface IndividualQueryResult {
     [key: string]: boolean;
 }
@@ -17,16 +17,16 @@ export declare class PresenceHandler {
     private pendingUnsubscribes;
     private limboQueue;
     private flushTimeout;
-    constructor(services: Services, options: Options);
+    constructor(services: IServices, options: IOptions);
     subscribe(callback: SubscribeCallback): void;
     subscribe(user: string, callback: SubscribeCallback): void;
     unsubscribe(userOrCallback?: string | SubscribeCallback, callback?: SubscribeCallback): void;
     getAll(): Promise<QueryResult>;
-    getAll(users: Array<string>): Promise<IndividualQueryResult>;
+    getAll(users: string[]): Promise<IndividualQueryResult>;
     getAll(callback: (error: {
         reason: EVENT;
     }, result?: QueryResult) => void): void;
-    getAll(users: Array<string>, callback: (error: {
+    getAll(users: string[], callback: (error: {
         reason: EVENT;
     }, result?: IndividualQueryResult) => void): void;
     private handle;

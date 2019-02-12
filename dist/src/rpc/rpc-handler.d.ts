@@ -1,7 +1,7 @@
-import { Services } from '../client';
-import { Options } from '../client-options';
-import { RPCMakeCallback } from '../rpc/rpc';
-import { RPCResponse } from '../rpc/rpc-response';
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
+import { RPCMakeCallback } from "../rpc/rpc";
+import { RPCResponse } from "../rpc/rpc-response";
 export declare type RPCProvider = (rpcData: any, response: RPCResponse) => void;
 export declare class RPCHandler {
     private services;
@@ -9,7 +9,7 @@ export declare class RPCHandler {
     private rpcs;
     private providers;
     private limboQueue;
-    constructor(services: Services, options: Options);
+    constructor(services: IServices, options: IOptions);
     /**
      * Registers a callback function as a RPC provider. If another connected client calls
      * client.rpc.make() the request will be routed to this method

@@ -1,6 +1,6 @@
-import { Services } from '../client';
-import { Options } from '../client-options';
-import { RPCMessage } from '../../binary-protocol/src/message-constants';
+import { RPCMessage } from "../../binary-protocol/src/message-constants";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -8,13 +8,13 @@ import { RPCMessage } from '../../binary-protocol/src/message-constants';
  * incoming response data
  */
 export declare class RPCResponse {
+    autoAccept: boolean;
     private services;
     private name;
     private correlationId;
     private isAccepted;
     private isComplete;
-    autoAccept: boolean;
-    constructor(message: RPCMessage, options: Options, services: Services);
+    constructor(message: RPCMessage, options: IOptions, services: IServices);
     /**
      * Acknowledges the receipt of the request. This
      * will happen implicitly unless the request callback

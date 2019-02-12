@@ -1,13 +1,13 @@
-import { DefaultOptions } from './client-options';
-import { Logger } from './util/logger';
-import { TimeoutRegistry } from './util/timeout-registry';
-import { TimerRegistry } from './util/timer-registry';
-import { Connection } from './connection/connection';
-import { EventHandler } from './event/event-handler';
-import { RPCHandler } from './rpc/rpc-handler';
-import { RecordHandler } from './record/record-handler';
-import { PresenceHandler } from './presence/presence-handler';
-import * as EventEmitter from 'component-emitter2';
+import * as EventEmitter from "component-emitter2";
+import { DefaultOptions } from "./client-options";
+import { Connection } from "./connection/connection";
+import { EventHandler } from "./event/event-handler";
+import { PresenceHandler } from "./presence/presence-handler";
+import { RecordHandler } from "./record/record-handler";
+import { RPCHandler } from "./rpc/rpc-handler";
+import { Logger } from "./util/logger";
+import { TimeoutRegistry } from "./util/timeout-registry";
+import { TimerRegistry } from "./util/timer-registry";
 export class Client extends EventEmitter {
     constructor(url, options = {}) {
         super();
@@ -26,7 +26,7 @@ export class Client extends EventEmitter {
         this.presence = new PresenceHandler(this.services, this.options);
     }
     login(detailsOrCallback, callback) {
-        if (detailsOrCallback && typeof detailsOrCallback === 'object') {
+        if (detailsOrCallback && typeof detailsOrCallback === "object") {
             if (callback) {
                 this.services.connection.authenticate(detailsOrCallback, callback);
             }
@@ -39,7 +39,7 @@ export class Client extends EventEmitter {
             }
         }
         else {
-            if (typeof detailsOrCallback === 'function') {
+            if (typeof detailsOrCallback === "function") {
                 this.services.connection.authenticate({}, detailsOrCallback);
             }
             else {
@@ -69,19 +69,19 @@ export class Client extends EventEmitter {
             return;
         }
         return new Promise((resolve, reject) => {
-            this.services.connection.resume(error => {
+            this.services.connection.resume((error) => {
                 error ? reject(error) : resolve();
             });
         });
     }
     /**
-    * Returns a random string. The first block of characters
-    * is a timestamp, in order to allow databases to optimize for semi-
-    * sequentuel numberings
-    */
+     * Returns a random string. The first block of characters
+     * is a timestamp, in order to allow databases to optimize for semi-
+     * sequentuel numberings
+     */
     getUid() {
         const timestamp = (new Date()).getTime().toString(36);
-        const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '');
+        const randomString = (Math.random() * 10000000000000000).toString(36).replace(".", "");
         return `${timestamp}-${randomString}`;
     }
 }

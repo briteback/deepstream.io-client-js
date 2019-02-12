@@ -3,9 +3,9 @@ import * as utils from "../util/utils";
 import { MergeStrategy } from "./merge-strategy";
 import { RecordCore, WriteAckCallback } from "./record-core";
 
-export class AnonymousRecord extends Emitter  {
+export class AnonymousRecord extends Emitter {
   private record: RecordCore | null;
-  private subscriptions: utils.RecordSubscribeArguments[];
+  private subscriptions: utils.IRecordSubscribeArguments[];
   private getRecordCore: (recordName: string) => RecordCore;
 
   constructor(getRecordCore: (recordName: string) => RecordCore) {
@@ -51,8 +51,8 @@ export class AnonymousRecord extends Emitter  {
 
     this.record = this.getRecordCore(recordName);
 
-    for (let i = 0; i < this.subscriptions.length; i++) {
-      this.record.subscribe(this.subscriptions[i]);
+    for (const subscription of this.subscriptions) {
+      this.record.subscribe(subscription);
     }
 
     this.emit("nameChanged", recordName);
@@ -105,7 +105,7 @@ export class AnonymousRecord extends Emitter  {
     this.subscriptions = this.subscriptions.filter((subscription) => {
       return (
         subscription.path !== parameters.path ||
-          subscription.callback !== parameters.callback
+        subscription.callback !== parameters.callback
       );
     });
 
@@ -116,8 +116,8 @@ export class AnonymousRecord extends Emitter  {
 
   public discard(): void {
     if (this.record) {
-      for (let i = 0; i < this.subscriptions.length; i++) {
-        this.record.unsubscribe(this.subscriptions[i]);
+      for (const subscription of this.subscriptions) {
+        this.record.unsubscribe(subscription);
       }
       return this.record.discard();
     }

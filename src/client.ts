@@ -1,5 +1,5 @@
 import * as EventEmitter from "component-emitter2";
-import { DefaultOptions, Options } from "./client-options";
+import { DefaultOptions, IOptions } from "./client-options";
 import { AuthenticationCallback, Connection, ResumeCallback } from "./connection/connection";
 import { CONNECTION_STATE } from "./constants";
 import { EventHandler } from "./event/event-handler";
@@ -12,13 +12,14 @@ import { TimerRegistry } from "./util/timer-registry";
 
 export type offlineStoreWriteResponse = ((error: string | null) => void);
 
-export interface RecordOfflineStore {
-  get: (recordName: string, callback: ((recordName: string, version: number, data: string[] | object | null) => void)) => void;
+type DataType = string[] | object | null;
+export interface IRecordOfflineStore {
+  get: (recordName: string, callback: ((recordName: string, version: number, data: DataType) => void)) => void;
   set: (recordName: string, version: number, data: string[] | object, callback: offlineStoreWriteResponse) => void;
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void;
 }
 
-export interface Services {
+export interface IServices {
   logger: Logger;
   connection: Connection;
   timeoutRegistry: TimeoutRegistry;
@@ -32,8 +33,8 @@ export class Client extends EventEmitter {
   public record: RecordHandler;
   public presence: PresenceHandler;
 
-  private services: Services;
-  private options: Options;
+  private services: IServices;
+  private options: IOptions;
 
   constructor(url: string, options: any = {}) {
     super();
@@ -44,7 +45,7 @@ export class Client extends EventEmitter {
     services.timeoutRegistry = new TimeoutRegistry(services, this.options);
     services.connection = new Connection(services, this.options, url, this);
     services.emitter = (this as Emitter);
-    this.services = services as Services;
+    this.services = services as IServices;
 
     this.services.connection.onLost(
       services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry),
@@ -56,11 +57,11 @@ export class Client extends EventEmitter {
     this.presence = new PresenceHandler(this.services, this.options);
   }
 
-  public login(): Promise<object>;
+  public login(details?: object): Promise<object>;
   public login(callback: AuthenticationCallback): void;
-  public login(details: object): Promise<object>;
   public login(details: object, callback: AuthenticationCallback): void;
-  public login(detailsOrCallback?: object | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<object | null> {
+  public login(detailsOrCallback?: object | AuthenticationCallback, callback?: AuthenticationCallback):
+  void | Promise<object | null> {
     if (detailsOrCallback && typeof detailsOrCallback === "object") {
       if (callback) {
         this.services.connection.authenticate(detailsOrCallback, callback);
@@ -113,10 +114,10 @@ export class Client extends EventEmitter {
   }
 
   /**
-  * Returns a random string. The first block of characters
-  * is a timestamp, in order to allow databases to optimize for semi-
-  * sequentuel numberings
-  */
+   * Returns a random string. The first block of characters
+   * is a timestamp, in order to allow databases to optimize for semi-
+   * sequentuel numberings
+   */
   public getUid(): string {
     const timestamp = (new Date()).getTime().toString(36);
     const randomString = (Math.random() * 10000000000000000).toString(36).replace(".", "");

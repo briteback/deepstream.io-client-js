@@ -1,6 +1,6 @@
-import * as utils from '../util/utils';
-import { EVENT } from '../constants';
-import * as Emitter from 'component-emitter2';
+import * as Emitter from "component-emitter2";
+import { EVENT } from "../constants";
+import * as utils from "../util/utils";
 export class Record extends Emitter {
     constructor(record) {
         super();
@@ -42,13 +42,13 @@ export class Record extends Emitter {
      */
     erase(path) {
         if (!path) {
-            throw new Error('unable to erase record data without path, consider using `delete`');
+            throw new Error("unable to erase record data without path, consider using `delete`");
         }
         this.set(path, undefined);
     }
     eraseWithAck(path, callback) {
         if (!path) {
-            throw new Error('unable to erase record data without path, consider using `delete`');
+            throw new Error("unable to erase record data without path, consider using `delete`");
         }
         if (callback) {
             this.setWithAck(path, undefined, callback);
@@ -64,15 +64,15 @@ export class Record extends Emitter {
     }
     unsubscribe(path, callback) {
         const parameters = utils.normalizeArguments(arguments);
-        this.subscriptions = this.subscriptions.filter(subscription => {
+        this.subscriptions = this.subscriptions.filter((subscription) => {
             return (subscription.path !== parameters.path ||
                 subscription.callback !== parameters.callback);
         });
         this.record.unsubscribe(parameters);
     }
     discard() {
-        for (let i = 0; i < this.subscriptions.length; i++) {
-            this.record.unsubscribe(this.subscriptions[i]);
+        for (const subscription of this.subscriptions) {
+            this.record.unsubscribe(subscription);
         }
         return this.record.discard();
     }

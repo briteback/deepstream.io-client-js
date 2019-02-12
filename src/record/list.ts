@@ -6,9 +6,9 @@ import { RecordCore, WriteAckCallback } from "./record-core";
 
 export class List extends Emitter {
   private record: RecordCore;
-  private wrappedFunctions: Map<Function, Function>;
-  private originalApplyUpdate: Function;
-  private originalApplyChange: Function;
+  private wrappedFunctions: Map<(...args: any[]) => void, (...args: any[]) => void>;
+  private originalApplyUpdate: (...args: any[]) => void;
+  private originalApplyChange: (...args: any[]) => void;
   private beforeStructure: any;
 
   private hasAddListener: boolean;
@@ -83,7 +83,7 @@ export class List extends Emitter {
    */
   public setEntriesWithAck(entries: string[], callback?: WriteAckCallback): Promise<void> | void {
     if (!callback) {
-      return new Promise(( resolve, reject ) => {
+      return new Promise((resolve, reject) => {
         this.setEntries(entries, (error: string | null) => {
           if (error) {
             reject(error);
@@ -189,7 +189,8 @@ export class List extends Emitter {
     }
 
     // Make sure the callback is invoked with an empty array for new records
-    const listCallback = function(scope: any, cb: Function) {
+    // tslint:disable-next-line
+    const listCallback = function(scope: any, cb: (...args: any[]) => void) {
       cb(scope.getEntries());
     }.bind(this, this, parameters.callback);
 
@@ -201,7 +202,7 @@ export class List extends Emitter {
      * The reason we are holding a referencing to wrapped array is so that
      * on unsubscribe it can provide a reference to the actual method the
      * record is subscribed too.
-     **/
+     */
     this.wrappedFunctions.set(parameters.callback, listCallback);
     parameters.callback = listCallback;
     this.record.subscribe(parameters);
@@ -302,6 +303,8 @@ export class List extends Emitter {
     let i;
 
     if (this.hasRemoveListener) {
+      // This looks like a bit of magic to me, so I only disable tslint for it...
+      // tslint:disable-next-line
       for (entry in before) {
         for (i = 0; i < before[entry].length; i++) {
           if (after[entry] === undefined || after[entry][i] === undefined) {

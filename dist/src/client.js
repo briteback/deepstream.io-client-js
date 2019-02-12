@@ -1,15 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const EventEmitter = require("component-emitter2");
 const client_options_1 = require("./client-options");
+const connection_1 = require("./connection/connection");
+const event_handler_1 = require("./event/event-handler");
+const presence_handler_1 = require("./presence/presence-handler");
+const record_handler_1 = require("./record/record-handler");
+const rpc_handler_1 = require("./rpc/rpc-handler");
 const logger_1 = require("./util/logger");
 const timeout_registry_1 = require("./util/timeout-registry");
 const timer_registry_1 = require("./util/timer-registry");
-const connection_1 = require("./connection/connection");
-const event_handler_1 = require("./event/event-handler");
-const rpc_handler_1 = require("./rpc/rpc-handler");
-const record_handler_1 = require("./record/record-handler");
-const presence_handler_1 = require("./presence/presence-handler");
-const EventEmitter = require("component-emitter2");
 class Client extends EventEmitter {
     constructor(url, options = {}) {
         super();
@@ -28,7 +28,7 @@ class Client extends EventEmitter {
         this.presence = new presence_handler_1.PresenceHandler(this.services, this.options);
     }
     login(detailsOrCallback, callback) {
-        if (detailsOrCallback && typeof detailsOrCallback === 'object') {
+        if (detailsOrCallback && typeof detailsOrCallback === "object") {
             if (callback) {
                 this.services.connection.authenticate(detailsOrCallback, callback);
             }
@@ -41,7 +41,7 @@ class Client extends EventEmitter {
             }
         }
         else {
-            if (typeof detailsOrCallback === 'function') {
+            if (typeof detailsOrCallback === "function") {
                 this.services.connection.authenticate({}, detailsOrCallback);
             }
             else {
@@ -71,19 +71,19 @@ class Client extends EventEmitter {
             return;
         }
         return new Promise((resolve, reject) => {
-            this.services.connection.resume(error => {
+            this.services.connection.resume((error) => {
                 error ? reject(error) : resolve();
             });
         });
     }
     /**
-    * Returns a random string. The first block of characters
-    * is a timestamp, in order to allow databases to optimize for semi-
-    * sequentuel numberings
-    */
+     * Returns a random string. The first block of characters
+     * is a timestamp, in order to allow databases to optimize for semi-
+     * sequentuel numberings
+     */
     getUid() {
         const timestamp = (new Date()).getTime().toString(36);
-        const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '');
+        const randomString = (Math.random() * 10000000000000000).toString(36).replace(".", "");
         return `${timestamp}-${randomString}`;
     }
 }

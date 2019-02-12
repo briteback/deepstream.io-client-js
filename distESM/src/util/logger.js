@@ -1,5 +1,5 @@
-import { EVENT } from '../constants';
-import { TOPIC, ACTIONS } from '../../binary-protocol/src/message-constants';
+import { ACTIONS, TOPIC, } from "../../binary-protocol/src/message-constants";
+import { EVENT } from "../constants";
 function isEvent(action) {
     return EVENT[action] !== undefined;
 }
@@ -18,26 +18,28 @@ export class Logger {
             warnMessage += `: ${EVENT[event]}`;
         }
         if (meta) {
-            warnMessage += ` – ${typeof meta === 'string' ? meta : JSON.stringify(meta)}`;
+            warnMessage += ` – ${typeof meta === "string" ? meta : JSON.stringify(meta)}`;
         }
+        // tslint:disable-next-line
         console.warn(warnMessage);
     }
     error(message, event, meta) {
         // tslint:disable-next-line:no-console
         if (isEvent(event)) {
             if (event === EVENT.IS_CLOSED) {
-                this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION]);
+                this.emitter.emit("error", meta, EVENT[event], TOPIC[TOPIC.CONNECTION]);
             }
             else if (event === EVENT.CONNECTION_ERROR) {
-                this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION]);
+                this.emitter.emit("error", meta, EVENT[event], TOPIC[TOPIC.CONNECTION]);
             }
         }
         else {
             const action = event ? event : message.action;
-            this.emitter.emit('error', meta, ACTIONS[message.topic][action], TOPIC[message.topic]);
+            this.emitter.emit("error", meta, ACTIONS[message.topic][action], TOPIC[message.topic]);
         }
     }
     E(message) {
+        // tslint:disable-next-line
         console.error(message);
     }
 }

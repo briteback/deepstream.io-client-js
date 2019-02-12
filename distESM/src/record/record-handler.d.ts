@@ -1,15 +1,15 @@
-import { Services } from '../client';
-import { Options } from '../client-options';
-import { WriteAckCallback } from './record-core';
-import { Record } from './record';
-import { AnonymousRecord } from './anonymous-record';
-import { List } from './list';
-import { Listener, ListenCallback } from '../util/listener';
-import { SingleNotifier } from './single-notifier';
-import { WriteAcknowledgementService } from './write-ack-service';
-import { MergeStrategyService } from './merge-strategy-service';
-import { MergeStrategy } from './merge-strategy';
-export interface RecordServices {
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
+import { ListenCallback, Listener } from "../util/listener";
+import { AnonymousRecord } from "./anonymous-record";
+import { List } from "./list";
+import { MergeStrategy } from "./merge-strategy";
+import { MergeStrategyService } from "./merge-strategy-service";
+import { Record } from "./record";
+import { WriteAckCallback } from "./record-core";
+import { SingleNotifier } from "./single-notifier";
+import { WriteAcknowledgementService } from "./write-ack-service";
+export interface IRecordServices {
     writeAckService: WriteAcknowledgementService;
     readRegistry: SingleNotifier;
     headRegistry: SingleNotifier;
@@ -21,14 +21,14 @@ export declare class RecordHandler {
     private listener;
     private recordCores;
     private recordServices;
-    constructor(services: Services, options: Options, recordServices?: RecordServices, listener?: Listener);
+    constructor(services: IServices, options: IOptions, recordServices?: IRecordServices, listener?: Listener);
     setMergeStrategy(recordName: string, mergeStrategy: MergeStrategy): void;
     setMergeStrategyRegExp(regexp: RegExp, mergeStrategy: MergeStrategy): void;
     /**
-   * Returns an existing record or creates a new one.
-   *
-   * @param   {String} name              the unique name of the record
-   */
+     * Returns an existing record or creates a new one.
+     *
+     * @param   {String} name              the unique name of the record
+     */
     getRecord(name: string): Record;
     /**
      * Returns an existing List or creates a new one. A list is a specialised

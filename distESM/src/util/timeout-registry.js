@@ -1,6 +1,6 @@
-import { EVENT } from '../constants';
-import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils';
-import * as EventEmitter from 'component-emitter2';
+import { RESPONSE_TO_REQUEST } from "../../binary-protocol/src/utils";
+import { EVENT } from "../constants";
+import * as EventEmitter from "component-emitter2";
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
  * them. This is a pattern that's used by numerour classes. This registry aims
@@ -36,15 +36,15 @@ export class TimeoutRegistry extends EventEmitter {
         }
         this.remove(timeout.message);
         const internalTimeout = Object.assign({}, {
+            event: timeout.event,
             timerId: -1,
             uniqueName: this.getUniqueName(timeout.message),
-            event: timeout.event
         }, { timeout });
         internalTimeout.timerId = this.services.timerRegistry.add({
-            context: this,
             callback: this.onTimeout,
+            context: this,
+            data: internalTimeout,
             duration: timeout.duration,
-            data: internalTimeout
         });
         this.register.set(internalTimeout.timerId, internalTimeout);
         this.ackRegister.set(internalTimeout.uniqueName, internalTimeout);
@@ -80,6 +80,15 @@ export class TimeoutRegistry extends EventEmitter {
         }
     }
     /**
+     * Remote all timeouts when connection disconnects
+     */
+    onConnectionLost() {
+        for (const [timerId] of this.register) {
+            clearTimeout(timerId);
+            this.register.delete(timerId);
+        }
+    }
+    /**
      * Will be invoked if the timeout has occured before the ack message was received
      */
     onTimeout(internalTimeout) {
@@ -105,15 +114,6 @@ export class TimeoutRegistry extends EventEmitter {
             name += message.name;
         }
         return name;
-    }
-    /**
-     * Remote all timeouts when connection disconnects
-     */
-    onConnectionLost() {
-        for (const [timerId] of this.register) {
-            clearTimeout(timerId);
-            this.register.delete(timerId);
-        }
     }
 }
 //# sourceMappingURL=timeout-registry.js.map

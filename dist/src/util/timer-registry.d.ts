@@ -1,11 +1,11 @@
-export interface Timeout {
-    callback: Function;
+export interface ITimeout {
+    callback: (...args: any[]) => void;
     duration: number;
     context: any;
     data?: any;
 }
 export declare class TimerRegistry {
-    add(timeout: Timeout): number;
+    add(timeout: ITimeout): number;
     remove(timerId: number): boolean;
-    requestIdleCallback(callback: Function): void;
+    requestIdleCallback(callback: (...args: any[]) => void): void;
 }

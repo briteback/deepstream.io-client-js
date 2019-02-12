@@ -1,18 +1,18 @@
 import * as Emitter from "component-emitter2";
 import { EVENT_ACTIONS as EVENT_ACTION, EventMessage, TOPIC } from "../../binary-protocol/src/message-constants";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { EVENT } from "../constants";
 import { ListenCallback, Listener } from "../util/listener";
 
 export class EventHandler {
 
-  private services: Services;
+  private services: IServices;
   private emitter: Emitter;
   private listeners: Listener;
   private limboQueue: EventMessage[];
 
-  constructor(services: Services, options: Options, listeners?: Listener) {
+  constructor(services: IServices, options: IOptions, listeners?: Listener) {
     this.services = services;
     this.listeners = listeners || new Listener(TOPIC.EVENT, services);
     this.emitter = new Emitter();
@@ -57,9 +57,9 @@ export class EventHandler {
 
     if (!this.emitter.hasListeners(name)) {
       this.services.logger.warn({
-        topic: TOPIC.EVENT,
         action: EVENT_ACTION.NOT_SUBSCRIBED,
         name,
+        topic: TOPIC.EVENT,
       });
       return;
     }
@@ -68,9 +68,9 @@ export class EventHandler {
 
     if (!this.emitter.hasListeners(name)) {
       const message = {
-        topic: TOPIC.EVENT,
         action: EVENT_ACTION.UNSUBSCRIBE,
         name,
+        topic: TOPIC.EVENT,
       };
       this.services.timeoutRegistry.add({ message });
       if (this.services.connection.isConnected) {
@@ -91,10 +91,10 @@ export class EventHandler {
     }
 
     const message = {
-      topic: TOPIC.EVENT,
       action: EVENT_ACTION.EMIT,
       name,
       parsedData: data,
+      topic: TOPIC.EVENT,
     };
 
     if (this.services.connection.isConnected) {
@@ -193,8 +193,8 @@ export class EventHandler {
     for (const name of callbacks) {
       this.sendSubscriptionMessage(name);
     }
-    for (let i = 0; i < this.limboQueue.length; i++) {
-      this.services.connection.sendMessage(this.limboQueue[i]);
+    for (const limboObject of this.limboQueue) {
+      this.services.connection.sendMessage(limboObject);
     }
     this.limboQueue = [];
   }
@@ -205,9 +205,9 @@ export class EventHandler {
 
   private sendSubscriptionMessage(name: string) {
     const message = {
-      topic: TOPIC.EVENT,
       action: EVENT_ACTION.SUBSCRIBE,
       name,
+      topic: TOPIC.EVENT,
     };
 
     this.services.timeoutRegistry.add({ message });

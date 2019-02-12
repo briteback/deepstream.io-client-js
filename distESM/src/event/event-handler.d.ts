@@ -1,12 +1,12 @@
-import { Services } from '../client';
-import { Options } from '../client-options';
-import { Listener, ListenCallback } from '../util/listener';
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
+import { ListenCallback, Listener } from "../util/listener";
 export declare class EventHandler {
     private services;
     private emitter;
     private listeners;
     private limboQueue;
-    constructor(services: Services, options: Options, listeners?: Listener);
+    constructor(services: IServices, options: IOptions, listeners?: Listener);
     /**
      * Subscribe to an event. This will receive both locally emitted events
      * as well as events emitted by other connected clients.

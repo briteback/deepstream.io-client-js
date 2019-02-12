@@ -1,5 +1,5 @@
-import { Services } from '../client';
-import { Options } from '../client-options';
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 export declare type RPCMakeCallback = (error: string | null, result?: any) => void;
 /**
  * This class represents a single remote procedure
@@ -15,7 +15,7 @@ export declare class RPC {
     private response;
     private acceptTimeout;
     private responseTimeout;
-    constructor(name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services);
+    constructor(name: string, correlationId: string, data: any, response: RPCMakeCallback, options: IOptions, services: IServices);
     /**
      * Called once an ack message is received from the server
      */
@@ -38,6 +38,6 @@ export declare class RPC {
     /**
      * Called after either an error or a response
      * was received
-    */
+     */
     private complete;
 }

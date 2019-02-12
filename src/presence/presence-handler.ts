@@ -1,7 +1,7 @@
 import * as Emitter from "component-emitter2";
 import { Message, PRESENCE_ACTIONS as PRESENCE_ACTION, TOPIC } from "../../binary-protocol/src/message-constants";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { EVENT } from "../constants";
 
 export type QueryResult = string[];
@@ -35,7 +35,7 @@ function validateQueryArguments(rest: any[]): { users: string[] | null, callback
 }
 
 export class PresenceHandler {
-  private services: Services;
+  private services: IServices;
   private globalSubscriptionEmitter: Emitter;
   private subscriptionEmitter: Emitter;
   private queryEmitter: Emitter;
@@ -46,7 +46,7 @@ export class PresenceHandler {
   private limboQueue: Message[];
   private flushTimeout: number | null;
 
-  constructor(services: Services, options: Options) {
+  constructor(services: IServices, options: IOptions) {
     this.services = services;
     this.subscriptionEmitter = new Emitter();
     this.globalSubscriptionEmitter = new Emitter();
@@ -123,8 +123,8 @@ export class PresenceHandler {
 
       this.pendingSubscribes.clear();
       const users = this.subscriptionEmitter.eventNames();
-      for (let i = 0; i < users.length; i++) {
-        this.pendingUnsubscribes.add(users[i]);
+      for (const user of users) {
+        this.pendingUnsubscribes.add(user);
       }
       this.registerFlushTimeout();
       this.unsubscribeToAllChanges();
@@ -148,17 +148,17 @@ export class PresenceHandler {
     if (users) {
       const queryId = (this.counter++).toString();
       message = {
-        topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
         correlationId: queryId,
         names: users,
+        topic: TOPIC.PRESENCE,
       };
       emitter = this.queryEmitter;
       emitterAction = queryId;
     } else {
       message = {
-        topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY_ALL,
+        topic: TOPIC.PRESENCE,
       };
       emitter = this.queryAllEmitter;
       emitterAction = ONLY_EVENT;
@@ -182,7 +182,8 @@ export class PresenceHandler {
     return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
       emitter.once(
         emitterAction,
-        (error: { reason: string }, results: QueryResult | IndividualQueryResult) => error ? reject(error) : resolve(results),
+        (error: { reason: string }, results: QueryResult | IndividualQueryResult) =>
+          error ? reject(error) : resolve(results),
       );
     });
   }
@@ -268,10 +269,10 @@ export class PresenceHandler {
   private bulkSubscription(action: PRESENCE_ACTION.SUBSCRIBE | PRESENCE_ACTION.UNSUBSCRIBE, names: string[]) {
     const correlationId = this.counter++;
     const message: Message = {
-      topic: TOPIC.PRESENCE,
       action,
       correlationId: correlationId.toString(),
       names,
+      topic: TOPIC.PRESENCE,
     };
     this.services.timeoutRegistry.add({ message });
     this.services.connection.sendMessage(message);
@@ -298,9 +299,9 @@ export class PresenceHandler {
   private registerFlushTimeout() {
     if (!this.flushTimeout) {
       this.flushTimeout = this.services.timerRegistry.add({
-        duration: 0,
-        context: this,
         callback: this.flush,
+        context: this,
+        duration: 0,
       });
     }
   }
@@ -316,8 +317,8 @@ export class PresenceHandler {
       this.subscribeToAllChanges();
     }
 
-    for (let i = 0; i < this.limboQueue.length; i++) {
-      this.sendQuery(this.limboQueue[i]);
+    for (const limboObject of this.limboQueue) {
+      this.sendQuery(limboObject);
     }
     this.limboQueue = [];
   }

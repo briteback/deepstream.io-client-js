@@ -1,17 +1,17 @@
 import { Message, RECORD_ACTIONS } from "../../binary-protocol/src/message-constants";
 import { ACTION_TO_WRITE_ACK } from "../../binary-protocol/src/utils";
 
-import { Services } from "../client";
+import { IServices } from "../client";
 import { EVENT } from "../constants";
 import { WriteAckCallback } from "./record-core";
 
 export class WriteAcknowledgementService {
 
-  private services: Services;
-  private responses: Map<string, Function>;
+  private services: IServices;
+  private responses: Map<string, (...args: any[]) => any>;
   private count: number;
 
-  constructor(services: Services) {
+  constructor(services: IServices) {
     this.services = services;
     this.responses = new Map<string, WriteAckCallback>();
     this.count = 1;

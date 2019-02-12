@@ -1,5 +1,5 @@
-import { RecordCore, WriteAckCallback } from './record-core';
-import * as Emitter from 'component-emitter2';
+import * as Emitter from "component-emitter2";
+import { RecordCore, WriteAckCallback } from "./record-core";
 export declare class List extends Emitter {
     private record;
     private wrappedFunctions;
@@ -20,7 +20,7 @@ export declare class List extends Emitter {
      * Returns the array of list entries or an
      * empty array if the list hasn't been populated yet.
      */
-    getEntries(): Array<string>;
+    getEntries(): string[];
     /**
      * Returns true if the list is empty
      */
@@ -28,11 +28,11 @@ export declare class List extends Emitter {
     /**
      * Updates the list with a new set of entries
      */
-    setEntriesWithAck(entries: Array<string>, callback?: WriteAckCallback): Promise<void> | void;
+    setEntriesWithAck(entries: string[], callback?: WriteAckCallback): Promise<void> | void;
     /**
      * Updates the list with a new set of entries
      */
-    setEntries(entries: Array<string>, callback?: WriteAckCallback): void;
+    setEntries(entries: string[], callback?: WriteAckCallback): void;
     /**
      * Removes an entry from the list
      *
@@ -51,12 +51,12 @@ export declare class List extends Emitter {
      * Proxies the underlying Record's subscribe method. Makes sure
      * that no path is provided
      */
-    subscribe(callback: (entries: Array<string>) => void): void;
+    subscribe(callback: (entries: string[]) => void): void;
     /**
      * Proxies the underlying Record's unsubscribe method. Makes sure
      * that no path is provided
      */
-    unsubscribe(callback: (entries: Array<string>) => void): void;
+    unsubscribe(callback: (entries: string[]) => void): void;
     /**
      * Proxies the underlying Record's _update method. Set's
      * data to an empty array if no data is provided.

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const constants_1 = require("../constants");
-const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const Emitter = require("component-emitter2");
-const ONLY_EVENT = 'OE';
+const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_1 = require("../constants");
+const ONLY_EVENT = "OE";
 function validateQueryArguments(rest) {
     let users = null;
     let callback = null;
@@ -12,7 +12,7 @@ function validateQueryArguments(rest) {
             users = rest[0];
         }
         else {
-            if (typeof rest[0] !== 'function') {
+            if (typeof rest[0] !== "function") {
                 throw new Error('invalid argument: "callback"');
             }
             callback = rest[0];
@@ -21,7 +21,7 @@ function validateQueryArguments(rest) {
     else if (rest.length === 2) {
         users = rest[0];
         callback = rest[1];
-        if (!Array.isArray(users) || typeof callback !== 'function') {
+        if (!Array.isArray(users) || typeof callback !== "function") {
             throw new Error('invalid argument: "users" or "callback"');
         }
     }
@@ -44,7 +44,7 @@ class PresenceHandler {
         this.flushTimeout = null;
     }
     subscribe(userOrCallback, callback) {
-        if (typeof userOrCallback === 'string' && userOrCallback.length > 0 && typeof callback === 'function') {
+        if (typeof userOrCallback === "string" && userOrCallback.length > 0 && typeof callback === "function") {
             const user = userOrCallback;
             if (!this.subscriptionEmitter.hasListeners(user)) {
                 this.pendingSubscribes.add(user);
@@ -54,7 +54,7 @@ class PresenceHandler {
             this.registerFlushTimeout();
             return;
         }
-        if (typeof userOrCallback === 'function' && typeof callback === 'undefined') {
+        if (typeof userOrCallback === "function" && typeof callback === "undefined") {
             if (!this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)) {
                 this.subscribeToAllChanges();
             }
@@ -64,10 +64,10 @@ class PresenceHandler {
         throw new Error('invalid arguments: "user" or "callback"');
     }
     unsubscribe(userOrCallback, callback) {
-        if (userOrCallback && typeof userOrCallback === 'string' && userOrCallback.length > 0) {
+        if (userOrCallback && typeof userOrCallback === "string" && userOrCallback.length > 0) {
             const user = userOrCallback;
             if (callback) {
-                if (typeof callback !== 'function') {
+                if (typeof callback !== "function") {
                     throw new Error('invalid argument: "callback"');
                 }
                 this.subscriptionEmitter.off(user, callback);
@@ -82,7 +82,7 @@ class PresenceHandler {
             }
             return;
         }
-        if (userOrCallback && typeof userOrCallback === 'function') {
+        if (userOrCallback && typeof userOrCallback === "function") {
             callback = userOrCallback;
             this.globalSubscriptionEmitter.off(ONLY_EVENT, callback);
             if (!this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)) {
@@ -90,13 +90,13 @@ class PresenceHandler {
             }
             return;
         }
-        if (typeof userOrCallback === 'undefined' && typeof callback === 'undefined') {
+        if (typeof userOrCallback === "undefined" && typeof callback === "undefined") {
             this.subscriptionEmitter.off();
             this.globalSubscriptionEmitter.off();
             this.pendingSubscribes.clear();
             const users = this.subscriptionEmitter.eventNames();
-            for (let i = 0; i < users.length; i++) {
-                this.pendingUnsubscribes.add(users[i]);
+            for (const user of users) {
+                this.pendingUnsubscribes.add(user);
             }
             this.registerFlushTimeout();
             this.unsubscribeToAllChanges();
@@ -112,18 +112,18 @@ class PresenceHandler {
         if (users) {
             const queryId = (this.counter++).toString();
             message = {
-                topic: message_constants_1.TOPIC.PRESENCE,
                 action: message_constants_1.PRESENCE_ACTIONS.QUERY,
                 correlationId: queryId,
-                names: users
+                names: users,
+                topic: message_constants_1.TOPIC.PRESENCE,
             };
             emitter = this.queryEmitter;
             emitterAction = queryId;
         }
         else {
             message = {
+                action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL,
                 topic: message_constants_1.TOPIC.PRESENCE,
-                action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL
             };
             emitter = this.queryAllEmitter;
             emitterAction = ONLY_EVENT;
@@ -217,10 +217,10 @@ class PresenceHandler {
     bulkSubscription(action, names) {
         const correlationId = this.counter++;
         const message = {
-            topic: message_constants_1.TOPIC.PRESENCE,
             action,
             correlationId: correlationId.toString(),
-            names
+            names,
+            topic: message_constants_1.TOPIC.PRESENCE,
         };
         this.services.timeoutRegistry.add({ message });
         this.services.connection.sendMessage(message);
@@ -244,9 +244,9 @@ class PresenceHandler {
     registerFlushTimeout() {
         if (!this.flushTimeout) {
             this.flushTimeout = this.services.timerRegistry.add({
-                duration: 0,
+                callback: this.flush,
                 context: this,
-                callback: this.flush
+                duration: 0,
             });
         }
     }
@@ -259,13 +259,13 @@ class PresenceHandler {
         if (hasGlobalSubscription) {
             this.subscribeToAllChanges();
         }
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            this.sendQuery(this.limboQueue[i]);
+        for (const limboObject of this.limboQueue) {
+            this.sendQuery(limboObject);
         }
         this.limboQueue = [];
     }
     onExitLimbo() {
-        this.queryEmitter.eventNames().forEach(correlationId => {
+        this.queryEmitter.eventNames().forEach((correlationId) => {
             this.queryEmitter.emit(correlationId, constants_1.EVENT.CLIENT_OFFLINE);
         });
         this.queryAllEmitter.emit(ONLY_EVENT, constants_1.EVENT.CLIENT_OFFLINE);

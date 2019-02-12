@@ -1,6 +1,6 @@
 import { RPC_ACTIONS as RPC_ACTION, RPCMessage, TOPIC } from "../../binary-protocol/src/message-constants";
-import { Services } from "../client";
-import { Options } from "../client-options";
+import { IServices } from "../client";
+import { IOptions } from "../client-options";
 import { EVENT } from "../constants";
 import { RPC, RPCMakeCallback } from "../rpc/rpc";
 import { RPCResponse } from "../rpc/rpc-response";
@@ -9,13 +9,13 @@ import { getUid } from "../util/utils";
 export type RPCProvider = (rpcData: any, response: RPCResponse) => void;
 
 export class RPCHandler {
-  private services: Services;
-  private options: Options;
+  private services: IServices;
+  private options: IOptions;
   private rpcs: Map<string, RPC>;
   private providers: Map<string, RPCProvider>;
   private limboQueue: Array<{ name: string, data: any, correlationId: string, callback: RPCMakeCallback }>;
 
-  constructor(services: Services, options: Options) {
+  constructor(services: IServices, options: IOptions) {
     this.services = services;
     this.options = options;
     this.rpcs = new Map<string, RPC>();
@@ -70,9 +70,9 @@ export class RPCHandler {
 
     if (!this.providers.has(name)) {
       this.services.logger.warn({
-        topic: TOPIC.RPC,
         action: RPC_ACTION.NOT_PROVIDED,
         name,
+        topic: TOPIC.RPC,
       });
       return;
     }
@@ -130,7 +130,14 @@ export class RPCHandler {
         this.limboQueue.push({ correlationId, name, data, callback });
       } else {
         return new Promise((resolve, reject) => {
-          this.limboQueue.push({ correlationId, name, data, callback: (error: string | null, result: any) => error ? reject(error) : resolve(result) });
+          const limboCallback = (error: string | null, result: any) =>
+            error ? reject(error) : resolve(result);
+          this.limboQueue.push({
+            callback: limboCallback,
+            correlationId,
+            data,
+            name,
+          });
         });
       }
     } else {
@@ -157,10 +164,10 @@ export class RPCHandler {
       provider(message.parsedData, new RPCResponse(message, this.options, this.services));
     } else {
       this.services.connection.sendMessage({
-        topic: TOPIC.RPC,
         action: RPC_ACTION.REJECT,
-        name: message.name,
         correlationId: message.correlationId,
+        name: message.name,
+        topic: TOPIC.RPC,
       });
     }
   }
@@ -232,9 +239,9 @@ export class RPCHandler {
 
   private sendProvide(name: string) {
     const message = {
-      topic: TOPIC.RPC,
       action: RPC_ACTION.PROVIDE,
       name,
+      topic: TOPIC.RPC,
     };
     this.services.timeoutRegistry.add({ message });
     this.services.connection.sendMessage(message);
@@ -244,21 +251,20 @@ export class RPCHandler {
     for (const [name] of this.providers) {
       this.sendProvide(name);
     }
-    for (let i = 0; i < this.limboQueue.length; i++) {
-      const { correlationId, name, data, callback } = this.limboQueue[i];
+    for (const limboObject of this.limboQueue) {
+      const { correlationId, name, data, callback } = limboObject;
       this.rpcs.set(correlationId, new RPC(name, correlationId, data, callback, this.options, this.services));
     }
     this.limboQueue = [];
   }
 
   private onExitLimbo() {
-    for (let i = 0; i < this.limboQueue.length; i++) {
-      this.limboQueue[i].callback(EVENT.CLIENT_OFFLINE);
+    for (const limboObject of this.limboQueue) {
+      limboObject.callback(EVENT.CLIENT_OFFLINE);
     }
     this.limboQueue = [];
   }
 
-  private onConnectionLost(): void {
-
-  }
+  // tslint:disable-next-line
+  private onConnectionLost(): void {}
 }

@@ -1,6 +1,6 @@
-import * as utils from '../util/utils';
-import { EVENT } from '../constants';
-import * as Emitter from 'component-emitter2';
+import * as Emitter from "component-emitter2";
+import { EVENT } from "../constants";
+import * as utils from "../util/utils";
 export class List extends Emitter {
     constructor(record) {
         super();
@@ -10,9 +10,9 @@ export class List extends Emitter {
         this.originalApplyChange = this.record.applyChange.bind(this.record);
         this.record.applyChange = this.applyChange.bind(this);
         this.wrappedFunctions = new Map();
-        this.record.on('delete', this.emit.bind(this, 'delete'));
-        this.record.on('discard', this.emit.bind(this, 'discard'));
-        this.record.on('ready', this.emit.bind(this, 'ready'));
+        this.record.on("delete", this.emit.bind(this, "delete"));
+        this.record.on("discard", this.emit.bind(this, "discard"));
+        this.record.on("ready", this.emit.bind(this, "ready"));
         this.hasAddListener = false;
         this.hasRemoveListener = false;
         this.hasMoveListener = false;
@@ -74,13 +74,13 @@ export class List extends Emitter {
      * Updates the list with a new set of entries
      */
     setEntries(entries, callback) {
-        const errorMsg = 'entries must be an array of record names';
+        const errorMsg = "entries must be an array of record names";
         let i;
         if (!(entries instanceof Array)) {
             throw new Error(errorMsg);
         }
         for (i = 0; i < entries.length; i++) {
-            if (typeof entries[i] !== 'string') {
+            if (typeof entries[i] !== "string") {
                 throw new Error(errorMsg);
             }
         }
@@ -124,8 +124,8 @@ export class List extends Emitter {
      * @param {Number} [index]
      */
     addEntry(entry, index, callback) {
-        if (typeof entry !== 'string') {
-            throw new Error('Entry must be a recordName');
+        if (typeof entry !== "string") {
+            throw new Error("Entry must be a recordName");
         }
         if (this.record.isReady === false) {
             // ..
@@ -150,9 +150,10 @@ export class List extends Emitter {
     subscribe(callback) {
         const parameters = utils.normalizeArguments(arguments);
         if (parameters.path) {
-            throw new Error('path is not supported for List.subscribe');
+            throw new Error("path is not supported for List.subscribe");
         }
         // Make sure the callback is invoked with an empty array for new records
+        // tslint:disable-next-line
         const listCallback = function (scope, cb) {
             cb(scope.getEntries());
         }.bind(this, this, parameters.callback);
@@ -164,7 +165,7 @@ export class List extends Emitter {
          * The reason we are holding a referencing to wrapped array is so that
          * on unsubscribe it can provide a reference to the actual method the
          * record is subscribed too.
-         **/
+         */
         this.wrappedFunctions.set(parameters.callback, listCallback);
         parameters.callback = listCallback;
         this.record.subscribe(parameters);
@@ -176,7 +177,7 @@ export class List extends Emitter {
     unsubscribe(callback) {
         const parameters = utils.normalizeArguments(arguments);
         if (parameters.path) {
-            throw new Error('path is not supported for List.unsubscribe');
+            throw new Error("path is not supported for List.unsubscribe");
         }
         const listenCallback = this.wrappedFunctions.get(parameters.callback);
         parameters.callback = listenCallback;
@@ -213,10 +214,10 @@ export class List extends Emitter {
         const entries = this.getEntries();
         if (index !== undefined) {
             if (isNaN(index)) {
-                throw new Error('Index must be a number');
+                throw new Error("Index must be a number");
             }
             if (index !== entries.length && (index >= entries.length || index < 0)) {
-                throw new Error('Index must be within current entries');
+                throw new Error("Index must be within current entries");
             }
             hasIndex = true;
         }
@@ -253,6 +254,8 @@ export class List extends Emitter {
         let entry;
         let i;
         if (this.hasRemoveListener) {
+            // This looks like a bit of magic to me, so I only disable tslint for it...
+            // tslint:disable-next-line
             for (entry in before) {
                 for (i = 0; i < before[entry].length; i++) {
                     if (after[entry] === undefined || after[entry][i] === undefined) {

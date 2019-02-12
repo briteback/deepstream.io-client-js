@@ -8,7 +8,7 @@ const constants_1 = require("../constants");
  * that they can can be notified at once, and also includes reconnection funcionality
  * incase the connection drops.
  *
- * @param {Services} services          The deepstream client
+ * @param {IServices} services          The deepstream client
  * @param {Options} options     Function to call to allow resubscribing
  *
  * @constructor
@@ -25,20 +25,20 @@ class SingleNotifier {
         this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
     }
     /**
-   * Add a request. If one has already been made it will skip the server request
-   * and multiplex the response
-   *
-   * @param {String} name An identifier for the request, e.g. a record name
-   * @param {Object} response An object with property `callback` or `resolve` and `reject`
-   *
-   * @public
-   * @returns {void}
-   */
+     * Add a request. If one has already been made it will skip the server request
+     * and multiplex the response
+     *
+     * @param {String} name An identifier for the request, e.g. a record name
+     * @param {Object} response An object with property `callback` or `resolve` and `reject`
+     *
+     * @public
+     * @returns {void}
+     */
     request(name, callback) {
         const message = {
-            topic: message_constants_1.TOPIC.RECORD,
             action: this.action,
-            name
+            name,
+            topic: message_constants_1.TOPIC.RECORD,
         };
         const req = this.requests.get(name);
         if (req) {
@@ -81,33 +81,31 @@ class SingleNotifier {
         if (!responses && !internalResponses) {
             return;
         }
-        for (let i = 0; i < internalResponses.length; i++) {
-            internalResponses[i](message);
+        for (const internalResponse of internalResponses) {
+            internalResponse(message);
         }
         this.internalRequests.delete(name);
         // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
-        for (let i = 0; i < responses.length; i++) {
-            responses[i](error, data);
+        for (const response of responses) {
+            response(error, data);
         }
         this.requests.delete(name);
         return;
     }
-    onConnectionLost() {
-    }
+    // tslint:disable-next-line
+    onConnectionLost() { }
     onExitLimbo() {
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            const message = this.limboQueue[i];
+        for (const message of this.limboQueue) {
             const requests = this.requests.get(message.name);
             if (requests) {
-                requests.forEach(cb => cb(constants_1.EVENT.CLIENT_OFFLINE));
+                requests.forEach((cb) => cb(constants_1.EVENT.CLIENT_OFFLINE));
             }
         }
         this.requests.clear();
         this.limboQueue = [];
     }
     onConnectionReestablished() {
-        for (let i = 0; i < this.limboQueue.length; i++) {
-            const message = this.limboQueue[i];
+        for (const message of this.limboQueue) {
             this.services.connection.sendMessage(message);
             this.services.timeoutRegistry.add({ message });
         }

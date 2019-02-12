@@ -9,7 +9,7 @@ const TRIM_REGULAR_EXPRESSION: RegExp = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 /**
  * Removes whitespace from the beginning and end of a string
  */
-export const trim = function(inputString: string): string {
+export const trim = (inputString: string): string => {
   if (inputString.trim) {
     return inputString.trim();
   }
@@ -72,6 +72,7 @@ export const shallowCopy = (obj: any): any => {
   } else if (typeof obj === "object") {
     const copy = Object.create(null);
     const props = Object.keys(obj);
+    // tslint:disable-next-line
     for (let i = 0; i < props.length; i++) {
       copy[props[i]] = obj[props[i]];
     }
@@ -118,10 +119,10 @@ export const parseUrl = (initialURl: string, defaultPath: string): string => {
 };
 
 /**
-* Returns a random string. The first block of characters
-* is a timestamp, in order to allow databases to optimize for semi-
-* sequentuel numberings
-*/
+ * Returns a random string. The first block of characters
+ * is a timestamp, in order to allow databases to optimize for semi-
+ * sequentuel numberings
+ */
 export const getUid = (): string => {
   const timestamp = (new Date()).getTime().toString(36);
   const randomString = (Math.random() * 10000000000000000).toString(36).replace(".", "");
@@ -129,13 +130,21 @@ export const getUid = (): string => {
   return `${timestamp}-${randomString}`;
 };
 
-export interface RecordSetArguments { callback?: (error: string | null, recordName: string) => void; path?: string; data?: any; }
-export interface RecordSubscribeArguments { callback: (data: any) => void; path?: string; triggerNow?: boolean; }
+export interface IRecordSetArguments {
+  callback?: (error: string | null, recordName: string) => void;
+  path?: string; data?: any;
+}
+
+export interface IRecordSubscribeArguments {
+  callback: (data: any) => void;
+  path?: string;
+  triggerNow?: boolean;
+}
 
 /**
  * Creates a map based on the types of the provided arguments
  */
-export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): RecordSetArguments => {
+export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): IRecordSetArguments => {
   let result;
   const isRootData = (data: any) => data !== undefined && typeof data === "object";
   const isNestedData = (data: any) => typeof data !== "function";
@@ -144,9 +153,9 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
 
   if (args.length === startIndex + 1) {
     result = {
-      path: undefined,
-      data: isRootData(args[startIndex]) ? args[startIndex] : undefined,
       callback: undefined,
+      data: isRootData(args[startIndex]) ? args[startIndex] : undefined,
+      path: undefined,
     };
   }
 
@@ -168,9 +177,9 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
 
   if (args.length === startIndex + 3) {
     result = {
-      path: isPath(args[startIndex]) ? args[startIndex] : undefined,
-      data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
       callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : undefined,
+      data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
+      path: isPath(args[startIndex]) ? args[startIndex] : undefined,
     };
   }
 
@@ -199,7 +208,7 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
 /**
  * Creates a map based on the types of the provided arguments
  */
-export const normalizeArguments = (args: IArguments): RecordSubscribeArguments => {
+export const normalizeArguments = (args: IArguments): IRecordSubscribeArguments => {
   // If arguments is already a map of normalized parameters
   // (e.g. when called by AnonymousRecord), just return it.
   if (args.length === 1 && typeof args[0] === "object") {
@@ -208,13 +217,13 @@ export const normalizeArguments = (args: IArguments): RecordSubscribeArguments =
 
   const result = Object.create(null);
 
-  for (let i = 0; i < args.length; i++) {
-    if (typeof args[i] === "string") {
-      result.path = args[i];
-    } else if (typeof args[i] === "function") {
-      result.callback = args[i];
-    } else if (typeof args[i] === "boolean") {
-      result.triggerNow = args[i];
+  for (const arg of args) {
+    if (typeof arg === "string") {
+      result.path = arg;
+    } else if (typeof arg === "function") {
+      result.callback = arg;
+    } else if (typeof arg === "boolean") {
+      result.triggerNow = arg;
     }
   }
   return result;
