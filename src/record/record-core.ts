@@ -498,9 +498,11 @@ export class RecordCore extends Emitter {
   private onReady(): void {
     this.services.timeoutRegistry.clear(this.responseTimeout);
     this.applyPendingWrites();
-    this.applyPendingUpdates();
     this.isReady = true;
     this.emit(EVENT.RECORD_READY);
+    this.services.timerRegistry.requestIdleCallback(() => {
+      this.applyPendingUpdates();
+    });
   }
 
   /**

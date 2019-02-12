@@ -401,9 +401,11 @@ export class RecordCore extends Emitter {
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);
         this.applyPendingWrites();
-        this.applyPendingUpdates();
         this.isReady = true;
         this.emit(EVENT.RECORD_READY);
+        this.services.timerRegistry.requestIdleCallback(() => {
+            this.applyPendingUpdates();
+        });
     }
     /**
      * This happens when reading record data again after a reconenction
