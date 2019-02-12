@@ -29,6 +29,7 @@ export class Connection {
         this.limboTimeout = null;
         this.isReconnecting = false;
         this.firstOpen = true;
+        this.authUnsuccessfulReconnectTimeout = null;
         this.stateMachine = new StateMachine(this.services.logger, {
             init: CONNECTION_STATE.CLOSED,
             onStateChanged: (newState, oldState) => {
@@ -621,17 +622,23 @@ export class Connection {
         this.authCallback = null;
     }
     onAuthUnSuccessful() {
-        const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] };
+        // this is super ugly but we need a way to try again when the servers is not up
+        // and normal reconnect is not working for scenarios like this (yet)
+        clearTimeout(this.authUnsuccessfulReconnectTimeout);
+        this.authUnsuccessfulReconnectTimeout = setTimeout(() => this.forceReconnect(), 3000);
+        return;
+        /*const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] };
         if (this.resumeCallback) {
-            this.resumeCallback(reason);
-            this.resumeCallback = null;
+          this.resumeCallback(reason);
+          this.resumeCallback = null;
         }
         if (this.authCallback === null) {
-            this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason);
-            return;
+          this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason);
+          return;
         }
+    
         this.authCallback(false, reason);
-        this.authCallback = null;
+        this.authCallback = null;*/
     }
     updateClientData(data) {
         const newClientData = data || null;

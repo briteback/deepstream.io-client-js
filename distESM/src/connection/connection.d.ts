@@ -27,6 +27,7 @@ export declare class Connection {
     private limboTimeout;
     private isReconnecting;
     private firstOpen;
+    private authUnsuccessfulReconnectTimeout;
     constructor(services: IServices, options: IOptions, url: string, emitter: Emitter);
     onLost(callback: () => void): void;
     removeOnLost(callback: () => void): void;
