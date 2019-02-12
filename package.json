@@ -16,7 +16,7 @@
     "tscESM": "rm -rf distESM && tsc -p tsconfigESM.json",
     "build": "npm run tsc && npm run tscESM",
     "prepublishOnly": "npm run build",
-    "preversion": "npm run build && git add distESM dist",
+    "preversion": "npm run lint && npm run build && git add distESM dist",
     "postversion": "git push && git push --tags",
     "test": "mocha -r ts-node/register ./test/**/*Spec.ts --recursive --reporter dot --require source-map-support/register",
     "test:coverage": "nyc mocha",
