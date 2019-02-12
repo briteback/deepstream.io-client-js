@@ -112,6 +112,7 @@ export class RecordCore extends Emitter {
         this.stateMachine = new StateMachine(this.services.logger, stateMachine);
         this.handleReadResponse = this.handleReadResponse.bind(this);
         this.onConnectionLost = this.onConnectionLost.bind(this);
+        this.onConnectionStateChanged = this.onConnectionStateChanged.bind(this);
         this.stateMachine.transition(RA.SUBSCRIBE);
     }
     /**
@@ -388,13 +389,17 @@ export class RecordCore extends Emitter {
      * Transition States
      */
     onSubscribing() {
-        this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, (newState) => {
-            if (newState === CONNECTION_STATE.OPEN) {
-                // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
-                this.sendSUBCRToServer();
-            }
-        });
+        this.parentEmitter.on(EVENT.CONNECTION_STATE_CHANGED, this.onConnectionStateChanged);
         if (this.services.connection.isConnected) {
+            this.sendSUBCRToServer();
+        }
+    }
+    /*
+     * Gets record again and resubscibes if connection is reestablished
+     */
+    onConnectionStateChanged(newState) {
+        if (newState === CONNECTION_STATE.OPEN) {
+            // If we are in CONNECTION_STATE.OPEN, no need to check if we are connected.
             this.sendSUBCRToServer();
         }
     }
@@ -566,6 +571,7 @@ export class RecordCore extends Emitter {
         this.services.timerRegistry.remove(this.discardTimeout);
         this.services.timerRegistry.remove(this.responseTimeout);
         this.services.connection.removeOnLost(this.onConnectionLost);
+        this.parentEmitter.off(EVENT.CONNECTION_STATE_CHANGED, this.onConnectionStateChanged);
         this.emitter.off();
         this.isReady = false;
         this.whenComplete(this.name);

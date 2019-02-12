@@ -136,6 +136,7 @@ export declare class RecordCore extends Emitter {
      * Transition States
      */
     private onSubscribing;
+    private onConnectionStateChanged;
     private onReady;
     /**
      * This happens when reading record data again after a reconenction
