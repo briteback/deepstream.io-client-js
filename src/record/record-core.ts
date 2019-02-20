@@ -206,6 +206,13 @@ export class RecordCore extends Emitter {
     }
   }
 
+  /*
+   * Returns true if record is ready, else false
+   */
+  public isRecordReady(): boolean {
+    return this.isReady;
+  }
+
   /**
    * Sets the value of either the entire dataset
    * or of a specific path within the record

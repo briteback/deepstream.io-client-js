@@ -133,22 +133,16 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name);
-    if (recordCore && callback) {
-      return recordCore.whenReady(null, () => {
-        callback(null, recordCore.get());
-      });
-
-    } else if (recordCore && !callback) {
-      return new Promise((resolve, reject) => {
-        recordCore.whenReady(null, () => {
-          resolve(recordCore.get());
-        });
-      });
-
-    } else if (!recordCore && callback) {
+    if (recordCore && recordCore.isRecordReady()) {
+      if (callback) {
+        return callback(null, recordCore.get());
+      } else {
+        return Promise.resolve(recordCore.get());
+      }
+    }
+    
+    if (callback) {
       this.recordServices.readRegistry.request(name, callback);
-      return;
-
     } else {
       return new Promise((resolve, reject) => {
         const cb = (err: any, data: any) => err ? reject(err) : resolve(data);
@@ -202,19 +196,12 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name);
-    if (recordCore) {
+    if (recordCore && recordCore.isRecordReady()) {
       if (callback) {
-        recordCore.whenReady(null, () => {
-          callback(null, recordCore.version as number);
-        });
+        return callback(null, recordCore.version as number);
       } else {
-        return new Promise((resolve, reject) => {
-          recordCore.whenReady(null, () => {
-            resolve(recordCore.version as number);
-          });
-        });
+        return Promise.resolve(recordCore.version as number);
       }
-      return;
     }
 
     if (callback) {
