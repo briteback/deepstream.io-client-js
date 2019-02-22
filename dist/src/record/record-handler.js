@@ -100,21 +100,16 @@ class RecordHandler {
             throw new Error("invalid argument: callback");
         }
         const recordCore = this.recordCores.get(name);
-        if (recordCore && callback) {
-            return recordCore.whenReady(null, () => {
-                callback(null, recordCore.get());
-            });
+        if (recordCore && recordCore.isRecordReady()) {
+            if (callback) {
+                return callback(null, recordCore.get());
+            }
+            else {
+                return Promise.resolve(recordCore.get());
+            }
         }
-        else if (recordCore && !callback) {
-            return new Promise((resolve, reject) => {
-                recordCore.whenReady(null, () => {
-                    resolve(recordCore.get());
-                });
-            });
-        }
-        else if (!recordCore && callback) {
+        if (callback) {
             this.recordServices.readRegistry.request(name, callback);
-            return;
         }
         else {
             return new Promise((resolve, reject) => {
@@ -149,20 +144,13 @@ class RecordHandler {
             throw new Error("invalid argument: callback");
         }
         const recordCore = this.recordCores.get(name);
-        if (recordCore) {
+        if (recordCore && recordCore.isRecordReady()) {
             if (callback) {
-                recordCore.whenReady(null, () => {
-                    callback(null, recordCore.version);
-                });
+                return callback(null, recordCore.version);
             }
             else {
-                return new Promise((resolve, reject) => {
-                    recordCore.whenReady(null, () => {
-                        resolve(recordCore.version);
-                    });
-                });
+                return Promise.resolve(recordCore.version);
             }
-            return;
         }
         if (callback) {
             this.recordServices.headRegistry.request(name, callback);

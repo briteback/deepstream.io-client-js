@@ -627,7 +627,9 @@ class Connection {
         // this is super ugly but we need a way to try again when the servers is not up
         // and normal reconnect is not working for scenarios like this (yet)
         clearTimeout(this.authUnsuccessfulReconnectTimeout);
-        this.authUnsuccessfulReconnectTimeout = setTimeout(() => this.forceReconnect(), 3000);
+        const { maxReconnectInterval } = this.options;
+        const cb = () => this.sendAuthParams();
+        this.authUnsuccessfulReconnectTimeout = setTimeout(cb, maxReconnectInterval);
         return;
         /*const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] };
         if (this.resumeCallback) {

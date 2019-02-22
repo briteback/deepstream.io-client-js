@@ -48,6 +48,7 @@ export declare class RecordCore extends Emitter {
      * @param   {[Function]} callback Will be called when the record is ready
      */
     whenReady(context: null | List | Record | AnonymousRecord, callback?: (context: any) => void): Promise<any> | void;
+    isRecordReady(): boolean;
     /**
      * Sets the value of either the entire dataset
      * or of a specific path within the record
