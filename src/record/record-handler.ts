@@ -140,7 +140,7 @@ export class RecordHandler {
         return Promise.resolve(recordCore.get());
       }
     }
-    
+
     if (callback) {
       this.recordServices.readRegistry.request(name, callback);
     } else {
