@@ -245,6 +245,9 @@ export class List extends Emitter {
    * data to an empty array if no data is provided.
    */
   private applyChange(message: RecordMessage) {
+    if (!message) {
+      return;
+    }
     if (!(message.parsedData instanceof Array)) {
       message.parsedData = [];
     }

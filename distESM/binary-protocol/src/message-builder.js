@@ -32,7 +32,7 @@
  *
  */
 /* tslint:disable:no-bitwise */
-import { TOPIC, ACTIONS, META_KEYS, PAYLOAD_ENCODING, } from './message-constants';
+import { TOPIC, ACTIONS, PAYLOAD_ENCODING, } from './message-constants';
 import { ACTION_TO_WRITE_ACK, isWriteAck, } from './utils';
 import { HEADER_LENGTH, META_PAYLOAD_OVERFLOW_LENGTH, } from './constants';
 import { validateMeta, hasPayload, } from './message-validator';
@@ -49,19 +49,32 @@ export function getMessage(msg, isAck) {
             throw new Error(`message ${TOPIC[message.topic]} ${message.action} should not have an ack`);
         }
     }
+    // these mimic the META_KEYS constants.
     const meta = Object.create(null);
-    for (const key in META_KEYS) {
-        meta[META_KEYS[key]] = message[key];
+    if (message.payloadEncoding !== PAYLOAD_ENCODING.JSON) {
+        meta.e = message.payloadEncoding;
     }
-    if (meta[META_KEYS.payloadEncoding] === PAYLOAD_ENCODING.JSON) {
-        delete meta[META_KEYS.payloadEncoding];
-    }
+    meta.n = message.name;
+    meta.m = message.names;
+    meta.s = message.subscription;
+    meta.c = message.correlationId;
+    meta.v = message.version;
+    meta.p = message.path;
+    meta.r = message.reason;
+    meta.u = message.url;
+    meta.t = message.originalTopic;
+    meta.a = message.originalAction;
+    meta.x = message.protocolVersion;
+    meta.rn = message.requestorName;
+    meta.rd = message.requestorData;
+    meta.ts = message.trustedSender;
+    meta.rt = message.registryTopic;
     const metaError = validateMeta(message.topic, action, meta);
     if (metaError) {
         throw new Error(`invalid ${TOPIC[message.topic]} ${ACTIONS[message.topic][action] || action}: ${metaError}`);
     }
     const metaStr = JSON.stringify(meta);
-    const metaBuff = metaStr === '{}' ? null : Buffer.from(metaStr, 'utf8');
+    const metaBuff = metaStr.length === 2 ? null : Buffer.from(metaStr, 'utf8');
     let payloadBuff;
     if (message.data instanceof Buffer) {
         payloadBuff = message.data;
