@@ -127,5 +127,9 @@ export interface IOptions {
      * Handles the data of an RPC message and allows it to be rewritten.
      */
     messageRewriter: (message: RPCMessage) => void;
+    /**
+     * Function that returns authentication params.
+     */
+    getAuthParams?: () => Promise<object>;
 }
 export declare const DefaultOptions: IOptions;

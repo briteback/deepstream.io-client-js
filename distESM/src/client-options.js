@@ -7,7 +7,7 @@ export const DefaultOptions = {
     maxReconnectAttempts: 5,
     maxReconnectInterval: 180000,
     mergeStrategy: REMOTE_WINS,
-    messageRewriter: (message) => { },
+    messageRewriter: (_) => { },
     nodeStoragePath: "./local-storage",
     nodeStorageSize: 5,
     offlineBufferTimeout: 10000,

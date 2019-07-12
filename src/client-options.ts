@@ -148,6 +148,11 @@ export interface IOptions {
    */
   messageRewriter: (message: RPCMessage) => void;
 
+  /**
+   * Function that returns authentication params.
+   */
+  getAuthParams?: () => Promise<object>;
+
 }
 
 export const DefaultOptions: IOptions = {
@@ -158,7 +163,7 @@ export const DefaultOptions: IOptions = {
   maxReconnectAttempts: 5,
   maxReconnectInterval: 180000,
   mergeStrategy: REMOTE_WINS,
-  messageRewriter: (message: RPCMessage) => { /* noop */ },
+  messageRewriter: (_: RPCMessage) => { /* noop */ },
   nodeStoragePath: "./local-storage",
   nodeStorageSize: 5,
   offlineBufferTimeout: 10000,

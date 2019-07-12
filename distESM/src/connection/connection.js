@@ -1,3 +1,11 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 import { AUTH_ACTIONS as AUTH_ACTION, CONNECTION_ACTIONS as CONNECTION_ACTION, PARSER_ACTIONS as PARSER_ACTION, TOPIC, } from "../../binary-protocol/src/message-constants";
 import { parseData, } from "../../binary-protocol/src/message-parser";
 import { CONNECTION_STATE, EVENT } from "../constants";
@@ -460,11 +468,23 @@ export class Connection {
      * doesn't use the queued message mechanism, but rather sends the message directly
      */
     sendAuthParams() {
-        this.stateMachine.transition("authenticate" /* AUTHENTICATE */);
-        this.sendMessage({
-            action: AUTH_ACTION.REQUEST,
-            parsedData: this.authParams,
-            topic: TOPIC.AUTH,
+        return __awaiter(this, void 0, void 0, function* () {
+            this.stateMachine.transition("authenticate" /* AUTHENTICATE */);
+            if (this.options.getAuthParams) {
+                const authParams = yield this.options.getAuthParams();
+                this.sendMessage({
+                    action: AUTH_ACTION.REQUEST,
+                    parsedData: authParams,
+                    topic: TOPIC.AUTH,
+                });
+            }
+            else {
+                this.sendMessage({
+                    action: AUTH_ACTION.REQUEST,
+                    parsedData: this.authParams,
+                    topic: TOPIC.AUTH,
+                });
+            }
         });
     }
     /**

@@ -572,13 +572,22 @@ export class Connection {
    * Sends authentication params to the server. Please note, this
    * doesn't use the queued message mechanism, but rather sends the message directly
    */
-  private sendAuthParams(): void {
+  private async sendAuthParams(): Promise<void> {
     this.stateMachine.transition(TRANSITIONS.AUTHENTICATE);
-    this.sendMessage({
-      action: AUTH_ACTION.REQUEST,
-      parsedData: this.authParams,
-      topic: TOPIC.AUTH,
-    });
+    if (this.options.getAuthParams) {
+      const authParams = await this.options.getAuthParams();
+      this.sendMessage({
+        action: AUTH_ACTION.REQUEST,
+        parsedData: authParams,
+        topic: TOPIC.AUTH,
+      });
+    } else {
+      this.sendMessage({
+        action: AUTH_ACTION.REQUEST,
+        parsedData: this.authParams,
+        topic: TOPIC.AUTH,
+      });
+    }
   }
 
   /**
